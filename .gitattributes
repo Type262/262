@@ -1,0 +1,21 @@
+# LF line endings in the repository and in every checkout, on every platform.
+* text=auto eol=lf
+
+# Binary files: no line-ending conversion, no text diffs.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.avif  binary
+*.ico   binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.otf   binary
+*.mp4   binary
+*.webm  binary
+*.pdf   binary
+
+# assets/vendor/ is a pinned copy of dnsprovejs: collapsed in diffs and left out of the language statistics.
+assets/vendor/**    linguist-generated linguist-vendored

@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  site-sdk:
+    name: Site and SDK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dev dependencies
+        run: npm ci
+
+      - name: Check syntax
+        run: |
+          for f in assets/*.js lib/*.js bin/*.mjs upload/*.mjs; do
+            node --check "$f" || exit 1
+            echo "ok $f"
+          done
+
+      - name: Test SDK, ABI and upload service
+        run: npm test
+
+      - name: Build the site
+        run: sh scripts/build.sh
+
+      - name: Check the build output
+        run: |
+          for f in dist/index.html dist/app.html dist/docs.html dist/lib/wallet262.js dist/bin/type262.mjs; do
+            test -f "$f" || { echo "missing $f"; exit 1; }
+            echo "ok $f"
+          done
+
+  contracts:
+    name: Contracts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: recursive
+
+      - uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.8.5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      # make-proof.mjs uses @ensdomains/dnsprovejs and viem
+      - name: Install dev dependencies
+        run: npm ci
+
+      - name: Build
+        working-directory: contracts
+        run: forge build --sizes
+
+      # Compiled for shanghai, as deployed. Without FORK_RPC the fork tests are skipped here.
+      - name: Unit and fuzz tests
+        working-directory: contracts
+        run: forge test -vvv
+
+      - name: Build a real DNSSEC proof (root, .com, cloudflare.com)
+        working-directory: contracts
+        run: |
+          mkdir -p test/fixtures
+          node script/make-proof.mjs TXT cloudflare.com > test/fixtures/proof.hex
+
+      # The live pons v2 contracts and the P-256 precompile (EIP-7951) behind DNSSEC algorithm 13 need osaka.
+      - name: Fork tests on Robinhood Chain mainnet
+        timeout-minutes: 10
+        working-directory: contracts
+        env:
+          FORK_RPC: https://rpc.mainnet.chain.robinhood.com
+        run: forge test --evm-version osaka --match-test "test_(fork|sim)_" -vvv

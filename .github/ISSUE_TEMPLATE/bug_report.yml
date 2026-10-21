@@ -1,0 +1,101 @@
+name: Bug report
+description: Something in TYPE/262 doesn't work the way the docs describe.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this. A clear report with steps to reproduce gets fixed fastest.
+
+        **Security issues go through [private vulnerability reporting](https://github.com/Type262/262/security/advisories/new), never a public issue.**
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      description: Where does the problem show up?
+      options:
+        - App (app.html)
+        - Landing page (index.html)
+        - Docs (docs.html)
+        - SDK (lib/wallet262.js)
+        - CLI (bin/type262.mjs)
+        - Upload service (upload/server.mjs)
+        - Contracts (contracts/)
+        - Build, scripts or CI
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you saw, including any error message.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+      description: What should have happened instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: The smallest set of steps that shows the problem.
+      placeholder: |
+        1. Open app.html#resolve/yoursite.com
+        2. Click ...
+        3. See ...
+    validations:
+      required: true
+
+  - type: input
+    id: domain
+    attributes:
+      label: Domain or URL
+      description: The domain, URL or page involved, if any.
+      placeholder: yoursite.com
+
+  - type: input
+    id: onchain
+    attributes:
+      label: Transaction hash or contract address
+      description: For anything on Robinhood Chain (4663). Public data only.
+      placeholder: 0x...
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Browser and wallet for the app, or Node.js version and OS for the SDK and CLI. Add the commit if you run from source.
+      placeholder: |
+        Browser / wallet: Brave 1.x with MetaMask 12.x
+        Node.js: 22.x
+        OS: macOS 15
+        Commit: abc1234
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or output
+      description: Console output, CLI output or a Foundry trace. Formatted as code automatically.
+      render: shell
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you submit
+      options:
+        - label: I searched the existing issues and this is not a duplicate.
+          required: true
+        - label: This is not a security vulnerability. Those go through private vulnerability reporting.
+          required: true
+        - label: Nothing I pasted contains a private key, seed phrase, API key or .env file.
+          required: true
