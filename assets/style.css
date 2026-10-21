@@ -553,6 +553,8 @@ a.ln-card:hover { transform: translateY(-3px); }
 .pb-nets em { font: 500 0.625rem/1 var(--mono); font-style: normal; letter-spacing: .06em; padding: 0.25rem 0.375rem; border: 1px solid var(--line-2); color: var(--dim); }
 .pb-ico { display: inline-grid; place-items: center; width: 1.5rem; height: 1.5rem; }
 .pb-ico img, .pb-ico svg { width: 1.5rem; height: 1.5rem; border-radius: 0.375rem; }
+/* the official Solana logomark, unaltered, on a black tile so it reads on any button state */
+.pb-ico img[src$="chains/solana.svg"] { box-sizing: border-box; padding: 16%; background: #000; object-fit: contain; }
 .pb-addr { height: 3.25rem; }
 .pb-addr .pb-coin { flex: 0 0 6.5rem; border-right: 1px solid var(--line); text-transform: uppercase; }
 .pb-addr .pb-coin[hidden] { display: none; }

@@ -61,7 +61,7 @@ function syncNetwork() {
 $$('#net [data-chain]').forEach(b => b.addEventListener('click', () => setNetwork(b.dataset.chain)))
 document.addEventListener('click', e => { const b = e.target.closest('[data-chain-go]'); if (b) setNetwork(b.dataset.chainGo) })
 
-const SOL_ICON = '<svg viewBox="0 0 20 20" aria-hidden="true"><rect width="20" height="20" rx="10" fill="#0b0b0b"/><path fill="#14f195" d="M6.6 12.6h8.3l-1.5 1.5H5.1zm0-6.7h8.3L13.4 7.4H5.1zm8.3 3.3H6.6l-1.5 1.5h8.3z"/></svg>'
+const SOL_ICON = '<img src="assets/chains/solana.svg" alt="" width="20" height="20">'
 const SOON = {
   escrow: ['Vaults on Solana', 'Pay a domain before it publishes a wallet: send to its vault on Solana. Escrow on Robinhood Chain is also supported.'],
   launch: ['Launch on pump.fun', 'Launch a coin on pump.fun whose creator fees go to a domain. The pons launchpad on Robinhood Chain is also supported.'],
@@ -577,7 +577,7 @@ function renderEscrow(domain, s) {
 const NETWORKS = {
   sol: {
     code: 'SOL', kind: 'solana', label: 'Solana', tag: 'Main', placeholder: 'Solana address',
-    icon: '<svg viewBox="0 0 20 20" aria-hidden="true"><rect width="20" height="20" rx="10" fill="#0b0b0b"/><defs><linearGradient id="solg" x1="0" x2="1"><stop offset="0" stop-color="#9945ff"/><stop offset="1" stop-color="#14f195"/></linearGradient></defs><path fill="url(#solg)" d="M6.6 12.6h8.3l-1.5 1.5H5.1zm0-6.7h8.3L13.4 7.4H5.1zm8.3 3.3H6.6l-1.5 1.5h8.3z"/></svg>',
+    icon: '<img src="assets/chains/solana.svg" alt="" width="20" height="20">',
     hint: 'The main network on TYPE/262: SOL and USDC payments settle on Solana. Use a wallet address you control, not a token account.',
   },
   evm: {
@@ -587,7 +587,7 @@ const NETWORKS = {
   },
   btc: {
     code: 'BTC', kind: 'btc', label: 'Bitcoin', placeholder: 'bc1…',
-    icon: '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="10" fill="#f7931a"/><path fill="#fff" d="M13.6 8.7c.2-1.3-.8-2-2.2-2.5l.4-1.8-1.1-.3-.4 1.7-.9-.2.4-1.7-1.1-.3-.4 1.8-.7-.2-1.5-.4-.3 1.2s.8.2.8.2c.5.1.5.4.5.6l-.5 2-.1.1h.1l-.7 2.8c-.1.1-.2.3-.5.2l-.8-.2-.5 1.3 1.4.4.8.2-.5 1.8 1.1.3.4-1.8.9.2-.4 1.8 1.1.3.5-1.8c1.9.4 3.3.2 3.9-1.5.5-1.4 0-2.2-1-2.7.7-.2 1.3-.7 1.4-1.7zm-2.5 3.5c-.3 1.4-2.7.6-3.4.4l.6-2.5c.8.2 3.2.6 2.8 2.1zm.4-3.5c-.3 1.3-2.3.6-2.9.5l.6-2.2c.6.1 2.7.4 2.3 1.7z"/></svg>',
+    icon: '<img src="assets/chains/bitcoin.png" alt="" width="20" height="20">',
     hint: 'Published for wallets that read DNS. TYPE/262 itself settles on Solana, so add a Solana address too.',
   },
   other: {
