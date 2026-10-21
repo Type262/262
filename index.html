@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TYPE/262 · Every domain is a wallet</title>
+  <meta name="description" content="DNS has an official record type for crypto addresses: RRTYPE 262, WALLET. Publish one record and anyone, or any AI agent, can pay your domain on Robinhood Chain.">
+  <meta name="theme-color" content="#0b0b0b">
+  <link rel="icon" type="image/webp" href="assets/art/emblem.webp">
+  <meta property="og:image" content="https://type262.onrender.com/assets/art/logo-lockup.webp">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,700..900&family=Geist:wght@300..800&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/style.css">
+  <link rel="stylesheet" href="assets/theme.css">
+</head>
+<body>
+  <div class="intro" aria-hidden="true"><span class="n num">000</span><i class="bar"></i></div>
+
+  <header class="hud" id="hud">
+    <div class="container">
+      <a class="logo" href="./"><img src="assets/art/emblem.webp" alt=""><span class="wm">TYPE<b>/</b>262</span></a>
+      <nav>
+        <a href="#slot">The slot</a>
+        <a href="#how">How it works</a>
+        <a href="#agents">Agents</a>
+        <a href="#escrow">Escrow</a>
+        <a href="#adoption">Adoption</a>
+      </nav>
+      <div class="end"><a class="btn sm" href="docs.html">Docs</a><a class="btn sm icon hide-sm" href="https://x.com/type_262" target="_blank" rel="noopener" aria-label="TYPE/262 on X" title="@type_262 on X"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a><a class="btn sm icon hide-sm" href="https://github.com/Type262/262" target="_blank" rel="noopener" aria-label="TYPE/262 on GitHub" title="Type262/262 on GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></a><a class="btn primary sm" href="app.html">Open app</a></div>
+    </div>
+  </header>
+
+  <main>
+    <!-- hero -->
+    <section class="hero">
+      <img class="bg-art flora" id="flora" src="assets/art/flora.webp" alt="" aria-hidden="true">
+      <div class="container hero-inner">
+        <div class="hero-mark" id="mark"><div class="float"><img src="assets/art/chrome-262.webp" alt="262" width="1536" height="1024"></div></div>
+        <h1 class="display">
+          <span class="ln"><span>Every <span class="flap" id="hero-flap"><b>d</b><b>o</b><b>m</b><b>a</b><b>i</b><b>n</b></span></span></span>
+          <span class="ln"><span>is a <span class="accent">wallet.</span></span></span>
+        </h1>
+        <p class="body hero-fade">DNS has had an official record type for crypto addresses since 2024. Almost nobody uses it. <b>Publish one record and anyone, or any AI agent, can pay your name.</b></p>
+        <div class="search hero-fade">
+          <form class="field" id="try-form" autocomplete="off">
+            <span class="pre">dig</span>
+            <input id="try-in" placeholder="yoursite.com" spellcheck="false" aria-label="Domain">
+            <button class="btn primary" type="submit">Resolve</button>
+          </form>
+          <div class="result" id="try-out" aria-live="polite"></div>
+        </div>
+      </div>
+      <div class="cue hero-fade" aria-hidden="true"><span class="label">Scroll</span><i></i></div>
+    </section>
+
+    <!-- 01 the slot -->
+    <section class="section" id="slot">
+      <img class="bg-art bg-orbit" data-par=".12" loading="lazy" decoding="async" src="assets/art/chrome-orbit.webp" alt="" aria-hidden="true">
+      <div class="container">
+        <div class="section-head center">
+          <span class="eyebrow" data-reveal>01 — The slot</span>
+          <h2 class="h2 split">Two numbers. <span class="accent">Same story.</span></h2>
+          <p class="body" data-reveal>The internet reserved a slot for money twice. The first one slept for 28 years. The second one is waking up now.</p>
+        </div>
+        <div class="compare">
+          <article class="cmp" data-track data-reveal>
+            <div class="cmp-top"><span class="num">402</span><span class="tag">HTTP</span></div>
+            <div><h3 class="h3">Payment Required</h3><p class="dim" style="margin-top:0.5rem">Reserved "for future use" in 1997. Useless without internet money, until x402 switched it on with stablecoins in 2025.</p></div>
+            <div><div class="track" style="--max:1"><i></i></div><div class="ends"><span>1997</span><span>2025</span></div></div>
+            <span class="label">28 years asleep</span>
+          </article>
+          <article class="cmp now" data-track data-reveal data-d="1">
+            <div class="cmp-top"><span class="num">262</span><span class="tag">DNS</span></div>
+            <div><h3 class="h3">WALLET</h3><p class="dim" style="margin-top:0.5rem">Allocated by IANA in June 2024: a coin and an address, published by your domain. TYPE/262 switches it on today.</p></div>
+            <div><div class="track" style="--max:.07"><i></i></div><div class="ends"><span>2024 · now</span><span>2052</span></div></div>
+            <span class="label">Don't wait 28 years</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- 02 how it works -->
+    <section class="section story" id="how">
+      <div class="story-pin">
+        <img class="bg-art bg-roots" loading="lazy" decoding="async" src="assets/art/roots.webp" alt="" aria-hidden="true">
+        <div class="container story-body">
+          <div class="story-left">
+            <div class="story-intro">
+              <span class="eyebrow">02 — How it works</span>
+              <h2 class="h2">One record. One query. <span class="accent">One payment.</span></h2>
+            </div>
+            <ol class="steps-list">
+              <li class="step-item on"><span class="n">01</span><div><h3 class="h3">Publish</h3><div class="desc"><div><p class="body">Add a WALLET record to your DNS: a coin and an address. Sign the zone with DNSSEC and you're done.</p></div></div><i class="bar"><b></b></i></div></li>
+              <li class="step-item"><span class="n">02</span><div><h3 class="h3">Resolve</h3><div class="desc"><div><p class="body">Any wallet, app or AI agent asks DNS one question. The answer is cached worldwide and cryptographically signed.</p></div></div><i class="bar"><b></b></i></div></li>
+              <li class="step-item"><span class="n">03</span><div><h3 class="h3">Pay</h3><div class="desc"><div><p class="body">USDG or ETH goes straight to the published address and settles on Robinhood Chain in seconds.</p></div></div><i class="bar"><b></b></i></div></li>
+            </ol>
+          </div>
+
+          <div class="stage" id="stage">
+            <!-- 1 · publish -->
+            <div class="scene on" data-scene="0">
+              <div class="scene-bar"><span class="label">yoursite.com · zone file</span><span class="chip-s" id="zone-chip">Unsigned</span></div>
+              <div class="zone">
+                <div class="zl"><i>1</i><span><span class="c">; yoursite.com</span></span></div>
+                <div class="zl"><i>2</i><span><span class="k">$TTL</span> 3600</span></div>
+                <div class="zl"><i>3</i><span>@     <span class="k">IN</span>  <span class="t">A</span>       76.76.21.21</span></div>
+                <div class="zl"><i>4</i><span>@     <span class="k">IN</span>  <span class="t">MX</span>      10 mail.yoursite.com.</span></div>
+                <div class="zl"><i>5</i><span>www   <span class="k">IN</span>  <span class="t">CNAME</span>   yoursite.com.</span></div>
+                <div class="zl new" id="zone-new"><i>6</i><span><span id="zone-typed"></span><span class="caret"></span></span></div>
+              </div>
+              <div class="scene-foot"><span class="label">RRTYPE 262 · WALLET</span><span class="label" id="zone-state">Editing</span></div>
+            </div>
+
+            <!-- 2 · resolve -->
+            <div class="scene" data-scene="1">
+              <div class="scene-bar"><span class="label">dig yoursite.com TYPE262</span><span class="chip-s" id="ad-chip">AD flag —</span></div>
+              <div class="hops" id="hops">
+                <i class="packet" id="packet"></i>
+                <div class="hop"><i></i><b>agent</b><span>query yoursite.com TYPE262</span></div>
+                <div class="hop"><i></i><b>1.1.1.1</b><span>cache miss · recursing</span></div>
+                <div class="hop"><i></i><b>. root</b><span>referral → com.</span></div>
+                <div class="hop"><i></i><b>com.</b><span>referral → yoursite.com.</span></div>
+                <div class="hop ans"><i></i><b>yoursite.com</b><span>ANSWER  ETH 0x7a1f…c0de</span></div>
+              </div>
+              <div class="answer" id="answer"><span>WALLET <b>ETH 0x7a1f…c0de</b></span><span>DNSSEC <b>✓</b></span><span>2/2 resolvers agree</span></div>
+              <div class="scene-foot"><span class="label">Cloudflare + Google · DoH</span><span class="label" id="hop-ms">0 ms</span></div>
+            </div>
+
+            <!-- 3 · pay -->
+            <div class="scene" data-scene="2">
+              <div class="scene-bar"><span class="label">Pay a name</span><span class="chip-s">Robinhood Chain · 4663</span></div>
+              <div class="pay">
+                <div class="pay-to">yoursite.com <span class="mono">→ 0x7a1f…c0de</span></div>
+                <div class="pay-amt num"><span id="pay-amt">0.00</span><small>USDG</small></div>
+                <div class="pay-steps" id="pay-steps"><span>Resolve</span><span>Sign</span><span>Broadcast</span><span>Settled</span></div>
+                <div class="receipt" id="receipt"><span>✓ 5.00 USDG settled</span><span>to yoursite.com</span></div>
+              </div>
+              <div class="scene-foot"><span class="label">No account · no checkout</span><span class="label" id="pay-state">Ready</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 03 agents -->
+    <section class="section" id="agents">
+      <div class="container split2">
+        <div class="copy">
+          <span class="eyebrow" data-reveal>03 — For agents</span>
+          <h2 class="h2 split">x402 made URLs payable. 262 makes them <span class="accent">accountable.</span></h2>
+          <p class="body" data-reveal>When an API answers <b>402 Payment Required</b>, it tells your agent where to send money, and the agent just trusts it. A hijacked server or a prompt injection can swap that address.</p>
+          <p class="body" data-reveal>TYPE/262 adds one check: <b>does this address belong to the domain I'm talking to?</b> One line of code, answered by DNS.</p>
+          <a class="btn" href="app.html#verify" data-reveal>Try the verifier</a>
+        </div>
+        <div class="term" data-reveal data-d="1">
+          <div class="term-bar"><div class="dots"><i></i><i></i><i></i></div><span class="label">agent · x402 client</span></div>
+          <div class="console" id="console" aria-label="Agent console demo"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 04 escrow -->
+    <section class="section" id="escrow">
+      <div class="container">
+        <div class="escrow-head">
+          <div class="copy">
+            <span class="eyebrow" data-reveal>04 — Claimable escrow</span>
+            <h2 class="h2 split">Pay them <span class="accent">before</span> they're here.</h2>
+            <p class="body" data-reveal>Send to any domain, even one that has never heard of TYPE/262. The money waits on-chain like a seed, until the owner adds one record. <b>Every website on Earth can already be paid.</b></p>
+            <a class="btn primary" href="app.html#escrow" data-reveal>Send to any domain</a>
+          </div>
+          <div class="seed" data-reveal data-d="1"><img loading="lazy" decoding="async" src="assets/art/seed.webp" alt="" aria-hidden="true"></div>
+        </div>
+        <div class="flow-bar" id="flow-bar"><i></i></div>
+        <div class="flow" id="flow">
+          <div><span class="label">01 · Send</span><span class="v" id="flow-amt">$0</span><p>Anyone sends USDG to nytimes.com.</p></div>
+          <div><span class="label">02 · Wait</span><span class="v">On-chain</span><p>Funds sit in escrow, keyed by the domain name.</p></div>
+          <div><span class="label">03 · Publish</span><span class="v">_wallet</span><p>The owner adds one DNS record with their wallet and turns on DNSSEC.</p></div>
+          <div><span class="label">04 · Prove</span><span class="v">DNSSEC</span><p>The contract checks the DNS signatures on-chain, all the way up to the root.</p></div>
+          <div><span class="label">05 · Paid</span><span class="v">Instantly</span><p>Funds go straight to the owner's wallet. Unclaimed after 180 days? Senders get it back.</p></div>
+        </div>
+        
+      </div>
+    </section>
+
+    <!-- 05 adoption -->
+    <section class="section" id="adoption">
+      <img class="bg-art bg-myc" loading="lazy" decoding="async" src="assets/art/mycelium.webp" alt="" aria-hidden="true">
+      <div class="container adopt">
+        <div class="copy">
+          <span class="eyebrow">05 — Adoption, live</span>
+          <div class="num"><span id="count">0</span><small id="count-of">/48</small></div>
+          <h3 class="h3">The land is empty. Be first.</h3>
+          <p class="body">The web's top sites, checked for a WALLET record right now, from your browser, over DNS.</p>
+          <span class="label" id="scan-state">Waiting to scan</span>
+        </div>
+        <div class="card board">
+          <div class="board-head label"><div><span>Domain</span><span>Status</span></div><div><span>Domain</span><span>Status</span></div></div>
+          <div class="board-cols" id="board"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 06 roadmap -->
+    <section class="section" id="roadmap">
+      <div class="container">
+        <div class="section-head">
+          <span class="eyebrow" data-reveal>06 — Roadmap</span>
+          <h2 class="h2 split">Shipped, built, <span class="accent">next.</span></h2>
+        </div>
+        <ol class="road">
+          <li data-reveal><span><span class="tag good">Live</span></span><div><h3 class="h3">Resolve, pay, publish, verify</h3><p class="body">Look up any name, pay it from your wallet, generate your record and check x402 payTo addresses against DNS. App, SDK and CLI.</p></div><span class="label">01</span></li>
+          <li data-reveal><span><span class="tag">Built</span></span><div><h3 class="h3">Claimable escrow</h3><p class="body">Pay any domain before it publishes. Owners claim instantly with a DNSSEC proof; senders can refund after 180 days. Deploying to Robinhood Chain.</p></div><span class="label">02</span></li>
+          <li data-reveal><span><span class="tag">Built</span></span><div><h3 class="h3">Website coins</h3><p class="body">Launch a token on pons with its creator fees routed to a domain. The domain's owner claims them with a DNSSEC proof. <a class="ul" href="app.html#launch">Open the launchpad →</a></p></div><span class="label">03</span></li>
+          <li data-reveal><span><span class="tag good">Built</span></span><div><h3 class="h3">Trustless claims</h3><p class="body">DNSSEC proofs are verified on-chain with ENS's oracle, anchored to the DNS root keys. No attestor, no server, no admin over the rules.</p></div><span class="label">04</span></li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="section cta">
+      <div class="container">
+        <div class="lockup" data-reveal><img loading="lazy" decoding="async" src="assets/art/logo-lockup.webp" alt="TYPE/262" width="1254" height="1254"></div>
+        <div class="section-head center" style="margin-bottom:2.5rem">
+          <h2 class="h2 split">Make your domain <span class="accent">payable.</span></h2>
+          <p class="body" data-reveal>One DNS record. Works with every DNS host. Settles on Robinhood Chain.</p>
+        </div>
+        <div class="actions" data-reveal><a class="btn primary" href="app.html#publish">Publish your record</a><a class="btn" href="app.html">Open the app</a></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <a class="logo" href="./"><img src="assets/art/emblem.webp" alt=""><span class="wm">TYPE<b>/</b>262</span></a>
+      <nav>
+        <a href="app.html">App</a>
+        <a href="app.html#publish">Publish</a>
+        <a href="app.html#escrow">Escrow</a>
+        <a href="docs.html">Docs</a>
+        <a href="docs.html#sdk">SDK</a>
+        <a href="https://www.iana.org/assignments/dns-parameters/dns-parameters.xhtml#dns-parameters-4" target="_blank" rel="noopener">IANA registry ↗</a>
+      </nav>
+      <div class="socials"><a class="btn sm" href="https://x.com/type_262" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg><span>@type_262</span></a><a class="btn sm" href="https://github.com/Type262/262" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg><span>Type262/262</span></a></div>
+      <small>Built on IANA RRTYPE 262 (WALLET). Payments settle on Robinhood Chain (4663). Not affiliated with IANA, ICANN or Robinhood.</small>
+    </div>
+  </footer>
+
+  <script type="module" src="assets/landing.js"></script>
+  <!-- Failsafe: if the scripts ever fail to load, never leave the intro covering the page. -->
+  <script>setTimeout(function () { document.body.classList.add('ready'); var i = document.querySelector('.intro'); if (i) i.remove() }, 4500)</script>
+</body>
+</html>
