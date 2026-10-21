@@ -16,13 +16,15 @@ body:
       options:
         - App (app.html)
         - Landing page (index.html)
-        - The Unclaimed Board or domain profiles
         - Docs
+        - Solana vaults and the worker
+        - pump.fun launchpad
         - SDK (lib/wallet262.js)
         - CLI (bin/type262.mjs)
+        - On-chain Solana program
+        - Robinhood Chain contracts
+        - The Unclaimed Board or domain profiles
         - MCP server (mcp/)
-        - Upload service
-        - Contracts
         - WALLET record support in other software
         - Something else
     validations:

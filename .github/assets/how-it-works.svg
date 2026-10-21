@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="660" viewBox="0 0 1200 660" role="img" aria-labelledby="t d">
 <title id="t">TYPE/262: how it works</title>
-<desc id="d">Three steps. Publish one DNS record, a TXT record at _wallet.&lt;domain&gt; or the native WALLET record (type 262), with DNSSEC on. Any wallet or AI agent resolves it over DNS-over-HTTPS from Cloudflare and Google, cross-checked and DNSSEC-signed. Then pay the published address in USDG or ETH on Robinhood Chain.</desc>
+<desc id="d">Three steps. Publish your Solana address in one DNS record, a TXT record at _wallet.&lt;domain&gt; or the native WALLET record (type 262), with DNSSEC on. Any wallet or AI agent resolves it over DNS-over-HTTPS from Cloudflare and Google, cross-checked and DNSSEC-signed. Then SOL or USDC goes straight to the published address from any Solana wallet. With no record yet, pay the domain's vault and the owner claims it once the record is up. An ETH line in the same record set pays on Robinhood Chain, also supported.</desc>
 <defs>
 <linearGradient id="pg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#141414"/><stop offset="1" stop-color="#0d0d0d"/></linearGradient>
 <radialGradient id="ga" gradientUnits="userSpaceOnUse" cx="120" cy="0" r="620"><stop offset="0" stop-color="#C8FF1E" stop-opacity=".09"/><stop offset="1" stop-color="#C8FF1E" stop-opacity="0"/></radialGradient>
@@ -24,7 +24,7 @@
 <text x="94" y="180.5" font-size="13" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-weight="600" text-anchor="middle">01</text>
 <text x="124" y="180.5" font-size="12" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="2">PUBLISH</text>
 <text x="76" y="236" font-size="20" fill="#EDEDED" font-weight="600">One DNS record</text>
-<text x="76" y="268" font-size="14.5" fill="#8F8F8F">Name your EVM address in one record:</text>
+<text x="76" y="268" font-size="14.5" fill="#8F8F8F">Name your Solana address in one record:</text>
 <text x="76" y="290" font-size="14.5" fill="#8F8F8F"><tspan >a TXT at </tspan><tspan fill="#CFCFCF" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">_wallet.&lt;domain&gt;</tspan><tspan >, or the</tspan></text>
 <text x="76" y="312" font-size="14.5" fill="#8F8F8F">native WALLET record, type 262. Then</text>
 <text x="76" y="334" font-size="14.5" fill="#8F8F8F">turn on DNSSEC at your DNS host.</text>
@@ -47,14 +47,14 @@
 <circle cx="854" cy="176" r="18" fill="#0a0a0a" stroke="#C8FF1E" stroke-opacity=".85"/>
 <text x="854" y="180.5" font-size="13" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-weight="600" text-anchor="middle">03</text>
 <text x="884" y="180.5" font-size="12" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="2">PAY</text>
-<text x="836" y="236" font-size="20" fill="#EDEDED" font-weight="600">Paid on Robinhood Chain</text>
-<text x="836" y="268" font-size="14.5" fill="#8F8F8F">USDG or ETH goes straight to the</text>
-<text x="836" y="290" font-size="14.5" fill="#8F8F8F">published address on chain 4663.</text>
-<text x="836" y="312" font-size="14.5" fill="#8F8F8F">No record yet? Send it to escrow and</text>
-<text x="836" y="334" font-size="14.5" fill="#8F8F8F">the owner claims it with DNSSEC.</text>
-<rect x="836" y="360" width="54.96" height="24" rx="12" fill="#161616" stroke="#333"/><text x="863.48" y="375.96" font-size="11" fill="#D6D6D6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="1.2">USDG</text>
-<rect x="898.96" y="360" width="46.72" height="24" rx="12" fill="#161616" stroke="#333"/><text x="922.32" y="375.96" font-size="11" fill="#D6D6D6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="1.2">ETH</text>
-<rect x="953.68" y="360" width="104.4" height="24" rx="12" fill="#161616" stroke="#333"/><text x="1005.88" y="375.96" font-size="11" fill="#D6D6D6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="1.2">CHAIN 4663</text>
+<text x="836" y="236" font-size="20" fill="#EDEDED" font-weight="600">Paid on Solana</text>
+<text x="836" y="268" font-size="14.5" fill="#8F8F8F">SOL or USDC goes straight to the</text>
+<text x="836" y="290" font-size="14.5" fill="#8F8F8F">published address from any Solana</text>
+<text x="836" y="312" font-size="14.5" fill="#8F8F8F">wallet. No record? Pay the domain's vault;</text>
+<text x="836" y="334" font-size="14.5" fill="#8F8F8F">the owner claims it once the record is up.</text>
+<rect x="836" y="360" width="46.72" height="24" rx="12" fill="#161616" stroke="#333"/><text x="859.36" y="375.96" font-size="11" fill="#D6D6D6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="1.2">SOL</text>
+<rect x="890.72" y="360" width="54.96" height="24" rx="12" fill="#161616" stroke="#333"/><text x="918.2" y="375.96" font-size="11" fill="#D6D6D6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="1.2">USDC</text>
+<rect x="953.68" y="360" width="63.2" height="24" rx="12" fill="#161616" stroke="#333"/><text x="985.28" y="375.96" font-size="11" fill="#D6D6D6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="1.2">VAULT</text>
 <circle cx="410" cy="274" r="11.7" fill="#C8FF1E" opacity=".18" filter="url(#blur)"/><circle cx="410" cy="274" r="4.5" fill="#C8FF1E"/><circle cx="410" cy="274" r="2.025" fill="#F7FFE0"/>
 <circle cx="790" cy="274" r="11.7" fill="#C8FF1E" opacity=".18" filter="url(#blur)"/><circle cx="790" cy="274" r="4.5" fill="#C8FF1E"/><circle cx="790" cy="274" r="2.025" fill="#F7FFE0"/>
 <line x1="220" y1="416" x2="220" y2="458" stroke="#C8FF1E" stroke-opacity=".55" stroke-dasharray="2 4"/>
@@ -67,12 +67,12 @@
 <text x="300" y="542" font-size="14" fill="#8F8F8F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">3600</text>
 <text x="356" y="542" font-size="14" fill="#8F8F8F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">IN</text>
 <text x="392" y="542" font-size="14" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">WALLET</text>
-<text x="470" y="542" font-size="14" fill="#B7A0FF" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">&quot;ETH&quot; &quot;0x7a1fe1c2b0d3a4f5e6d7c8b9a0f1e2d3c4b5c0de&quot;</text>
+<text x="470" y="542" font-size="14" fill="#B7A0FF" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">&quot;SOL&quot; &quot;9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM&quot;</text>
 <text x="76" y="570" font-size="14" fill="#EDEDED" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">_wallet.example.com.</text>
 <text x="300" y="570" font-size="14" fill="#8F8F8F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">3600</text>
 <text x="356" y="570" font-size="14" fill="#8F8F8F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">IN</text>
 <text x="392" y="570" font-size="14" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">TXT</text>
-<text x="470" y="570" font-size="14" fill="#B7A0FF" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">&quot;ETH 0x7a1fe1c2b0d3a4f5e6d7c8b9a0f1e2d3c4b5c0de&quot;</text>
-<text x="76" y="600" font-size="12.5" fill="#6E6E6E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">; the TXT form works on every DNS host and is the record escrow claims prove</text>
+<text x="470" y="570" font-size="14" fill="#B7A0FF" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">&quot;SOL 9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM&quot;</text>
+<text x="76" y="600" font-size="12.5" fill="#6E6E6E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">; the TXT form works on every DNS host · vault claims accept either form · an ETH line in the same record set pays on Robinhood Chain</text>
 </g>
 </svg>

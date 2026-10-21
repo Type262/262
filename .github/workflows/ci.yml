@@ -34,7 +34,7 @@ jobs:
             echo "ok $f"
           done
 
-      - name: Test SDK, ABI, chain data, upload service and MCP server
+      - name: Test SDK, Solana vault worker, uploads, ABI, chain data and MCP server
         run: npm test
 
       - name: Build the site
@@ -68,7 +68,7 @@ jobs:
       - name: Install dev dependencies
         run: npm ci
 
-      - name: Build
+      - name: Build the Robinhood Chain contracts
         working-directory: contracts
         run: forge build --sizes
 

@@ -7,9 +7,9 @@ This page covers what is in scope, how to report privately, what happens next, a
 
 | Component | Where |
 |---|---|
-| Solana worker | `upload/server.mjs`: vault derivation, the DNS checks before a claim, claims, collects and refunds, and the live service below |
-| Smart contracts | `contracts/src/`: `DomainEscrow`, `DnssecVerifier`, `DomainLauncher`, `DomainFeeForwarder` on Robinhood Chain, and the live deployment below |
+| Solana worker | `upload/server.mjs`, `upload/worker.mjs`, `upload/vault.mjs`, `upload/chain.mjs`, `upload/pump.mjs`: vault derivation, the DNS checks before a claim, claims, collects and refunds, and the live service below |
 | Solana program | `solana/programs/type262/`: the escrow, the on-chain DNSSEC verifier and the pump.fun launcher, built and tested, not deployed |
+| Robinhood Chain contracts | `contracts/src/`: `DomainEscrow`, `DnssecVerifier`, `DomainLauncher`, `DomainFeeForwarder`, and the live deployment below |
 | SDK and CLI | `lib/wallet262.js`, `bin/type262.mjs` |
 | MCP server | `mcp/src/server.mjs` and the bundle `mcp/type262-mcp.mjs` |
 | Web app and pages | `index.html`, `app.html`, `board.html`, `domain.html`, `docs.html` and `assets/`, including in-browser proof building in `assets/dnssec.js` and `assets/solana-proof.js`, and the Solana clients in `assets/solana.js` and `assets/solana-type262.js` |
@@ -93,7 +93,7 @@ On Robinhood Chain the escrow admin can pause new deposits in the meantime; clai
 
 ## How it's verified
 
-- **Solana claims checked by two resolvers.** The worker pays a vault out only when Cloudflare and Google DNS-over-HTTPS both answer, return the same record and report it DNSSEC-authenticated, and only to a regular wallet: an account owned by the System Program or one that doesn't exist yet, never a token account, a mint or a program.
+- **Solana claims checked by two resolvers.** The worker pays a vault out only when Cloudflare and Google DNS-over-HTTPS both answer, return the same record and report it DNSSEC-authenticated, and only to a regular wallet: a System Program account with no data, or one that doesn't exist yet, never a token account, a mint or a program.
 - **Custody stated plainly.** Solana vaults are custodial. Every vault key derives from one master secret, kept only in the worker's environment (`VAULT_MASTER_SEED`) and never in the repository.
 - **An on-chain record.** Every claim payout carries the memo `type262:claim:<domain>` and every refund `type262:refund:<deposit signature>`. The worker keeps no database: it checks deposits and earlier payouts on-chain, and anyone can audit a vault from its transaction history.
 - **Fees nobody can redirect.** Coins launched on pump.fun have the domain's vault as their creator. pump.fun's sweeps and collects are permissionless and can only pay that vault.

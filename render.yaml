@@ -1,10 +1,11 @@
-# Render blueprint for TYPE/262.
-# type262: the static landing page, app and docs. On Robinhood Chain, claims are checked on-chain with DNSSEC.
-# type262-upload: pins Launch-form images and token metadata to IPFS through Pinata, and serves the read-only
-# /rpc fallback and the Solana /rpc/solana relay, so the Pinata key and any RPC key never reach the browser.
-# It is also the Solana vault worker (/solana/*): every domain's vault key is derived from VAULT_MASTER_SEED, so
+# Render blueprint for TYPE/262. Solana is the main network; Robinhood Chain is also supported.
+# type262: the static landing page, app, docs, board and domain profiles.
+# type262-upload: the Solana vault worker (/solana/*). Every domain's vault key is derived from VAULT_MASTER_SEED, so
 # this service holds the keys of the Solana vaults and pays a vault out to the SOL wallet the domain publishes in
-# DNSSEC-signed DNS (on Robinhood Chain the contracts check DNSSEC themselves). Its gas wallet pays the fees.
+# DNSSEC-signed DNS. Its gas wallet pays the fees. It also pins Launch-form images and coin metadata to IPFS through
+# Pinata, and serves the Solana /rpc/solana relay and the read-only Robinhood Chain /rpc fallback, so the Pinata key
+# and any RPC key never reach the browser. On Robinhood Chain no server is in the claim path: the contracts check
+# DNSSEC proofs on-chain. See DEPLOY.md.
 services:
   - type: web
     name: type262

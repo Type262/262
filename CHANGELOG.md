@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `type262 link` makes Solana Pay links: SOL by default, or USDC with `link <domain> <amount> USDC`. `USDG` and `ETH` still make EIP-681 links on Robinhood Chain.
+
+### Changed
+
+- The README, its diagrams and screenshots, the social preview, `DEPLOY.md` and the package metadata lead with Solana, and present Robinhood Chain as also supported. New diagrams show the Solana architecture and the domain vault flow; the Robinhood Chain contract diagram moves into its own section.
+
+### Fixed
+
+- `type262 link` refuses an asset it doesn't know. It used to build an ETH link for anything other than USDG, so `link yoursite.com 5 USDC` asked for 5 ETH.
+
 ## [0.2.0] - 2026-10-21
 
 The Solana release. Solana is now TYPE/262's main network: pay a domain's published address in SOL or USDC, pay any domain's vault before it publishes a wallet, and launch pump.fun coins whose creator fees go to the domain's vault. The TYPE/262 worker pays a vault out to the wallet the domain's DNSSEC-signed record names. Robinhood Chain stays fully supported, with its contracts and deployment unchanged, and gains the Unclaimed Board, a public profile for every domain and an MCP server that lets AI agents pay domains by name.

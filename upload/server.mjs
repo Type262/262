@@ -1,4 +1,5 @@
-// TYPE/262 image upload and RPC fallback. The Launch form's "Choose image" posts a file to /image; it is
+// TYPE/262 worker: the Solana vault endpoints under /solana/ (worker.mjs), image and coin-metadata uploads, and the
+// RPC fallbacks. The Launch form's "Choose image" posts a file to /image; it is
 // pinned to IPFS with Pinata and the token gets ipfs://<cid>, the same kind of link pons stores. /metadata pins
 // a pump.fun-style token metadata JSON the same way. /rpc is a read-only Robinhood Chain RPC the app falls back
 // to when a browser can't reach the public one, and /rpc/solana is the same for Solana, plus sendTransaction to

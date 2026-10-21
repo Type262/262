@@ -74,7 +74,7 @@
 <h3 id="intro-three-pieces">The three pieces</h3>
 <div class="dx-scroll"><table class="dx-table"><thead><tr><th>Piece</th><th>Source</th><th>What it does</th></tr></thead><tbody>
 <tr><td>Records and resolver</td><td><code>lib/wallet262.js</code>, <code>bin/type262.mjs</code></td><td>Encodes WALLET records and resolves them over DNS-over-HTTPS from Cloudflare and Google in parallel, flagging any disagreement and reporting DNSSEC status. Zero dependencies; runs in browsers and Node 18+.</td></tr>
-<tr><td>Solana vaults and the worker</td><td><code>upload/server.mjs</code></td><td>Gives every domain its own Solana address, its vault, which anyone can pay in SOL, USDC or any SPL token, and which pump.fun coins launched for the domain name as their creator. The worker holds the vault keys and pays a vault out to the wallet the domain's DNSSEC-signed record names, minus 0.5%, once Cloudflare and Google agree on that record and both validated it. It also refunds deposits after 180 days.</td></tr>
+<tr><td>Solana vaults and the worker</td><td><code>upload/server.mjs</code>, <code>upload/worker.mjs</code>, <code>upload/vault.mjs</code></td><td>Gives every domain its own Solana address, its vault, which anyone can pay in SOL, USDC or any SPL token, and which pump.fun coins launched for the domain name as their creator. The worker holds the vault keys and pays a vault out to the wallet the domain's DNSSEC-signed record names, minus 0.5%, once Cloudflare and Google agree on that record and both validated it. It also refunds deposits after 180 days.</td></tr>
 <tr><td>Robinhood Chain contracts</td><td><code>DomainEscrow.sol</code>, <code>DnssecVerifier.sol</code>, <code>DomainLauncher.sol</code>, <code>DomainFeeForwarder.sol</code></td><td>The same escrow rules, with proofs checked by ENS's DNSSEC oracle, and pons v2 launches whose creator fees a per-domain forwarder moves into <code>DomainEscrow</code>.</td></tr>
 </tbody></table></div>
 <pre class="dx-code" data-lang="txt"><code>resolve   yoursite.com ──DoH──▶ WALLET record or _wallet TXT ──▶ address (DNSSEC + resolver agreement)
@@ -116,15 +116,15 @@ launch    trades ──▶ pons fee escrow ──collect──▶ DomainFeeForwa
 <li><strong>The escrow admin</strong> on Robinhood Chain can pause new deposits and hand the admin role to another address. It cannot move funds, change who gets paid, or block claims and refunds, which keep working while deposits are paused.</li>
 </ul>
 <h3 id="intro-open-source">Open source</h3>
-<p>TYPE/262 is open source under the MIT license, at <a href="https://github.com/Type262/262" target="_blank" rel="noopener">github.com/Type262/262</a>. The repository holds the landing page, app and docs, the SDK and CLI, the Solana program with its tests, the Solidity contracts with their Foundry tests and deploy scripts, and the records of the live deployments.</p>
+<p>TYPE/262 is open source under the MIT license, at <a href="https://github.com/Type262/262" target="_blank" rel="noopener">github.com/Type262/262</a>. The repository holds the landing page, app and docs, the SDK and CLI, the Solana vault worker, the on-chain Solana program with its tests, the Robinhood Chain contracts with their Foundry tests and deploy scripts, and the records of the live deployments.</p>
 <div class="dx-scroll"><table class="dx-table"><thead><tr><th>Path</th><th>Contents</th></tr></thead><tbody>
 <tr><td><code>index.html</code></td><td>Landing page with a live resolver and a live adoption scan of well-known domains</td></tr>
-<tr><td><code>app.html</code></td><td>The app: Resolve, Pay, Escrow, Publish, Verify, Badge and Launch</td></tr>
-<tr><td><code>board.html</code>, <code>domain.html</code></td><td>The Unclaimed Board (<code>/board</code>) and domain profiles (<code>/d/&lt;domain&gt;</code>)</td></tr>
+<tr><td><code>app.html</code></td><td>The app: Resolve, Pay, Escrow, Publish, Verify, Badge and Launch, on Solana or Robinhood Chain</td></tr>
+<tr><td><code>board.html</code>, <code>domain.html</code></td><td>The Unclaimed Board (<code>/board</code>) and domain profiles (<code>/d/&lt;domain&gt;</code>), read from Robinhood Chain</td></tr>
 <tr><td><code>docs.html</code></td><td>This documentation</td></tr>
 <tr><td><code>lib/wallet262.js</code></td><td>Zero-dependency SDK for browsers and Node 18+</td></tr>
 <tr><td><code>bin/type262.mjs</code></td><td>CLI</td></tr>
-<tr><td><code>mcp/</code></td><td>The MCP server for AI agents: its source and the single-file bundle</td></tr>
+<tr><td><code>mcp/</code></td><td>The MCP server for AI agents, which pays on Robinhood Chain: its source and the single-file bundle</td></tr>
 <tr><td><code>upload/server.mjs</code></td><td>The worker: Solana vault addresses, claims, collects and refunds; image and coin-metadata uploads for the Launch form, pinned to IPFS through Pinata; and read-only RPC fallbacks for Solana and Robinhood Chain. Its keys stay on the server</td></tr>
 <tr><td><code>test/</code></td><td>SDK tests against mocked DNS, ABI-parity tests against viem, tests for the board's chain reader, upload-server tests against a mock Pinata, MCP server tests, and tests of the Solana client and proof builder</td></tr>
 <tr><td><code>solana/</code></td><td>Anchor workspace: the <code>type262</code> program, built and tested, not deployed (see <a href="#solana-program">On-chain program</a>), its LiteSVM tests, the DNSSEC benchmarks, and the pump.fun research and encoders</td></tr>
@@ -175,10 +175,24 @@ import { resolveWallets } from './wallet262.js'
 
 const r = await resolveWallets('yoursite.com')
 console.log(r.verified, r.records)
-// true [ { code: 'ETH', address: '0x7a1f…c0de', source: 'TXT', dnssec: true } ]</code></pre>
+// true [ { code: 'SOL', address: '9WzD…AWWM', source: 'TXT', dnssec: true } ]</code></pre>
 <p><code>verified</code> is <code>true</code> only when the domain publishes at least one record, every resolver answered and returned the same records, and every record is DNSSEC-authenticated on every resolver. <a href="#resolution">Resolution</a> covers every field of the result.</p>
 <h4>3. Pay it</h4>
-<p>On Solana, pay a domain's <code>SOL</code> address in SOL or USDC with <code>assets/solana.js</code>; see <a href="#payments-solana">Send on Solana</a>. On Robinhood Chain, in a browser with an injected wallet, find the domain's EVM address, switch the wallet to Robinhood Chain, and send USDG. <code>transferTx</code> builds the EIP-1193 transaction parameters for a native or ERC-20 transfer.</p>
+<p>On Solana, the main network, turn the domain's <code>SOL</code> address into a Solana Pay link with <code>paymentUri</code> from the same file. A wallet can open it, or you can show it as a QR code.</p>
+<pre class="dx-code" data-lang="js"><code>import { resolveWallets, paymentUri } from './wallet262.js'
+
+const USDC = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v' // 6 decimals
+
+const r = await resolveWallets('yoursite.com')
+if (!r.agree) throw new Error('Resolvers disagree about this domain. Not sending.')
+const rec = r.records.find(x =&gt; x.code === 'SOL')
+if (!rec) throw new Error(`${r.domain} publishes no Solana wallet`)
+if (!r.verified) console.warn(`${r.domain} is not DNSSEC-verified. Double-check large amounts.`)
+
+console.log(paymentUri(rec.address, { amount: '5', splToken: USDC }))
+// solana:9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM?amount=5&amp;spl-token=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v</code></pre>
+<p>Leave out <code>splToken</code> to ask for SOL. To send from a connected wallet in the browser instead, use the app's Solana client, <code>assets/solana.js</code>; see <a href="#payments-solana">Send on Solana</a>.</p>
+<p>On Robinhood Chain, in a browser with an injected wallet, find the domain's EVM address, switch the wallet to Robinhood Chain, and send USDG. <code>transferTx</code> builds the EIP-1193 transaction parameters for a native or ERC-20 transfer.</p>
 <pre class="dx-code" data-lang="js"><code>import { resolveWallets, addressKind, transferTx } from './wallet262.js'
 
 const USDG = '0x5fc5360d0400a0fd4f2af552add042d716f1d168' // 6 decimals
@@ -215,9 +229,11 @@ async function payDomain(domain, amount) {
 
 const hash = await payDomain('yoursite.com', '5')</code></pre>
 <p>Load the script as a module (<code>&lt;script type="module"&gt;</code>) from a page served over HTTP. ES modules do not load from <code>file://</code> URLs. For ETH instead of USDG, omit <code>token</code> and use <code>decimals: 18</code>.</p>
-<p>The app's Pay tool applies the same rules: it disables sending when resolvers disagree and warns when the zone is not DNSSEC-signed. From a terminal, the CLI prints an EIP-681 payment link that a wallet can open, and warns on stderr when the record is not DNSSEC-verified by every resolver:</p>
-<pre class="dx-code" data-lang="bash"><code>node bin/type262.mjs link yoursite.com 5 USDG</code></pre>
-<pre class="dx-code" data-lang="txt"><code>ethereum:0x5fc5360d0400a0fd4f2af552add042d716f1d168@4663/transfer?address=0x7a1fe1c2b0d3a4f5e6d7c8b9a0f1e2d3c4b5c0de&amp;uint256=5000000</code></pre>
+<p>The app's Pay tool applies the same rules: it disables sending when resolvers disagree and warns when the zone is not DNSSEC-signed. From a terminal, the CLI prints a payment link that a wallet can open: Solana Pay for SOL (the default) or USDC, EIP-681 for USDG or ETH on Robinhood Chain. It warns on stderr when the record is not DNSSEC-verified by every resolver:</p>
+<pre class="dx-code" data-lang="bash"><code>node bin/type262.mjs link yoursite.com 5 USDC
+node bin/type262.mjs link yoursite.com 5 USDG</code></pre>
+<pre class="dx-code" data-lang="txt"><code>solana:9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM?amount=5&amp;spl-token=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+ethereum:0x5fc5360d0400a0fd4f2af552add042d716f1d168@4663/transfer?address=0x7a1fe1c2b0d3a4f5e6d7c8b9a0f1e2d3c4b5c0de&amp;uint256=5000000</code></pre>
 <p>Next, read the <a href="#sdk">SDK reference</a>, the <a href="#cli">CLI</a> commands, and <a href="#agents">Agents and x402</a> to check a <code>payTo</code> before paying.</p>
       </section>
 
@@ -744,7 +760,7 @@ parseFallbackTxt('"usdg:0x7a1fe1c2b0d3a4f5e6d7c8b9a0f1e2d3c4b5c0de"')
 </div>
 
 <h3 id="sdk-pay">Pay</h3>
-<p>Turn a resolved record into a transaction for an injected wallet, or into a deep link any wallet can open. These functions do not touch the network. See <a href="#payments">Payments</a> for the Robinhood Chain details.</p>
+<p>Turn a resolved record into a deep link any wallet can open, or into a transaction for an injected EVM wallet. These functions do not touch the network. <code>paymentUri</code> covers Solana, EVM and Bitcoin addresses; <code>transferTx</code> is for EVM chains such as Robinhood Chain. To send SOL or USDC from a connected Solana wallet, see <a href="#payments-solana">Send on Solana</a>; <a href="#payments">Payments</a> has the details for both networks.</p>
 
 <div class="dx-api">
 <div class="dx-sig"><code>transferTx({ from, to, amount, decimals = 18, token }) → { from, to, value, data? }</code></div>
@@ -778,7 +794,7 @@ const hash = await window.ethereum.request({ method: 'eth_sendTransaction', para
 
 <div class="dx-api">
 <div class="dx-sig"><code>paymentUri(address, { amount, chainId = 1, token, decimals = 18, splToken }?) → string</code></div>
-<p>Builds a wallet deep link. The scheme follows <code>addressKind(address)</code>: EIP-681 for EVM, BIP-21 for Bitcoin, Solana Pay for Solana. Any other address is returned unchanged.</p>
+<p>Builds a wallet deep link. The scheme follows <code>addressKind(address)</code>: Solana Pay for Solana, EIP-681 for EVM, BIP-21 for Bitcoin. Any other address is returned unchanged.</p>
 <div class="dx-scroll"><table class="dx-table">
 <thead><tr><th>Option</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
 <tbody>
@@ -791,6 +807,15 @@ const hash = await window.ethereum.request({ method: 'eth_sendTransaction', para
 </table></div>
 <p><strong>Throws</strong> the <code>parseUnits</code> errors for an invalid EVM amount.</p>
 <pre class="dx-code" data-lang="js"><code>import { paymentUri } from './wallet262.js'
+
+paymentUri('9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM', {
+  amount: '5',
+  splToken: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', // USDC
+})
+// 'solana:9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM?amount=5&amp;spl-token=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'
+
+paymentUri('9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM', { amount: '1' })
+// 'solana:9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM?amount=1'
 
 paymentUri('0x7a1fe1c2b0d3a4f5e6d7c8b9a0f1e2d3c4b5c0de', {
   amount: '5',
@@ -899,8 +924,8 @@ check.resolvedAt // 'shop.test'</code></pre>
       </section>
 
       <section class="dx-section" id="cli" data-group="Build">
-        <div class="dx-section-head"><span class="dx-kicker">Build</span><h2>CLI</h2><p class="dx-lead">Resolve domains, verify payment addresses, generate zone lines and print Robinhood Chain payment links from your terminal with four commands.</p></div>
-<p>The <code>type262</code> CLI puts the <a href="#sdk">SDK</a> in your terminal. Use it to see which wallets a domain publishes, check a payment address before you pay it, generate the zone lines to publish, and print a Robinhood Chain payment link. It has four commands and takes positional arguments only; there are no flags.</p>
+        <div class="dx-section-head"><span class="dx-kicker">Build</span><h2>CLI</h2><p class="dx-lead">Resolve domains, verify payment addresses, generate zone lines and print payment links, on Solana or Robinhood Chain, from your terminal with four commands.</p></div>
+<p>The <code>type262</code> CLI puts the <a href="#sdk">SDK</a> in your terminal. Use it to see which wallets a domain publishes, check a payment address before you pay it, generate the zone lines to publish, and print a payment link: Solana Pay for SOL or USDC, or EIP-681 for USDG or ETH on Robinhood Chain. It has four commands and takes positional arguments only; there are no flags.</p>
 
 <h3 id="cli-run">Run the CLI</h3>
 <p>The CLI is <code>bin/type262.mjs</code>, registered as the <code>type262</code> binary in <code>package.json</code>. It needs Node 18 or later.</p>
@@ -914,7 +939,9 @@ node type262/bin/type262.mjs resolve yoursite.com</code></pre>
   resolve &lt;domain&gt;                       wallets published by a domain
   verify  &lt;url|domain&gt; &lt;address&gt;         does this payTo belong to the domain?
   encode  &lt;domain&gt; &lt;CODE&gt; &lt;address&gt; [ttl] zone lines to publish
-  link    &lt;domain&gt; &lt;amount&gt; [USDG|ETH]   wallet payment link on Robinhood Chain</code></pre>
+  link    &lt;domain&gt; &lt;amount&gt; [SOL|USDC|USDG|ETH]
+                                         wallet payment link: SOL (default) or USDC on Solana,
+                                         USDG or ETH on Robinhood Chain</code></pre>
 
 <h3 id="cli-commands">Commands</h3>
 <div class="dx-scroll"><table class="dx-table">
@@ -923,7 +950,7 @@ node type262/bin/type262.mjs resolve yoursite.com</code></pre>
 <tr><td><a href="#cli-resolve"><code>resolve &lt;domain&gt;</code></a></td><td><code>resolveWallets</code></td><td>DoH</td><td>Status line, then one line per record</td></tr>
 <tr><td><a href="#cli-verify"><code>verify &lt;url|domain&gt; &lt;address&gt;</code></a></td><td><code>verifyPayTo</code></td><td>DoH</td><td>One verdict line; exit status 0 on a match</td></tr>
 <tr><td><a href="#cli-encode"><code>encode &lt;domain&gt; &lt;CODE&gt; &lt;address&gt; [ttl]</code></a></td><td><code>zoneLines</code></td><td>None</td><td>Three zone-file lines</td></tr>
-<tr><td><a href="#cli-link"><code>link &lt;domain&gt; &lt;amount&gt; [USDG|ETH]</code></a></td><td><code>resolveWallets</code>, <code>paymentUri</code></td><td>DoH</td><td>An EIP-681 link on chain 4663</td></tr>
+<tr><td><a href="#cli-link"><code>link &lt;domain&gt; &lt;amount&gt; [SOL|USDC|USDG|ETH]</code></a></td><td><code>resolveWallets</code>, <code>paymentUri</code></td><td>DoH</td><td>A Solana Pay link, or an EIP-681 link on chain 4663</td></tr>
 </tbody>
 </table></div>
 <p>Every <code>&lt;domain&gt;</code> argument accepts a domain, a URL or an email address, and is normalized with <code>normalizeDomain</code>. Lookups query Cloudflare and Google DNS-over-HTTPS in parallel, with the <code>_wallet</code> TXT fallback enabled.</p>
@@ -933,8 +960,8 @@ node type262/bin/type262.mjs resolve yoursite.com</code></pre>
 <pre class="dx-code" data-lang="bash"><code>node bin/type262.mjs resolve yoursite.com</code></pre>
 <p>For a signed zone that publishes both a <code>WALLET</code> record and the <code>_wallet</code> TXT fallback, the output has this shape:</p>
 <pre class="dx-code" data-lang="txt"><code>yoursite.com  DNSSEC ✓  resolvers agree
-  ETH    0x7a1fe1c2b0d3a4f5e6d7c8b9a0f1e2d3c4b5c0de  (TYPE262, signed)
-  ETH    0x7a1fe1c2b0d3a4f5e6d7c8b9a0f1e2d3c4b5c0de  (TXT, signed)</code></pre>
+  SOL    9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM  (TYPE262, signed)
+  SOL    9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM  (TXT, signed)</code></pre>
 <p>A domain with no record prints a single indented line instead:</p>
 <pre class="dx-code" data-lang="txt"><code>example.com  DNSSEC ✓  resolvers agree
   no WALLET record</code></pre>
@@ -950,7 +977,7 @@ node type262/bin/type262.mjs resolve yoursite.com</code></pre>
 
 <h3 id="cli-verify">verify</h3>
 <p>Checks that an address is published by the domain behind a URL, email or domain, using <code>verifyPayTo</code>. If every resolver answers that the host publishes nothing, it walks up one level, from <code>api.yoursite.com</code> to <code>yoursite.com</code>, under the rules of <a href="#res-resolve-wallets-up"><code>resolveWalletsUp</code></a>.</p>
-<pre class="dx-code" data-lang="bash"><code>node bin/type262.mjs verify https://api.yoursite.com/data 0x7a1fe1c2b0d3a4f5e6d7c8b9a0f1e2d3c4b5c0de</code></pre>
+<pre class="dx-code" data-lang="bash"><code>node bin/type262.mjs verify https://api.yoursite.com/data 9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM</code></pre>
 <pre class="dx-code" data-lang="txt"><code>MATCH: Match, DNSSEC-verified [yoursite.com]</code></pre>
 <p>The line is <code>&lt;verdict&gt;: &lt;reason&gt; [&lt;name checked&gt;]</code>. The reason is one of the <code>verifyPayTo</code> reasons listed in <a href="#sdk-verify">Verify</a>, and the bracket shows the name whose records were compared.</p>
 <div class="dx-scroll"><table class="dx-table">
@@ -985,18 +1012,25 @@ _wallet.yoursite.com. 300 IN TXT "ETH 0x7a1fe1c2b0d3a4f5e6d7c8b9a0f1e2d3c4b5c0de
 <p>Publish the line your DNS host accepts; you do not need all three. <code>encode</code> does not check that the code fits the address, so <code>encode yoursite.com BTC 0x…</code> succeeds. Use <code>codeMatchesAddress</code> from the SDK if you need that check. <a href="#wallet-record">The WALLET record</a> explains the forms.</p>
 
 <h3 id="cli-link">link</h3>
-<p>Resolves a domain and prints an EIP-681 payment link on Robinhood Chain (chain id <code>4663</code>) to the first record with an EVM address. Open it in a wallet or render it as a QR code.</p>
-<pre class="dx-code" data-lang="bash"><code>node bin/type262.mjs link yoursite.com 5
+<p>Resolves a domain and prints a payment link. For <code>SOL</code> (the default) or <code>USDC</code>, it is a Solana Pay link to the first record with a Solana address. For <code>USDG</code> or <code>ETH</code>, it is an EIP-681 link on Robinhood Chain (chain id <code>4663</code>) to the first record with an EVM address. Open it in a wallet or render it as a QR code.</p>
+<pre class="dx-code" data-lang="bash"><code>node bin/type262.mjs link yoursite.com 1
+node bin/type262.mjs link yoursite.com 5 USDC
+node bin/type262.mjs link yoursite.com 5 USDG
 node bin/type262.mjs link yoursite.com 0.01 ETH</code></pre>
-<pre class="dx-code" data-lang="txt"><code>ethereum:0x5fc5360d0400a0fd4f2af552add042d716f1d168@4663/transfer?address=0x7a1fe1c2b0d3a4f5e6d7c8b9a0f1e2d3c4b5c0de&amp;uint256=5000000
+<pre class="dx-code" data-lang="txt"><code>solana:9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM?amount=1
+solana:9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM?amount=5&amp;spl-token=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+ethereum:0x5fc5360d0400a0fd4f2af552add042d716f1d168@4663/transfer?address=0x7a1fe1c2b0d3a4f5e6d7c8b9a0f1e2d3c4b5c0de&amp;uint256=5000000
 ethereum:0x7a1fe1c2b0d3a4f5e6d7c8b9a0f1e2d3c4b5c0de@4663?value=10000000000000000</code></pre>
 <div class="dx-scroll"><table class="dx-table">
-<thead><tr><th>Asset</th><th>Link</th><th>Decimals</th></tr></thead>
+<thead><tr><th>Asset</th><th>Link</th><th>Amount</th></tr></thead>
 <tbody>
-<tr><td><code>USDG</code> (default)</td><td>ERC-20 <code>transfer</code> on USDG <code>0x5fc5360d0400a0fd4f2af552add042d716f1d168</code></td><td>6</td></tr>
-<tr><td>Any other value, such as <code>ETH</code></td><td>Native ETH transfer</td><td>18</td></tr>
+<tr><td><code>SOL</code> (default)</td><td>Solana Pay transfer of SOL</td><td>Written as given</td></tr>
+<tr><td><code>USDC</code></td><td>Solana Pay transfer with <code>spl-token=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v</code></td><td>Written as given</td></tr>
+<tr><td><code>USDG</code></td><td>ERC-20 <code>transfer</code> on USDG <code>0x5fc5360d0400a0fd4f2af552add042d716f1d168</code>, Robinhood Chain</td><td>Base units, 6 decimals</td></tr>
+<tr><td><code>ETH</code></td><td>Native ETH transfer on Robinhood Chain</td><td>Base units, 18 decimals</td></tr>
 </tbody>
 </table></div>
+<p>The asset is case-insensitive. Any other asset is refused.</p>
 <p>The link goes to standard output. If the lookup is not <code>verified</code> (records found, every resolver answered and agrees, every record signed on every resolver), the CLI also writes <code>warning: record is not DNSSEC-verified by every resolver</code> to standard error and still exits with status 0, so piping the link elsewhere stays clean. Like <code>resolve</code>, <code>link</code> does not fall back to the parent domain.</p>
 
 <h3 id="cli-errors">Exit status and errors</h3>
@@ -1013,8 +1047,10 @@ ethereum:0x7a1fe1c2b0d3a4f5e6d7c8b9a0f1e2d3c4b5c0de@4663?value=10000000000000000
 <tbody>
 <tr><td><code>error: Not a valid domain: &lt;input&gt;</code></td><td>The domain argument is not a valid hostname.</td></tr>
 <tr><td><code>error: cloudflare: HTTP 503; google: HTTP 503</code></td><td>Every resolver failed. The text depends on each failure.</td></tr>
-<tr><td><code>error: &lt;domain&gt; publishes no EVM wallet</code></td><td><code>link</code> found no record with an EVM address.</td></tr>
-<tr><td><code>error: Invalid amount</code></td><td><code>link</code> got an amount that is not a plain decimal.</td></tr>
+<tr><td><code>error: &lt;domain&gt; publishes no Solana wallet</code></td><td><code>link</code> for SOL or USDC found no record with a Solana address.</td></tr>
+<tr><td><code>error: &lt;domain&gt; publishes no EVM wallet</code></td><td><code>link</code> for USDG or ETH found no record with an EVM address.</td></tr>
+<tr><td><code>error: unknown asset &lt;asset&gt;: use SOL, USDC, USDG, ETH</code></td><td><code>link</code> got an asset other than these four.</td></tr>
+<tr><td><code>error: Invalid amount</code></td><td><code>link</code> for USDG or ETH got an amount that is not a plain decimal.</td></tr>
 <tr><td><code>error: Max 6 decimals</code></td><td><code>link</code> got a USDG amount with more than six decimals. ETH allows 18.</td></tr>
 <tr><td><code>error: Each string must be at most 255 bytes</code></td><td><code>encode</code> got a code or address longer than 255 bytes.</td></tr>
 </tbody>
@@ -2367,7 +2403,7 @@ FORK_RPC=https://rpc.mainnet.chain.robinhood.com forge test --evm-version osaka 
 <h4>What anyone can check</h4>
 <ul>
 <li><strong>Every vault.</strong> Vault addresses, balances, deposits, payouts and refunds are all on-chain. Each claim payout carries the memo <code>type262:claim:&lt;domain&gt;</code> and each refund <code>type262:refund:&lt;deposit signature&gt;</code>, and the worker keeps no database, so a vault's transaction history is its complete record.</li>
-<li><strong>The code.</strong> The worker is <code>upload/server.mjs</code>, open source with the rest of TYPE/262. The Robinhood Chain contracts are verified on Sourcify with exact matches.</li>
+<li><strong>The code.</strong> The worker is <code>upload/server.mjs</code> with <code>upload/worker.mjs</code> and <code>upload/vault.mjs</code>, open source with the rest of TYPE/262. The Robinhood Chain contracts are verified on Sourcify with exact matches.</li>
 </ul>
 <h4>What you don't need to trust</h4>
 <ul>
@@ -2440,12 +2476,12 @@ FORK_RPC=https://rpc.mainnet.chain.robinhood.com forge test --evm-version osaka 
 <h3 id="contributing-layout">Repository layout</h3>
 <div class="dx-scroll"><table class="dx-table"><thead><tr><th>Path</th><th>What it is</th></tr></thead><tbody>
 <tr><td><code>index.html</code></td><td>Landing page, with a live resolver and a live adoption scan</td></tr>
-<tr><td><code>app.html</code></td><td>The app: Resolve, Pay, Escrow, Publish, Verify, Badge and Launch</td></tr>
-<tr><td><code>board.html</code>, <code>domain.html</code></td><td>The Unclaimed Board and domain profiles, with <code>assets/pages.js</code> and <code>assets/chain-data.js</code></td></tr>
+<tr><td><code>app.html</code></td><td>The app: Resolve, Pay, Escrow, Publish, Verify, Badge and Launch, on Solana or Robinhood Chain</td></tr>
+<tr><td><code>board.html</code>, <code>domain.html</code></td><td>The Unclaimed Board and domain profiles, read from Robinhood Chain, with <code>assets/pages.js</code> and <code>assets/chain-data.js</code></td></tr>
 <tr><td><code>docs.html</code></td><td>This documentation, with <code>assets/docs.js</code> and <code>assets/docs.css</code></td></tr>
 <tr><td><code>lib/wallet262.js</code></td><td>The zero-dependency SDK and the package's main export</td></tr>
 <tr><td><code>bin/type262.mjs</code></td><td>The <code>type262</code> CLI</td></tr>
-<tr><td><code>mcp/src/server.mjs</code>, <code>mcp/type262-mcp.mjs</code></td><td>The MCP server for AI agents, and its single-file bundle built by <code>npm run mcp:build</code></td></tr>
+<tr><td><code>mcp/src/server.mjs</code>, <code>mcp/type262-mcp.mjs</code></td><td>The MCP server for AI agents, which pays on Robinhood Chain, and its single-file bundle built by <code>npm run mcp:build</code></td></tr>
 <tr><td><code>assets/app.js</code></td><td>App behaviour</td></tr>
 <tr><td><code>assets/abi.js</code></td><td>The app's minimal ABI encoder and decoder</td></tr>
 <tr><td><code>assets/solana.js</code></td><td>The app's Solana client: base58, PDAs, transactions, RPC and Wallet Standard wallets</td></tr>
@@ -2462,13 +2498,13 @@ FORK_RPC=https://rpc.mainnet.chain.robinhood.com forge test --evm-version osaka 
 <tr><td><code>solana/programs/type262/</code></td><td>The on-chain program, built and tested, not deployed: escrow, DNSSEC verifier and pump.fun launcher</td></tr>
 <tr><td><code>solana/tests-rs/</code></td><td>The program's LiteSVM tests, in their own Cargo workspace</td></tr>
 <tr><td><code>solana/docs/</code>, <code>solana/bench/</code>, <code>solana/scripts/</code></td><td>The DNSSEC and pump.fun specifications, the DNSSEC benchmarks and real-proof fixtures, and the fixture, simulation and end-to-end scripts</td></tr>
-<tr><td><code>contracts/src/</code></td><td><code>DomainEscrow</code>, <code>DnssecVerifier</code>, <code>DomainLauncher</code>, <code>DomainFeeForwarder</code>, <code>IDomainVerifier</code> and the pons interfaces</td></tr>
+<tr><td><code>contracts/src/</code></td><td>The Robinhood Chain contracts: <code>DomainEscrow</code>, <code>DnssecVerifier</code>, <code>DomainLauncher</code>, <code>DomainFeeForwarder</code>, <code>IDomainVerifier</code> and the pons interfaces</td></tr>
 <tr><td><code>contracts/script/</code></td><td><code>Deploy.s.sol</code>, <code>Oracle.sol</code>, <code>deploy-robinhood.sh</code>, <code>make-proof.mjs</code> and <code>save-deployment.mjs</code></td></tr>
 <tr><td><code>contracts/test/</code></td><td>Foundry unit tests and fork simulations</td></tr>
 <tr><td><code>deployments/</code></td><td><code>robinhood-4663.json</code>, the live deployment record</td></tr>
 <tr><td><code>scripts/</code></td><td><code>build.sh</code> (static build) and <code>post-deploy.mjs</code> (on-chain checks and app config)</td></tr>
-<tr><td><code>render.yaml</code></td><td>Render Blueprint for the site and the upload service</td></tr>
-<tr><td><code>README.md</code>, <code>DEPLOY.md</code></td><td>Project overview and the deployment runbook</td></tr>
+<tr><td><code>render.yaml</code></td><td>Render Blueprint for the site and the worker (<code>type262-upload</code>)</td></tr>
+<tr><td><code>README.md</code>, <code>DEPLOY.md</code></td><td>Project overview, and the deployment runbook: the Solana worker first, then the Robinhood Chain contracts</td></tr>
 </tbody></table></div>
 
 <h3 id="contributing-setup">Set up</h3>
@@ -2491,7 +2527,7 @@ npm run dev   # serves http://127.0.0.1:5262 with Python 3</code></pre>
 <ul>
 <li><strong>No build step.</strong> Pages load native ES modules straight from <code>assets/</code> and <code>lib/</code>. <code>scripts/build.sh</code> only copies files and versions asset paths.</li>
 <li><strong>Vanilla JavaScript.</strong> No framework and no bundler. The package is <code>"type": "module"</code>.</li>
-<li><strong>A zero-dependency SDK.</strong> <code>lib/wallet262.js</code> imports nothing and runs in browsers and Node 18+ with <code>fetch</code> and DNS-over-HTTPS JSON. The upload service has no dependencies either.</li>
+<li><strong>A zero-dependency SDK.</strong> <code>lib/wallet262.js</code> imports nothing and runs in browsers and Node 18+ with <code>fetch</code> and DNS-over-HTTPS JSON. The worker has no dependencies either.</li>
 <li><strong>No runtime packages in the app.</strong> The app encodes contract calls with its own small ABI coder, which <code>test/abi.test.mjs</code> checks against viem, and loads a pinned, vendored copy of dnsprovejs. viem and dnsprovejs are dev dependencies only.</li>
 <li><strong>Formatting.</strong> Match the existing JavaScript: two-space indentation, no semicolons, single-quoted strings.</li>
 <li><strong>Rust.</strong> Anchor 0.31 with the versions pinned in <code>solana/README.md</code>, formatted with <code>cargo fmt</code>. Every instruction takes one <code>&lt;Name&gt;Args</code> struct defined in its module. Errors live in one enum with a code range per module; append inside your range and never renumber, because clients match on the numbers. The admin has no power over funds.</li>

@@ -1,0 +1,130 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="866" viewBox="0 0 1200 866" role="img" aria-labelledby="t d">
+<title id="t">TYPE/262 on Robinhood Chain</title>
+<desc id="d">Robinhood Chain (chain id 4663), the second network TYPE/262 supports alongside Solana. Clients (web app, SDK lib/wallet262.js, CLI, MCP server for AI agents) resolve domains over DNS-over-HTTPS from Cloudflare and Google, reading the WALLET record or _wallet TXT in a DNSSEC-signed zone, and settle on Robinhood Chain: DomainEscrow asks DnssecVerifier, which uses the ENS DNSSECImpl oracle anchored to the IANA root keys. DomainLauncher launches tokens on pons v2 whose creator fees reach DomainEscrow through DomainFeeForwarder. Assets are USDG and ETH.</desc>
+<defs>
+<linearGradient id="pg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#141414"/><stop offset="1" stop-color="#0d0d0d"/></linearGradient>
+<radialGradient id="ga" gradientUnits="userSpaceOnUse" cx="120" cy="0" r="620"><stop offset="0" stop-color="#C8FF1E" stop-opacity=".09"/><stop offset="1" stop-color="#C8FF1E" stop-opacity="0"/></radialGradient>
+<radialGradient id="gv" gradientUnits="userSpaceOnUse" cx="1140" cy="866" r="640"><stop offset="0" stop-color="#8B5CFF" stop-opacity=".12"/><stop offset="1" stop-color="#8B5CFF" stop-opacity="0"/></radialGradient>
+<filter id="blur" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="3"/></filter>
+<marker id="ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M1 1.5 8.5 5 1 8.5" fill="none" stroke="#C8FF1E" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></marker>
+<marker id="av" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M1 1.5 8.5 5 1 8.5" fill="none" stroke="#B7A0FF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></marker>
+<marker id="ad" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M1 1.5 8.5 5 1 8.5" fill="none" stroke="#7A7A7A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></marker>
+</defs>
+<rect width="1200" height="866" rx="20" fill="#0a0a0a"/>
+<rect width="1200" height="866" rx="20" fill="url(#ga)"/>
+<rect width="1200" height="866" rx="20" fill="url(#gv)"/>
+<rect x=".5" y=".5" width="1199" height="865" rx="19.5" fill="none" stroke="#262626"/>
+<g font-family="Inter, 'Segoe UI', -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif">
+<rect x="48" y="53" width="8" height="8" fill="#C8FF1E"/><text x="66" y="62" font-size="12" fill="#8F8F8F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="2.4">ROBINHOOD CHAIN</text><text x="48" y="104" font-size="30" fill="#EDEDED" font-weight="700"><tspan >DNSSEC proofs, </tspan><tspan fill="#C8FF1E">checked on-chain.</tspan></text><text x="1152" y="62" font-size="11.5" fill="#8F8F8F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="end" letter-spacing="1.2">ALSO SUPPORTED · CHAIN ID 4663</text>
+<rect x="48" y="134" width="258" height="104" rx="16" fill="url(#pg)" stroke="#262626"/>
+<text x="70" y="164" font-size="11.5" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="2">WEB APP</text>
+<text x="70" y="192" font-size="14" fill="#EDEDED" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">app.html</text>
+<text x="70" y="218" font-size="13.5" fill="#8F8F8F">Seven tools, in the browser</text>
+<line x1="177.0" y1="238" x2="177.0" y2="268" stroke="#C8FF1E" stroke-opacity=".45"/>
+<circle cx="177" cy="268" r="3" fill="#C8FF1E"/><circle cx="177" cy="268" r="1.35" fill="#F7FFE0"/>
+<rect x="330" y="134" width="258" height="104" rx="16" fill="url(#pg)" stroke="#262626"/>
+<text x="352" y="164" font-size="11.5" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="2">SDK</text>
+<text x="352" y="192" font-size="14" fill="#EDEDED" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">lib/wallet262.js</text>
+<text x="352" y="218" font-size="13.5" fill="#8F8F8F">Browsers and Node 18+</text>
+<line x1="459.0" y1="238" x2="459.0" y2="268" stroke="#C8FF1E" stroke-opacity=".45"/>
+<circle cx="459" cy="268" r="3" fill="#C8FF1E"/><circle cx="459" cy="268" r="1.35" fill="#F7FFE0"/>
+<rect x="612" y="134" width="258" height="104" rx="16" fill="url(#pg)" stroke="#262626"/>
+<text x="634" y="164" font-size="11.5" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="2">CLI</text>
+<text x="634" y="192" font-size="14" fill="#EDEDED" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">bin/type262.mjs</text>
+<text x="634" y="218" font-size="13.5" fill="#8F8F8F">resolve, verify, encode, link</text>
+<line x1="741.0" y1="238" x2="741.0" y2="268" stroke="#C8FF1E" stroke-opacity=".45"/>
+<circle cx="741" cy="268" r="3" fill="#C8FF1E"/><circle cx="741" cy="268" r="1.35" fill="#F7FFE0"/>
+<rect x="894" y="134" width="258" height="104" rx="16" fill="url(#pg)" stroke="#262626"/>
+<text x="916" y="164" font-size="11.5" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="2">MCP SERVER</text>
+<text x="916" y="192" font-size="14" fill="#EDEDED" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">mcp/type262-mcp.mjs</text>
+<text x="916" y="218" font-size="13.5" fill="#8F8F8F">Lets AI agents pay by name</text>
+<line x1="1023.0" y1="238" x2="1023.0" y2="268" stroke="#C8FF1E" stroke-opacity=".45"/>
+<circle cx="1023" cy="268" r="3" fill="#C8FF1E"/><circle cx="1023" cy="268" r="1.35" fill="#F7FFE0"/>
+<line x1="177" y1="268" x2="1023" y2="268" stroke="#C8FF1E" stroke-opacity=".45"/>
+<path d="M248.0 268 V310" fill="none" stroke="#C8FF1E" stroke-opacity="0.75" stroke-width="1.3" marker-end="url(#ah)"/>
+<path d="M828.0 268 V310" fill="none" stroke="#C8FF1E" stroke-opacity="0.75" stroke-width="1.3" marker-end="url(#ah)"/>
+<text x="262" y="296" font-size="10.5" fill="#A8A8A8" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="0.8">RESOLVE OVER DoH</text>
+<text x="842" y="296" font-size="10.5" fill="#A8A8A8" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="0.8">PAY · DEPOSIT · CLAIM · LAUNCH</text>
+<rect x="48" y="312" width="400" height="480" rx="20" fill="#0b0b0b" fill-opacity=".7" stroke="#2a2a2a"/>
+<rect x="504" y="312" width="648" height="480" rx="20" fill="#0b0b0b" fill-opacity=".7" stroke="#2a2a2a"/>
+<text x="72" y="346" font-size="11.5" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="2">DNS</text>
+<text x="72" y="374" font-size="18" fill="#EDEDED" font-weight="600">Names and signatures</text>
+<text x="528" y="346" font-size="11.5" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="2">ROBINHOOD CHAIN · 4663</text>
+<text x="528" y="374" font-size="18" fill="#EDEDED" font-weight="600">Money and proofs</text>
+<rect x="1081.28" y="334" width="46.72" height="24" rx="12" fill="#12160a" stroke="#3a4a10"/><text x="1104.64" y="349.96" font-size="11" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="1.2">ETH</text>
+<rect x="1018.32" y="334" width="54.96" height="24" rx="12" fill="#12160a" stroke="#3a4a10"/><text x="1045.8" y="349.96" font-size="11" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="1.2">USDG</text>
+<rect x="72" y="396" width="352" height="100" rx="14" fill="url(#pg)" stroke="#262626"/>
+<text x="94" y="428" font-size="15.5" fill="#EDEDED" font-weight="600">DNS-over-HTTPS</text>
+<text x="402" y="428" font-size="10.5" fill="#8F8F8F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="end" letter-spacing="2">IN PARALLEL</text>
+<circle cx="102" cy="451.5" r="3.5" fill="#C8FF1E"/><circle cx="102" cy="451.5" r="1.575" fill="#F7FFE0"/>
+<text x="116" y="456" font-size="14" fill="#EDEDED">Cloudflare</text>
+<text x="200" y="456" font-size="12.5" fill="#8F8F8F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">cloudflare-dns.com</text>
+<circle cx="102" cy="475.5" r="3.5" fill="#C8FF1E"/><circle cx="102" cy="475.5" r="1.575" fill="#F7FFE0"/>
+<text x="116" y="480" font-size="14" fill="#EDEDED">Google</text>
+<text x="200" y="480" font-size="12.5" fill="#8F8F8F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">dns.google</text>
+<line x1="102" y1="455" x2="102" y2="475" stroke="#C8FF1E" stroke-opacity=".6"/>
+<text x="402" y="480" font-size="10.5" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="end" letter-spacing="2">CROSS-CHECKED</text>
+<path d="M248.0 496 V526" fill="none" stroke="#C8FF1E" stroke-opacity="0.75" stroke-width="1.3" marker-end="url(#ah)"/>
+<text x="262" y="517" font-size="10.5" fill="#A8A8A8" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="0.8">TYPE 262 · TXT · AD BIT</text>
+<rect x="72" y="528" width="352" height="232" rx="14" fill="url(#pg)" stroke="#262626"/>
+<text x="94" y="560" font-size="15.5" fill="#EDEDED" font-weight="600">DNSSEC chain of trust</text>
+<text x="402" y="560" font-size="10.5" fill="#8F8F8F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="end" letter-spacing="2">SIGNED ZONE</text>
+<circle cx="102" cy="595.5" r="3.5" fill="#C8FF1E"/>
+<text x="116" y="600" font-size="13" fill="#EDEDED" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">. (root)</text>
+<text x="402" y="600" font-size="12" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="end">KSK-2017 · KSK-2024</text>
+<path d="M102 600.5 V629.5 H117" fill="none" stroke="#3a3a3a"/>
+<circle cx="122" cy="629.5" r="3.5" fill="#5a5a5a"/>
+<text x="136" y="634" font-size="13" fill="#EDEDED" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">com.</text>
+<text x="402" y="634" font-size="12" fill="#8F8F8F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="end">DS · DNSKEY</text>
+<path d="M122 634.5 V663.5 H137" fill="none" stroke="#3a3a3a"/>
+<circle cx="142" cy="663.5" r="3.5" fill="#5a5a5a"/>
+<text x="156" y="668" font-size="13" fill="#EDEDED" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">yoursite.com.</text>
+<text x="402" y="668" font-size="12" fill="#8F8F8F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="end">DS · DNSKEY</text>
+<path d="M142 668.5 V697.5 H157" fill="none" stroke="#3a3a3a"/>
+<circle cx="162" cy="697.5" r="3.5" fill="#C8FF1E"/>
+<text x="176" y="702" font-size="13" fill="#EDEDED" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">yoursite.com. WALLET</text>
+<text x="402" y="702" font-size="12" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="end">type 262</text>
+<path d="M142 668.5 V731.5 H157" fill="none" stroke="#3a3a3a"/>
+<circle cx="162" cy="731.5" r="3.5" fill="#C8FF1E"/>
+<text x="176" y="736" font-size="13" fill="#EDEDED" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">_wallet TXT</text>
+<text x="402" y="736" font-size="12" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="end">&quot;ETH 0x…&quot;</text>
+<rect x="528" y="396" width="272" height="100" rx="14" fill="url(#pg)" stroke="#3b4a14"/>
+<text x="550" y="430" font-size="16" fill="#EDEDED" font-weight="600">DnssecVerifier</text>
+<text x="550" y="454" font-size="12" fill="#A0A0A0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">0x2dfB…5758</text>
+<text x="550" y="478" font-size="13" fill="#8F8F8F">Reads the wallet from the proof</text>
+<rect x="528" y="528" width="272" height="100" rx="14" fill="url(#pg)" stroke="#262626"/>
+<text x="550" y="562" font-size="16" fill="#EDEDED" font-weight="600">DNSSECImpl oracle</text>
+<text x="550" y="586" font-size="12" fill="#A0A0A0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">ENS · 0xB6bD…DaE1</text>
+<text x="550" y="610" font-size="13" fill="#8F8F8F">Checks every signature</text>
+<rect x="528" y="660" width="272" height="100" rx="14" fill="url(#pg)" stroke="#262626"/>
+<text x="550" y="694" font-size="16" fill="#EDEDED" font-weight="600">DomainLauncher</text>
+<text x="550" y="718" font-size="12" fill="#A0A0A0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">0x0226…716F</text>
+<text x="550" y="742" font-size="13" fill="#8F8F8F">Creator fees go to a domain</text>
+<rect x="856" y="396" width="272" height="100" rx="14" fill="url(#pg)" stroke="#3b4a14"/>
+<text x="878" y="430" font-size="16" fill="#EDEDED" font-weight="600">DomainEscrow</text>
+<text x="878" y="454" font-size="12" fill="#A0A0A0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">0x9fd2…E8d5</text>
+<text x="878" y="478" font-size="13" fill="#8F8F8F">One pool per domain · 0.5% fee</text>
+<rect x="856" y="528" width="272" height="100" rx="14" fill="url(#pg)" stroke="#262626"/>
+<text x="878" y="562" font-size="16" fill="#EDEDED" font-weight="600">DomainFeeForwarder</text>
+<text x="878" y="586" font-size="12" fill="#A0A0A0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">one per domain · CREATE2</text>
+<text x="878" y="610" font-size="13" fill="#8F8F8F">Carries creator fees to escrow</text>
+<rect x="856" y="660" width="272" height="100" rx="14" fill="url(#pg)" stroke="#262626"/>
+<text x="878" y="694" font-size="16" fill="#EDEDED" font-weight="600">pons v2 launchpad</text>
+<text x="878" y="718" font-size="12" fill="#A0A0A0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">factory 0x7eD5…EC7e</text>
+<text x="878" y="742" font-size="13" fill="#8F8F8F">Robinhood Chain's launchpad</text>
+<path d="M854 446 H804" fill="none" stroke="#C8FF1E" stroke-opacity="0.75" stroke-width="1.3" marker-end="url(#ah)"/>
+<text x="828" y="438" font-size="10.5" fill="#A8A8A8" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="0.8">verify</text>
+<path d="M664.0 496 V526" fill="none" stroke="#C8FF1E" stroke-opacity="0.75" stroke-width="1.3" marker-end="url(#ah)"/>
+<text x="678" y="517" font-size="10.5" fill="#A8A8A8" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="0.8">PROOF, ROOT DOWN</text>
+<path d="M526 596 H428" fill="none" stroke="#B7A0FF" stroke-opacity="0.8" stroke-width="1.3" marker-end="url(#av)"/>
+<text x="476" y="588" font-size="10.5" fill="#B7A0FF" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="0.8">trust</text>
+<text x="476" y="612" font-size="10.5" fill="#B7A0FF" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="0.8">anchor</text>
+<path d="M802 710 H852" fill="none" stroke="#C8FF1E" stroke-opacity="0.75" stroke-width="1.3" marker-end="url(#ah)"/>
+<text x="828" y="702" font-size="10.5" fill="#A8A8A8" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="0.8">launch</text>
+<path d="M992.0 658 V632" fill="none" stroke="#C8FF1E" stroke-opacity="0.75" stroke-width="1.3" marker-end="url(#ah)"/>
+<text x="1006" y="649" font-size="10.5" fill="#A8A8A8" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="0.8">CREATOR FEES</text>
+<path d="M992.0 526 V500" fill="none" stroke="#C8FF1E" stroke-opacity="0.75" stroke-width="1.3" marker-end="url(#ah)"/>
+<text x="1006" y="517" font-size="10.5" fill="#A8A8A8" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="0.8">COLLECT → DEPOSIT</text>
+<text x="600" y="834" font-size="12" fill="#7A7A7A" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="0.4">Robinhood Chain mainnet · deploy block 93920186 · every contract verified on Sourcify</text>
+</g>
+</svg>

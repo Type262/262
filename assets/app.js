@@ -63,8 +63,8 @@ document.addEventListener('click', e => { const b = e.target.closest('[data-chai
 
 const SOL_ICON = '<svg viewBox="0 0 20 20" aria-hidden="true"><rect width="20" height="20" rx="10" fill="#0b0b0b"/><path fill="#14f195" d="M6.6 12.6h8.3l-1.5 1.5H5.1zm0-6.7h8.3L13.4 7.4H5.1zm8.3 3.3H6.6l-1.5 1.5h8.3z"/></svg>'
 const SOON = {
-  escrow: ['Escrow on Solana', 'Paying a domain before it publishes a wallet comes to Solana on this screen next. Escrow on Robinhood Chain works today.'],
-  launch: ['Launch on pump.fun', 'Coins on pump.fun whose creator fees go to a domain come to this screen next. The pons launchpad on Robinhood Chain works today.'],
+  escrow: ['Vaults on Solana', 'Pay a domain before it publishes a wallet: send to its vault on Solana. Escrow on Robinhood Chain is also supported.'],
+  launch: ['Launch on pump.fun', 'Launch a coin on pump.fun whose creator fees go to a domain. The pons launchpad on Robinhood Chain is also supported.'],
 }
 const solCtx = {
   sol, toast, setNetwork,
@@ -709,7 +709,7 @@ function renderPublish() {
   try { domain = $('#pub-d').value.trim() ? normalizeDomain($('#pub-d').value) : null } catch (err) { domainErr = err.message }
   if (domain && $('#v-publish').classList.contains('on')) history.replaceState(null, '', `#publish/${domain}`)
   const step3 = body => `<div class="pb-step"><div class="pb-head"><small>03</small><h3>Add it at your DNS host</h3>
-    <p>A TXT record works on every DNS host, and it's the record escrow claims prove.</p></div>${body}</div>`
+    <p>A TXT record works on every DNS host, and every claim accepts it, on Solana and on Robinhood Chain.</p></div>${body}</div>`
   if (!domain || !list.length) {
     out.innerHTML = step3(`<div class="pb-empty">${domainErr ? `${esc(domainErr)}. Fix it` : !domain ? 'Enter your domain' : 'Add a valid address'} and your record appears here.</div>`)
     return

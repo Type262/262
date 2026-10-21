@@ -1,6 +1,8 @@
 # TYPE/262 on Solana
 
-> **Built and tested, not deployed.** This on-chain program is complete and covered by the LiteSVM suites and the end-to-end run below, but it is not deployed. The live Solana flow uses vaults instead: every domain has its own Solana address, and the TYPE/262 worker (`upload/server.mjs`) pays it out to the wallet the domain's DNSSEC-signed record names. See [On Solana](https://type262.onrender.com/docs.html#solana) and the [Worker API](https://type262.onrender.com/docs.html#solana-worker). Deploying this program would move the DNSSEC check on-chain, as the contracts already do on Robinhood Chain.
+Solana is TYPE/262's main network, and it is live today through domain vaults: every domain has its own Solana address, which anyone can pay in SOL, USDC or any SPL token, and which pump.fun coins launched for the domain name as their creator. The TYPE/262 worker (`upload/worker.mjs`, served by `upload/server.mjs`) pays a vault out to the wallet the domain's DNSSEC-signed record names, once Cloudflare and Google both return it and report it DNSSEC-authenticated. See [On Solana](https://type262.onrender.com/docs.html#solana) and the [Worker API](https://type262.onrender.com/docs.html#solana-worker).
+
+This directory is the next step: an on-chain program that verifies DNSSEC on Solana itself. It is built and tested, covered by the LiteSVM suites and the end-to-end run below, and not deployed yet. Deploying it would move the DNSSEC check on-chain, as the contracts already do on Robinhood Chain, which TYPE/262 also supports.
 
 One Anchor program, `type262`, with three parts:
 
@@ -8,7 +10,7 @@ One Anchor program, `type262`, with three parts:
 - **escrow**: holds SOL and SPL tokens for a domain until its owner claims them with that proof. Same rules as `DomainEscrow` on Robinhood Chain.
 - **launcher**: launches pump.fun coins whose creator is a per-domain PDA of this program, so creator fees can only ever reach the domain's escrow pool.
 
-The Robinhood Chain contracts in `../contracts` are unchanged and keep working; this directory is self-contained.
+This directory is self-contained. The live vault worker lives in `../upload`, and the Robinhood Chain contracts in `../contracts`.
 
 ## Documentation
 

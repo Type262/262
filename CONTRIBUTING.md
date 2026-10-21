@@ -2,6 +2,7 @@
 
 TYPE/262 switches on the DNS `WALLET` record (RRTYPE 262), so every domain is a wallet.
 Anyone, person or AI agent, can resolve a domain, verify its address and pay it in SOL or USDC on Solana, or in USDG or ETH on Robinhood Chain.
+Solana is the main network; Robinhood Chain is also supported.
 Domains that haven't published yet can be paid through their own vault on Solana or an escrow on Robinhood Chain, and pump.fun coins can send their creator fees to a domain.
 
 Thanks for helping build it. This guide covers the layout, setup, tests, builds, conventions and how to send a change.
@@ -31,7 +32,7 @@ The full documentation lives in [`docs.html`](https://type262.onrender.com/docs.
 | `docs.html` | The full documentation, with `assets/docs.js` and `assets/docs.css` |
 | `lib/wallet262.js` | The zero-dependency SDK for browsers and Node 18+, and the package's main export |
 | `bin/type262.mjs` | The `type262` CLI |
-| `mcp/src/server.mjs` | The MCP server for AI agents (source) |
+| `mcp/src/server.mjs` | The MCP server for AI agents, which pays on Robinhood Chain (source) |
 | `mcp/type262-mcp.mjs` | The MCP server as one self-contained file, built by `npm run mcp:build` |
 | `upload/server.mjs` | The worker: Solana vault addresses, claims, collects and refunds under `/solana/` (`worker.mjs`, with the rules in `vault.mjs` and the transactions in `chain.mjs` and `pump.mjs`); image and coin-metadata uploads for the Launch form (IPFS through Pinata); and the read-only RPC fallbacks for both chains. Zero dependencies |
 | `assets/` | Page scripts, styles and artwork. `config.js` holds the deployed addresses and the board's first block, `dnssec.js` builds Robinhood Chain claim proofs, `vendor/` is a pinned copy of dnsprovejs 1.0.1 |
@@ -50,14 +51,14 @@ The full documentation lives in [`docs.html`](https://type262.onrender.com/docs.
 | `test/` | JavaScript tests, run by `npm test` |
 | `scripts/` | `build.sh` (static build) and `post-deploy.mjs` (on-chain checks, writes `assets/config.js`) |
 | `deployments/` | `robinhood-4663.json`, the record of the live Robinhood Chain deployment |
-| `render.yaml` | Render Blueprint for the site and the upload service |
-| `DEPLOY.md` | The deployment runbook |
+| `render.yaml` | Render Blueprint for the site and the worker (`type262-upload`) |
+| `DEPLOY.md` | The deployment runbook: the Solana worker first, then the Robinhood Chain contracts |
 
 ## Prerequisites
 
 | Tool | Version | Used for |
 |---|---|---|
-| [Node.js](https://nodejs.org) | 18 or later (CI uses 22); 20.19 or later for proof building | Tests, the CLI, the MCP server, the upload service, proof building |
+| [Node.js](https://nodejs.org) | 18 or later (CI uses 22); 20.19 or later for proof building | Tests, the CLI, the worker, the MCP server, proof building |
 | Rust, the Solana CLI and Anchor | the exact versions in [`solana/README.md`](solana/README.md) | The on-chain program and its LiteSVM tests, and `solana-test-validator` for the end-to-end runs |
 | WSL Ubuntu (Windows only) | 24.04 | The local validator and the precompile tests, which don't run natively on Windows |
 | [Foundry](https://getfoundry.sh) | stable (`forge`, `cast`, `anvil`) | Contract builds, contract tests, fork tests |
@@ -73,7 +74,7 @@ npm ci
 ```
 
 `npm ci` installs the two dev dependencies, `viem` and `@ensdomains/dnsprovejs`.
-Tests, the proof script and the MCP build use them. The site, the SDK and the upload service need nothing installed.
+Tests, the proof script and the MCP build use them. The site, the SDK and the worker need nothing installed.
 
 Cloned without `--recurse-submodules`? Fetch the contract libraries with:
 
@@ -111,7 +112,7 @@ PINATA_JWT=your-pinata-jwt ALLOW_ORIGINS=http://127.0.0.1:5262 npm run upload:de
 ```
 
 Then add `export const UPLOAD_URL = 'http://127.0.0.1:8787'` to `assets/config.js` for your session, and leave it out of commits.
-Without the service, the Robinhood Chain form takes an image link instead; a pump.fun launch needs it to pin the coin's metadata.
+A pump.fun launch needs the service to pin the coin's metadata; without it, the Robinhood Chain form takes an image link instead.
 
 The `/solana/` endpoints also need `VAULT_MASTER_SEED`, 32 bytes as 64 hex characters. For local work, generate a throwaway one in your own shell (for example `VAULT_MASTER_SEED=$(openssl rand -hex 32)`), point the worker at a local validator, and never use it, or the vaults it derives, on mainnet.
 Never commit a master secret, never paste one into an issue or chat, and never log one or anything derived from it.
@@ -260,7 +261,7 @@ The site itself needs no build: `dist/` only exists to version asset paths for t
 
 - **Plain ES modules.** No frameworks, no TypeScript, no bundler for the site. Pages load native modules straight from `assets/` and `lib/`.
 - **Match the surrounding code.** Two-space indentation, no semicolons, single-quoted strings, and short comments that explain why rather than what.
-- **A dependency-free SDK.** `lib/wallet262.js` imports nothing and runs in browsers and Node 18+ with `fetch` and DNS-over-HTTPS JSON. The upload service has no dependencies either.
+- **A dependency-free SDK.** `lib/wallet262.js` imports nothing and runs in browsers and Node 18+ with `fetch` and DNS-over-HTTPS JSON. The worker has no dependencies either.
 - **No runtime packages in the app.** The app encodes contract calls with its own small ABI coder, checked against viem in `test/abi.test.mjs`, and loads a pinned, vendored copy of dnsprovejs. `viem` and `@ensdomains/dnsprovejs` stay dev dependencies.
 - **No new npm dependencies** without agreeing on them in an issue first.
 - **Rust.** Anchor 0.31 at the versions pinned in `solana/README.md`, formatted with `cargo fmt --all` (`cargo +stable fmt` in `tests-rs`). Every instruction takes one `<Name>Args` struct defined in its module, and `lib.rs` only delegates. Errors live in one enum with a range per module (shared 6000+, DNSSEC 6100+, escrow 6200+, launcher 6300+): append inside your range and never renumber, because clients match on the numbers. Mirror account and argument changes in the `tests-rs` harness. No admin power over funds.
@@ -278,8 +279,8 @@ The site itself needs no build: `dist/` only exists to version asset paths for t
 
 Never commit a private key, a seed phrase, a master secret such as `VAULT_MASTER_SEED`, an API key such as `PINATA_JWT`, or an `.env` file.
 
+A change to the Solana worker ships as a redeploy of the `type262-upload` service (see [`DEPLOY.md`](DEPLOY.md)); run `npm test` and the end-to-end runs on a local validator first. The on-chain Solana program is not deployed; before any deployment, run the LiteSVM suites, the precompile tests and the end-to-end run on the exact build.
 The Robinhood Chain contracts are immutable. A contract change ships as a new deployment through [`DEPLOY.md`](DEPLOY.md), and `scripts/post-deploy.mjs` points the app at it.
-A change to the worker ships as a redeploy of the `type262-upload` service; run `npm test` and the end-to-end runs on a local validator first. The on-chain Solana program is not deployed; before any deployment, run the LiteSVM suites, the precompile tests and the end-to-end run on the exact build.
 
 ## Documentation
 
@@ -289,7 +290,7 @@ A change to the worker ships as a redeploy of the `type262-upload` service; run 
 | [`mcp/README.md`](mcp/README.md) | MCP server tools, configuration and limits |
 | [`solana/README.md`](solana/README.md) | Building and testing the on-chain Solana program: toolchain, LiteSVM, WSL, the local validator |
 | [`solana/docs/`](solana/docs) | `DNSSEC.md` and `PUMP.md`, the specifications and measurements behind the program |
-| [`DEPLOY.md`](DEPLOY.md) | Deploying the contracts and pointing the app at them |
+| [`DEPLOY.md`](DEPLOY.md) | Deploying the Solana worker, then the Robinhood Chain contracts, and pointing the app at them |
 | [`CHANGELOG.md`](CHANGELOG.md) | Release history |
 
 `docs.html` is the source of truth. When code and docs disagree, fix whichever is wrong in the same pull request.

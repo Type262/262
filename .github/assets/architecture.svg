@@ -1,25 +1,25 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="866" viewBox="0 0 1200 866" role="img" aria-labelledby="t d">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1112" viewBox="0 0 1200 1112" role="img" aria-labelledby="t d">
 <title id="t">TYPE/262 architecture</title>
-<desc id="d">Clients (web app, SDK lib/wallet262.js, CLI, MCP server for AI agents) resolve domains over DNS-over-HTTPS from Cloudflare and Google, reading the WALLET record or _wallet TXT in a DNSSEC-signed zone, and settle on Robinhood Chain: DomainEscrow asks DnssecVerifier, which uses the ENS DNSSECImpl oracle anchored to the IANA root keys. DomainLauncher launches tokens on pons v2 whose creator fees reach DomainEscrow through DomainFeeForwarder. Assets are USDG and ETH.</desc>
+<desc id="d">Clients (web app app.html, which opens on Solana with a network switch; SDK lib/wallet262.js; CLI; MCP server for AI agents, which pays on Robinhood Chain) resolve domains over DNS-over-HTTPS from Cloudflare and Google, cross-checked, reading the WALLET record (type 262) or _wallet TXT &quot;SOL &lt;address&gt;&quot; in a DNSSEC-signed zone. On Solana mainnet a payer sends SOL or USDC straight to the published address. Every domain also has a vault, an HMAC-derived address anyone can send SOL, USDC or any SPL token to; on pump.fun coins launched with create_v2 and the vault as creator, every creator fee, on the bonding curve and on PumpSwap, accrues to it. The TYPE/262 worker (type262-upload.onrender.com) holds the vault keys, reads the SOL record from both resolvers with the DNSSEC AD bit, and pays the vault out to the published wallet minus a 0.5% fee; a sender can take a deposit back after 180 days if the domain has not claimed since. Also on Robinhood Chain (chain id 4663): DomainEscrow, DnssecVerifier with the ENS DNSSEC oracle anchored to the IANA root keys, DomainLauncher on pons v2, the MCP server, the board and domain profiles, in USDG and ETH.</desc>
 <defs>
 <linearGradient id="pg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#141414"/><stop offset="1" stop-color="#0d0d0d"/></linearGradient>
 <radialGradient id="ga" gradientUnits="userSpaceOnUse" cx="120" cy="0" r="620"><stop offset="0" stop-color="#C8FF1E" stop-opacity=".09"/><stop offset="1" stop-color="#C8FF1E" stop-opacity="0"/></radialGradient>
-<radialGradient id="gv" gradientUnits="userSpaceOnUse" cx="1140" cy="866" r="640"><stop offset="0" stop-color="#8B5CFF" stop-opacity=".12"/><stop offset="1" stop-color="#8B5CFF" stop-opacity="0"/></radialGradient>
+<radialGradient id="gv" gradientUnits="userSpaceOnUse" cx="1140" cy="1112" r="640"><stop offset="0" stop-color="#8B5CFF" stop-opacity=".12"/><stop offset="1" stop-color="#8B5CFF" stop-opacity="0"/></radialGradient>
 <filter id="blur" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="3"/></filter>
 <marker id="ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M1 1.5 8.5 5 1 8.5" fill="none" stroke="#C8FF1E" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></marker>
 <marker id="av" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M1 1.5 8.5 5 1 8.5" fill="none" stroke="#B7A0FF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></marker>
 <marker id="ad" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M1 1.5 8.5 5 1 8.5" fill="none" stroke="#7A7A7A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></marker>
 </defs>
-<rect width="1200" height="866" rx="20" fill="#0a0a0a"/>
-<rect width="1200" height="866" rx="20" fill="url(#ga)"/>
-<rect width="1200" height="866" rx="20" fill="url(#gv)"/>
-<rect x=".5" y=".5" width="1199" height="865" rx="19.5" fill="none" stroke="#262626"/>
+<rect width="1200" height="1112" rx="20" fill="#0a0a0a"/>
+<rect width="1200" height="1112" rx="20" fill="url(#ga)"/>
+<rect width="1200" height="1112" rx="20" fill="url(#gv)"/>
+<rect x=".5" y=".5" width="1199" height="1111" rx="19.5" fill="none" stroke="#262626"/>
 <g font-family="Inter, 'Segoe UI', -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif">
-<rect x="48" y="53" width="8" height="8" fill="#C8FF1E"/><text x="66" y="62" font-size="12" fill="#8F8F8F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="2.4">ARCHITECTURE</text><text x="48" y="104" font-size="30" fill="#EDEDED" font-weight="700"><tspan >DNS names the wallet. </tspan><tspan fill="#C8FF1E">The chain settles.</tspan></text><text x="1152" y="62" font-size="11.5" fill="#8F8F8F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="end" letter-spacing="1.2">ROBINHOOD CHAIN · CHAIN ID 4663</text>
+<rect x="48" y="53" width="8" height="8" fill="#C8FF1E"/><text x="66" y="62" font-size="12" fill="#8F8F8F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="2.4">ARCHITECTURE</text><text x="48" y="104" font-size="30" fill="#EDEDED" font-weight="700"><tspan >DNS names the wallet. </tspan><tspan fill="#C8FF1E">Solana settles.</tspan></text><text x="1152" y="62" font-size="11.5" fill="#8F8F8F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="end" letter-spacing="1.2">SOLANA MAINNET · ROBINHOOD CHAIN 4663</text>
 <rect x="48" y="134" width="258" height="104" rx="16" fill="url(#pg)" stroke="#262626"/>
 <text x="70" y="164" font-size="11.5" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="2">WEB APP</text>
 <text x="70" y="192" font-size="14" fill="#EDEDED" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">app.html</text>
-<text x="70" y="218" font-size="13.5" fill="#8F8F8F">Seven tools, in the browser</text>
+<text x="70" y="218" font-size="13.5" fill="#8F8F8F">Opens on Solana · network switch</text>
 <line x1="177.0" y1="238" x2="177.0" y2="268" stroke="#C8FF1E" stroke-opacity=".45"/>
 <circle cx="177" cy="268" r="3" fill="#C8FF1E"/><circle cx="177" cy="268" r="1.35" fill="#F7FFE0"/>
 <rect x="330" y="134" width="258" height="104" rx="16" fill="url(#pg)" stroke="#262626"/>
@@ -37,93 +37,125 @@
 <rect x="894" y="134" width="258" height="104" rx="16" fill="url(#pg)" stroke="#262626"/>
 <text x="916" y="164" font-size="11.5" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="2">MCP SERVER</text>
 <text x="916" y="192" font-size="14" fill="#EDEDED" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">mcp/type262-mcp.mjs</text>
-<text x="916" y="218" font-size="13.5" fill="#8F8F8F">Lets AI agents pay by name</text>
+<text x="916" y="218" font-size="13.5" fill="#8F8F8F">AI agents pay on Robinhood Chain</text>
 <line x1="1023.0" y1="238" x2="1023.0" y2="268" stroke="#C8FF1E" stroke-opacity=".45"/>
 <circle cx="1023" cy="268" r="3" fill="#C8FF1E"/><circle cx="1023" cy="268" r="1.35" fill="#F7FFE0"/>
 <line x1="177" y1="268" x2="1023" y2="268" stroke="#C8FF1E" stroke-opacity=".45"/>
 <path d="M248.0 268 V310" fill="none" stroke="#C8FF1E" stroke-opacity="0.75" stroke-width="1.3" marker-end="url(#ah)"/>
 <path d="M828.0 268 V310" fill="none" stroke="#C8FF1E" stroke-opacity="0.75" stroke-width="1.3" marker-end="url(#ah)"/>
 <text x="262" y="296" font-size="10.5" fill="#A8A8A8" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="0.8">RESOLVE OVER DoH</text>
-<text x="842" y="296" font-size="10.5" fill="#A8A8A8" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="0.8">PAY · DEPOSIT · CLAIM · LAUNCH</text>
-<rect x="48" y="312" width="400" height="480" rx="20" fill="#0b0b0b" fill-opacity=".7" stroke="#2a2a2a"/>
-<rect x="504" y="312" width="648" height="480" rx="20" fill="#0b0b0b" fill-opacity=".7" stroke="#2a2a2a"/>
+<text x="842" y="296" font-size="10.5" fill="#A8A8A8" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="0.8">PAY · DEPOSIT · LAUNCH · CLAIM</text>
+<rect x="48" y="312" width="400" height="556" rx="20" fill="#0b0b0b" fill-opacity=".7" stroke="#2a2a2a"/>
+<rect x="504" y="312" width="648" height="556" rx="20" fill="#0b0b0b" fill-opacity=".7" stroke="#2a2a2a"/>
 <text x="72" y="346" font-size="11.5" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="2">DNS</text>
 <text x="72" y="374" font-size="18" fill="#EDEDED" font-weight="600">Names and signatures</text>
-<text x="528" y="346" font-size="11.5" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="2">ROBINHOOD CHAIN · 4663</text>
-<text x="528" y="374" font-size="18" fill="#EDEDED" font-weight="600">Money and proofs</text>
-<rect x="1081.28" y="334" width="46.72" height="24" rx="12" fill="#12160a" stroke="#3a4a10"/><text x="1104.64" y="349.96" font-size="11" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="1.2">ETH</text>
-<rect x="1018.32" y="334" width="54.96" height="24" rx="12" fill="#12160a" stroke="#3a4a10"/><text x="1045.8" y="349.96" font-size="11" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="1.2">USDG</text>
-<rect x="72" y="396" width="352" height="100" rx="14" fill="url(#pg)" stroke="#262626"/>
-<text x="94" y="428" font-size="15.5" fill="#EDEDED" font-weight="600">DNS-over-HTTPS</text>
-<text x="402" y="428" font-size="10.5" fill="#8F8F8F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="end" letter-spacing="2">IN PARALLEL</text>
-<circle cx="102" cy="451.5" r="3.5" fill="#C8FF1E"/><circle cx="102" cy="451.5" r="1.575" fill="#F7FFE0"/>
-<text x="116" y="456" font-size="14" fill="#EDEDED">Cloudflare</text>
-<text x="200" y="456" font-size="12.5" fill="#8F8F8F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">cloudflare-dns.com</text>
-<circle cx="102" cy="475.5" r="3.5" fill="#C8FF1E"/><circle cx="102" cy="475.5" r="1.575" fill="#F7FFE0"/>
-<text x="116" y="480" font-size="14" fill="#EDEDED">Google</text>
-<text x="200" y="480" font-size="12.5" fill="#8F8F8F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">dns.google</text>
-<line x1="102" y1="455" x2="102" y2="475" stroke="#C8FF1E" stroke-opacity=".6"/>
-<text x="402" y="480" font-size="10.5" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="end" letter-spacing="2">CROSS-CHECKED</text>
-<path d="M248.0 496 V526" fill="none" stroke="#C8FF1E" stroke-opacity="0.75" stroke-width="1.3" marker-end="url(#ah)"/>
-<text x="262" y="517" font-size="10.5" fill="#A8A8A8" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="0.8">TYPE 262 · TXT · AD BIT</text>
-<rect x="72" y="528" width="352" height="232" rx="14" fill="url(#pg)" stroke="#262626"/>
-<text x="94" y="560" font-size="15.5" fill="#EDEDED" font-weight="600">DNSSEC chain of trust</text>
-<text x="402" y="560" font-size="10.5" fill="#8F8F8F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="end" letter-spacing="2">SIGNED ZONE</text>
-<circle cx="102" cy="595.5" r="3.5" fill="#C8FF1E"/>
-<text x="116" y="600" font-size="13" fill="#EDEDED" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">. (root)</text>
-<text x="402" y="600" font-size="12" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="end">KSK-2017 · KSK-2024</text>
-<path d="M102 600.5 V629.5 H117" fill="none" stroke="#3a3a3a"/>
-<circle cx="122" cy="629.5" r="3.5" fill="#5a5a5a"/>
-<text x="136" y="634" font-size="13" fill="#EDEDED" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">com.</text>
-<text x="402" y="634" font-size="12" fill="#8F8F8F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="end">DS · DNSKEY</text>
-<path d="M122 634.5 V663.5 H137" fill="none" stroke="#3a3a3a"/>
-<circle cx="142" cy="663.5" r="3.5" fill="#5a5a5a"/>
-<text x="156" y="668" font-size="13" fill="#EDEDED" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">yoursite.com.</text>
+<text x="528" y="346" font-size="11.5" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="2">SOLANA · MAINNET</text>
+<text x="528" y="374" font-size="18" fill="#EDEDED" font-weight="600">Payments, vaults, launches</text>
+<rect x="1073.04" y="334" width="54.96" height="24" rx="12" fill="#12160a" stroke="#3a4a10"/><text x="1100.52" y="349.96" font-size="11" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="1.2">USDC</text>
+<rect x="1018.32" y="334" width="46.72" height="24" rx="12" fill="#12160a" stroke="#3a4a10"/><text x="1041.68" y="349.96" font-size="11" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="1.2">SOL</text>
+<rect x="72" y="396" width="352" height="118" rx="14" fill="url(#pg)" stroke="#262626"/>
+<text x="94" y="430" font-size="15.5" fill="#EDEDED" font-weight="600">DNS-over-HTTPS</text>
+<text x="402" y="430" font-size="10.5" fill="#8F8F8F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="end" letter-spacing="2">IN PARALLEL</text>
+<circle cx="102" cy="457.5" r="3.5" fill="#C8FF1E"/><circle cx="102" cy="457.5" r="1.575" fill="#F7FFE0"/>
+<text x="116" y="462" font-size="14" fill="#EDEDED">Cloudflare</text>
+<text x="200" y="462" font-size="12.5" fill="#8F8F8F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">cloudflare-dns.com</text>
+<circle cx="102" cy="483.5" r="3.5" fill="#C8FF1E"/><circle cx="102" cy="483.5" r="1.575" fill="#F7FFE0"/>
+<text x="116" y="488" font-size="14" fill="#EDEDED">Google</text>
+<text x="200" y="488" font-size="12.5" fill="#8F8F8F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">dns.google</text>
+<line x1="102" y1="461" x2="102" y2="483" stroke="#C8FF1E" stroke-opacity=".6"/>
+<text x="402" y="488" font-size="10.5" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="end" letter-spacing="2">CROSS-CHECKED</text>
+<path d="M248.0 514 V552" fill="none" stroke="#C8FF1E" stroke-opacity="0.75" stroke-width="1.3" marker-end="url(#ah)"/>
+<text x="262" y="538" font-size="10.5" fill="#A8A8A8" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="0.8">TYPE 262 · TXT · AD BIT</text>
+<rect x="72" y="554" width="352" height="290" rx="14" fill="url(#pg)" stroke="#262626"/>
+<text x="94" y="588" font-size="15.5" fill="#EDEDED" font-weight="600">DNSSEC chain of trust</text>
+<text x="402" y="588" font-size="10.5" fill="#8F8F8F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="end" letter-spacing="2">SIGNED ZONE</text>
+<circle cx="102" cy="625.5" r="3.5" fill="#C8FF1E"/>
+<text x="116" y="630" font-size="13" fill="#EDEDED" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">. (root)</text>
+<text x="402" y="630" font-size="12" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="end">KSK-2017 · KSK-2024</text>
+<path d="M102 630.5 V663.5 H117" fill="none" stroke="#3a3a3a"/>
+<circle cx="122" cy="663.5" r="3.5" fill="#5a5a5a"/>
+<text x="136" y="668" font-size="13" fill="#EDEDED" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">com.</text>
 <text x="402" y="668" font-size="12" fill="#8F8F8F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="end">DS · DNSKEY</text>
-<path d="M142 668.5 V697.5 H157" fill="none" stroke="#3a3a3a"/>
-<circle cx="162" cy="697.5" r="3.5" fill="#C8FF1E"/>
-<text x="176" y="702" font-size="13" fill="#EDEDED" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">yoursite.com.  WALLET</text>
-<text x="402" y="702" font-size="12" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="end">type 262</text>
-<path d="M142 668.5 V731.5 H157" fill="none" stroke="#3a3a3a"/>
-<circle cx="162" cy="731.5" r="3.5" fill="#C8FF1E"/>
-<text x="176" y="736" font-size="13" fill="#EDEDED" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">_wallet  TXT</text>
-<text x="402" y="736" font-size="12" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="end">&quot;ETH 0x…&quot;</text>
-<rect x="528" y="396" width="272" height="100" rx="14" fill="url(#pg)" stroke="#3b4a14"/>
-<text x="550" y="430" font-size="16" fill="#EDEDED" font-weight="600">DnssecVerifier</text>
-<text x="550" y="454" font-size="12" fill="#A0A0A0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">0x2dfB…5758</text>
-<text x="550" y="478" font-size="13" fill="#8F8F8F">Reads the wallet from the proof</text>
-<rect x="528" y="528" width="272" height="100" rx="14" fill="url(#pg)" stroke="#262626"/>
-<text x="550" y="562" font-size="16" fill="#EDEDED" font-weight="600">DNSSECImpl oracle</text>
-<text x="550" y="586" font-size="12" fill="#A0A0A0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">ENS · 0xB6bD…DaE1</text>
-<text x="550" y="610" font-size="13" fill="#8F8F8F">Checks every signature</text>
-<rect x="528" y="660" width="272" height="100" rx="14" fill="url(#pg)" stroke="#262626"/>
-<text x="550" y="694" font-size="16" fill="#EDEDED" font-weight="600">DomainLauncher</text>
-<text x="550" y="718" font-size="12" fill="#A0A0A0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">0x0226…716F</text>
-<text x="550" y="742" font-size="13" fill="#8F8F8F">Creator fees go to a domain</text>
-<rect x="856" y="396" width="272" height="100" rx="14" fill="url(#pg)" stroke="#3b4a14"/>
-<text x="878" y="430" font-size="16" fill="#EDEDED" font-weight="600">DomainEscrow</text>
-<text x="878" y="454" font-size="12" fill="#A0A0A0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">0x9fd2…E8d5</text>
-<text x="878" y="478" font-size="13" fill="#8F8F8F">One pool per domain · 0.5% fee</text>
-<rect x="856" y="528" width="272" height="100" rx="14" fill="url(#pg)" stroke="#262626"/>
-<text x="878" y="562" font-size="16" fill="#EDEDED" font-weight="600">DomainFeeForwarder</text>
-<text x="878" y="586" font-size="12" fill="#A0A0A0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">one per domain · CREATE2</text>
-<text x="878" y="610" font-size="13" fill="#8F8F8F">Carries creator fees to escrow</text>
-<rect x="856" y="660" width="272" height="100" rx="14" fill="url(#pg)" stroke="#262626"/>
-<text x="878" y="694" font-size="16" fill="#EDEDED" font-weight="600">pons v2 launchpad</text>
-<text x="878" y="718" font-size="12" fill="#A0A0A0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">factory 0x7eD5…EC7e</text>
-<text x="878" y="742" font-size="13" fill="#8F8F8F">Robinhood Chain's launchpad</text>
-<path d="M854 446 H804" fill="none" stroke="#C8FF1E" stroke-opacity="0.75" stroke-width="1.3" marker-end="url(#ah)"/>
-<text x="828" y="438" font-size="10.5" fill="#A8A8A8" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="0.8">verify</text>
-<path d="M664.0 496 V526" fill="none" stroke="#C8FF1E" stroke-opacity="0.75" stroke-width="1.3" marker-end="url(#ah)"/>
-<text x="678" y="517" font-size="10.5" fill="#A8A8A8" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="0.8">PROOF, ROOT DOWN</text>
-<path d="M526 596 H428" fill="none" stroke="#B7A0FF" stroke-opacity="0.8" stroke-width="1.3" marker-end="url(#av)"/>
-<text x="476" y="588" font-size="10.5" fill="#B7A0FF" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="0.8">anchored</text>
-<path d="M802 710 H852" fill="none" stroke="#C8FF1E" stroke-opacity="0.75" stroke-width="1.3" marker-end="url(#ah)"/>
-<text x="828" y="702" font-size="10.5" fill="#A8A8A8" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="0.8">launch</text>
-<path d="M992.0 658 V632" fill="none" stroke="#C8FF1E" stroke-opacity="0.75" stroke-width="1.3" marker-end="url(#ah)"/>
-<text x="1006" y="649" font-size="10.5" fill="#A8A8A8" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="0.8">CREATOR FEES</text>
-<path d="M992.0 526 V500" fill="none" stroke="#C8FF1E" stroke-opacity="0.75" stroke-width="1.3" marker-end="url(#ah)"/>
-<text x="1006" y="517" font-size="10.5" fill="#A8A8A8" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="0.8">COLLECT → DEPOSIT</text>
-<text x="600" y="834" font-size="12" fill="#7A7A7A" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="0.4">Robinhood Chain mainnet · deploy block 93920186 · every contract verified on Sourcify</text>
+<path d="M122 668.5 V701.5 H137" fill="none" stroke="#3a3a3a"/>
+<circle cx="142" cy="701.5" r="3.5" fill="#5a5a5a"/>
+<text x="156" y="706" font-size="13" fill="#EDEDED" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">yoursite.com.</text>
+<text x="402" y="706" font-size="12" fill="#8F8F8F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="end">DS · DNSKEY</text>
+<path d="M142 706.5 V739.5 H157" fill="none" stroke="#3a3a3a"/>
+<circle cx="162" cy="739.5" r="3.5" fill="#C8FF1E"/>
+<text x="176" y="744" font-size="13" fill="#EDEDED" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">yoursite.com. WALLET</text>
+<text x="402" y="744" font-size="12" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="end">type 262</text>
+<path d="M142 706.5 V777.5 H157" fill="none" stroke="#3a3a3a"/>
+<circle cx="162" cy="777.5" r="3.5" fill="#C8FF1E"/>
+<text x="176" y="782" font-size="13" fill="#EDEDED" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">_wallet TXT</text>
+<text x="402" y="782" font-size="12" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="end">&quot;SOL 9WzD…&quot;</text>
+<line x1="94" y1="796" x2="402" y2="796" stroke="#262626"/>
+<text x="94" y="822" font-size="13" fill="#8F8F8F">DNSSEC turned on at your DNS host</text>
+<rect x="528" y="396" width="264" height="118" rx="14" fill="url(#pg)" stroke="#262626"/>
+<text x="550" y="430" font-size="16" fill="#EDEDED" font-weight="600">TYPE/262 worker</text>
+<text x="550" y="454" font-size="12" fill="#A0A0A0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">type262-upload.onrender.com</text>
+<text x="550" y="480" font-size="13" fill="#8F8F8F">Claim · collect · refund</text>
+<text x="550" y="500" font-size="13" fill="#8F8F8F">Refunds senders after 180 days</text>
+<rect x="864" y="396" width="264" height="118" rx="14" fill="url(#pg)" stroke="#262626"/>
+<text x="886" y="430" font-size="16" fill="#EDEDED" font-weight="600">Payer's wallet</text>
+<text x="886" y="454" font-size="12" fill="#A0A0A0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">any Wallet Standard wallet</text>
+<text x="886" y="480" font-size="13" fill="#8F8F8F">Phantom, Solflare, Backpack</text>
+<text x="886" y="500" font-size="13" fill="#8F8F8F">No TYPE/262 server in the path</text>
+<rect x="528" y="554" width="264" height="118" rx="14" fill="url(#pg)" stroke="#3b4a14"/>
+<text x="550" y="588" font-size="16" fill="#EDEDED" font-weight="600">vault(yoursite.com)</text>
+<text x="550" y="612" font-size="12" fill="#A0A0A0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">HMAC-derived address</text>
+<text x="550" y="638" font-size="13" fill="#8F8F8F">One per domain, no setup</text>
+<text x="550" y="658" font-size="13" fill="#8F8F8F">Anyone sends SOL, USDC, any SPL</text>
+<rect x="864" y="554" width="264" height="118" rx="14" fill="url(#pg)" stroke="#3b4a14"/>
+<text x="886" y="588" font-size="16" fill="#EDEDED" font-weight="600">The published wallet</text>
+<text x="886" y="612" font-size="12" fill="#A0A0A0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">SOL 9WzD…AWWM</text>
+<text x="886" y="638" font-size="13" fill="#8F8F8F">The one SOL address in DNS</text>
+<text x="886" y="658" font-size="13" fill="#8F8F8F">Receives payments and claims</text>
+<path d="M426 452 H524" fill="none" stroke="#C8FF1E" stroke-opacity="0.75" stroke-width="1.3" marker-end="url(#ah)"/>
+<text x="476" y="444" font-size="10.5" fill="#A8A8A8" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="0.8">reads</text>
+<text x="476" y="468" font-size="10.5" fill="#A8A8A8" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="0.8">AD bit</text>
+<path d="M660.0 516 V550" fill="none" stroke="#C8FF1E" stroke-opacity="0.75" stroke-width="1.3" marker-end="url(#ah)"/>
+<text x="674" y="538" font-size="10.5" fill="#A8A8A8" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="0.8">HOLDS THE KEY</text>
+<path d="M996.0 516 V550" fill="none" stroke="#C8FF1E" stroke-opacity="0.75" stroke-width="1.3" marker-end="url(#ah)"/>
+<text x="1010" y="538" font-size="10.5" fill="#A8A8A8" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="0.8">PAY DIRECT</text>
+<path d="M794 610 H860" fill="none" stroke="#C8FF1E" stroke-opacity="0.75" stroke-width="1.3" marker-end="url(#ah)"/>
+<text x="828" y="602" font-size="10.5" fill="#A8A8A8" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="0.8">claim</text>
+<text x="828" y="626" font-size="10.5" fill="#A8A8A8" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="0.8">0.5% fee</text>
+<rect x="528" y="712" width="600" height="132" rx="14" fill="url(#pg)" stroke="#262626"/>
+<text x="550" y="746" font-size="16" fill="#EDEDED" font-weight="600">pump.fun launchpad</text>
+<text x="1106" y="746" font-size="10.5" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="end" letter-spacing="2">CREATOR = VAULT</text>
+<rect x="550" y="766" width="169.33" height="58" rx="10" fill="#0e0e0e" stroke="#2c2c2c"/>
+<text x="566" y="790" font-size="13" fill="#EDEDED" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">create_v2</text>
+<text x="566" y="810" font-size="12" fill="#8F8F8F">Opening buy optional</text>
+<rect x="743.33" y="766" width="169.33" height="58" rx="10" fill="#0e0e0e" stroke="#2c2c2c"/>
+<text x="759.33" y="790" font-size="13" fill="#EDEDED" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">bonding curve</text>
+<text x="759.33" y="810" font-size="12" fill="#8F8F8F">Fee on every trade</text>
+<path d="M722.33 795 H740.33" fill="none" stroke="#C8FF1E" stroke-opacity="0.75" stroke-width="1.3" marker-end="url(#ah)"/>
+<rect x="936.67" y="766" width="169.33" height="58" rx="10" fill="#0e0e0e" stroke="#2c2c2c"/>
+<text x="952.67" y="790" font-size="13" fill="#EDEDED" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">PumpSwap</text>
+<text x="952.67" y="810" font-size="12" fill="#8F8F8F">After graduation</text>
+<path d="M915.67 795 H933.67" fill="none" stroke="#C8FF1E" stroke-opacity="0.75" stroke-width="1.3" marker-end="url(#ah)"/>
+<path d="M660.0 710 V676" fill="none" stroke="#C8FF1E" stroke-opacity="0.75" stroke-width="1.3" marker-end="url(#ah)"/>
+<text x="674" y="696" font-size="10.5" fill="#A8A8A8" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="0.8">CREATOR FEES, COLLECTED</text>
+<rect x="48" y="892" width="1104" height="158" rx="20" fill="#0b0b0b" fill-opacity=".7" stroke="#2a2a2a"/>
+<text x="72" y="926" font-size="11.5" fill="#B7A0FF" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="2">ALSO ON ROBINHOOD CHAIN · 4663</text>
+<text x="72" y="954" font-size="18" fill="#EDEDED" font-weight="600">Claims proven on-chain, no server</text>
+<rect x="1081.28" y="914" width="46.72" height="24" rx="12" fill="#14111f" stroke="#3a2f66"/><text x="1104.64" y="929.96" font-size="11" fill="#B7A0FF" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="1.2">ETH</text>
+<rect x="1018.32" y="914" width="54.96" height="24" rx="12" fill="#14111f" stroke="#3a2f66"/><text x="1045.8" y="929.96" font-size="11" fill="#B7A0FF" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="1.2">USDG</text>
+<text x="72" y="988" font-size="15" fill="#EDEDED" font-weight="600">DomainEscrow</text>
+<text x="72" y="1008" font-size="11.5" fill="#A0A0A0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">0x9fd2…E8d5</text>
+<text x="72" y="1027" font-size="13" fill="#8F8F8F">One pool per domain · 0.5% fee</text>
+<line x1="322" y1="978" x2="322" y2="1032" stroke="#262626"/>
+<text x="336" y="988" font-size="15" fill="#EDEDED" font-weight="600">DnssecVerifier</text>
+<text x="336" y="1008" font-size="11.5" fill="#A0A0A0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">0x2dfB…5758 · ENS oracle</text>
+<text x="336" y="1027" font-size="13" fill="#8F8F8F">Proofs checked to the IANA root</text>
+<line x1="586" y1="978" x2="586" y2="1032" stroke="#262626"/>
+<text x="600" y="988" font-size="15" fill="#EDEDED" font-weight="600">DomainLauncher</text>
+<text x="600" y="1008" font-size="11.5" fill="#A0A0A0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">0x0226…716F → pons v2</text>
+<text x="600" y="1027" font-size="13" fill="#8F8F8F">Creator fees reach the escrow</text>
+<line x1="850" y1="978" x2="850" y2="1032" stroke="#262626"/>
+<text x="864" y="988" font-size="15" fill="#EDEDED" font-weight="600">MCP · Board · Profiles</text>
+<text x="864" y="1008" font-size="11.5" fill="#A0A0A0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">/board · /d/&lt;domain&gt;</text>
+<text x="864" y="1027" font-size="13" fill="#8F8F8F">AI agents pay in USDG or ETH</text>
+<text x="600" y="1090" font-size="12" fill="#7A7A7A" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="0.4">Solana mainnet · worker type262-upload.onrender.com · Robinhood Chain contracts verified on Sourcify</text>
 </g>
 </svg>

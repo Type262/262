@@ -1,6 +1,8 @@
 # TYPE/262 MCP server
 
-Lets AI agents (Claude Desktop, Claude Code, Cursor, any MCP client) resolve, verify and pay domains by name on Robinhood Chain (4663).
+Lets AI agents (Claude Desktop, Claude Code, Cursor, any MCP client) resolve, verify and pay domains by name on Robinhood Chain (4663), in USDG or ETH.
+
+The MCP server is a Robinhood Chain tool. TYPE/262's main network is Solana: there, domains are paid in SOL or USDC from the [app](https://type262.onrender.com/app.html) or any Solana wallet, and domain vaults are claimed through the TYPE/262 worker (see [On Solana](https://type262.onrender.com/docs.html#solana)). `resolve_domain` and `verify_payto` read every record a domain publishes, Solana addresses included; `pay_domain` pays only on Robinhood Chain.
 
 `type262-mcp.mjs` is one self-contained file: a hand-written MCP server over stdio (newline-delimited JSON-RPC 2.0), with viem and the wallet262 SDK bundled in. It needs Node 18+ and nothing else.
 

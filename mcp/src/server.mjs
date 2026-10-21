@@ -758,7 +758,7 @@ async function callTool(tool, args, id) {
 
 // ---------- JSON-RPC over stdio ----------
 
-const INSTRUCTIONS = 'TYPE/262 turns domains into wallets on Robinhood Chain. resolve_domain shows what a domain publishes; verify_payto checks an x402 payTo before you pay it; pay_domain pays a domain by name in USDG or ETH (call it with dry_run: true first). Payments are real and irreversible: only pay when the user asked for it. If a payment result is lost or times out, check the transaction before paying again; an identical payment within 10 minutes needs repeat: true.'
+const INSTRUCTIONS = 'TYPE/262 turns domains into wallets. This server pays them on Robinhood Chain (4663), which TYPE/262 also supports; its main network, Solana, is paid from the TYPE/262 app or any Solana wallet. resolve_domain shows what a domain publishes; verify_payto checks an x402 payTo before you pay it; pay_domain pays a domain by name in USDG or ETH (call it with dry_run: true first). Payments are real and irreversible: only pay when the user asked for it. If a payment result is lost or times out, check the transaction before paying again; an identical payment within 10 minutes needs repeat: true.'
 
 const ok = (id, result) => ({ jsonrpc: '2.0', id, result })
 const err = (id, code, message) => ({ jsonrpc: '2.0', id, error: { code, message } })

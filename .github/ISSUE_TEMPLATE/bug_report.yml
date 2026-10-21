@@ -18,13 +18,14 @@ body:
       options:
         - App (app.html)
         - Landing page (index.html)
-        - The Unclaimed Board or a domain profile (/board, /d/<domain>)
         - Docs (docs.html)
+        - Solana vaults and the worker (upload/)
         - SDK (lib/wallet262.js)
         - CLI (bin/type262.mjs)
+        - On-chain Solana program (solana/)
+        - Robinhood Chain contracts (contracts/)
+        - The Unclaimed Board or a domain profile (/board, /d/<domain>)
         - MCP server (mcp/)
-        - Upload service (upload/server.mjs)
-        - Contracts (contracts/)
         - Build, scripts or CI
         - Not sure
     validations:
@@ -68,9 +69,9 @@ body:
   - type: input
     id: onchain
     attributes:
-      label: Transaction hash or contract address
-      description: For anything on Robinhood Chain (4663). Public data only.
-      placeholder: 0x...
+      label: Transaction or address
+      description: A Solana transaction signature or vault address, or a Robinhood Chain (4663) transaction hash or contract address. Public data only.
+      placeholder: Solana signature or address, or 0x...
 
   - type: textarea
     id: environment
@@ -78,7 +79,7 @@ body:
       label: Environment
       description: Browser and wallet for the app, or Node.js version and OS for the SDK, CLI and MCP server. Add the commit if you run from source.
       placeholder: |
-        Browser / wallet: Brave 1.x with MetaMask 12.x
+        Browser / wallet: Brave 1.x with Phantom
         Node.js: 22.x
         OS: macOS 15
         Commit: abc1234
@@ -87,7 +88,7 @@ body:
     id: logs
     attributes:
       label: Logs or output
-      description: Console output, CLI output or a Foundry trace. Formatted as code automatically.
+      description: Console output, CLI output, the worker's answer, Solana transaction logs or a Foundry trace. Formatted as code automatically.
       render: shell
 
   - type: checkboxes
