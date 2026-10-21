@@ -1,0 +1,26 @@
+# Render blueprint for TYPE/262.
+# type262: the static landing page, app and docs. Claims are checked on-chain with DNSSEC, so the app has no backend.
+# type262-upload: pins Launch-form images to IPFS through Pinata, so the Pinata key never reaches the browser.
+services:
+  - type: web
+    name: type262
+    runtime: static
+    buildCommand: sh scripts/build.sh
+    staticPublishPath: dist
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache
+
+  - type: web
+    name: type262-upload
+    runtime: node
+    plan: free
+    buildCommand: echo "no build step (zero dependencies)"
+    startCommand: node upload/server.mjs
+    healthCheckPath: /health
+    envVars:
+      - key: PINATA_JWT # Pinata API key (JWT) allowed to upload files. Set it in the Render dashboard; never commit it.
+        sync: false
+      - key: ALLOW_ORIGINS
+        value: https://type262.onrender.com
