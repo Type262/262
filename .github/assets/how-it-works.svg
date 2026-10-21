@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="660" viewBox="0 0 1200 660" role="img" aria-labelledby="t d">
+<title id="t">TYPE/262: how it works</title>
+<desc id="d">Three steps. Publish one DNS record, a TXT record at _wallet.&lt;domain&gt; or the native WALLET record (type 262), with DNSSEC on. Any wallet or AI agent resolves it over DNS-over-HTTPS from Cloudflare and Google, cross-checked and DNSSEC-signed. Then pay the published address in USDG or ETH on Robinhood Chain.</desc>
+<defs>
+<linearGradient id="pg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#141414"/><stop offset="1" stop-color="#0d0d0d"/></linearGradient>
+<radialGradient id="ga" gradientUnits="userSpaceOnUse" cx="120" cy="0" r="620"><stop offset="0" stop-color="#C8FF1E" stop-opacity=".09"/><stop offset="1" stop-color="#C8FF1E" stop-opacity="0"/></radialGradient>
+<radialGradient id="gv" gradientUnits="userSpaceOnUse" cx="1140" cy="660" r="640"><stop offset="0" stop-color="#8B5CFF" stop-opacity=".12"/><stop offset="1" stop-color="#8B5CFF" stop-opacity="0"/></radialGradient>
+<filter id="blur" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="3"/></filter>
+<marker id="ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M1 1.5 8.5 5 1 8.5" fill="none" stroke="#C8FF1E" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></marker>
+<marker id="av" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M1 1.5 8.5 5 1 8.5" fill="none" stroke="#B7A0FF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></marker>
+<marker id="ad" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M1 1.5 8.5 5 1 8.5" fill="none" stroke="#7A7A7A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></marker>
+</defs>
+<rect width="1200" height="660" rx="20" fill="#0a0a0a"/>
+<rect width="1200" height="660" rx="20" fill="url(#ga)"/>
+<rect width="1200" height="660" rx="20" fill="url(#gv)"/>
+<rect x=".5" y=".5" width="1199" height="659" rx="19.5" fill="none" stroke="#262626"/>
+<g font-family="Inter, 'Segoe UI', -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif">
+<rect x="48" y="53" width="8" height="8" fill="#C8FF1E"/><text x="66" y="62" font-size="12" fill="#8F8F8F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="2.4">HOW IT WORKS</text><text x="48" y="104" font-size="30" fill="#EDEDED" font-weight="700"><tspan >Publish. Resolve. </tspan><tspan fill="#C8FF1E">Pay.</tspan></text><text x="1152" y="104" font-size="11.5" fill="#8F8F8F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="end" letter-spacing="1.2">DNS WALLET RECORD · RRTYPE 262</text>
+<ellipse cx="600" cy="274" rx="604" ry="150" fill="none" stroke="#C8FF1E" stroke-opacity=".13"/>
+<ellipse cx="600" cy="274" rx="420" ry="104" fill="none" stroke="#C8FF1E" stroke-opacity=".07"/>
+<line x1="0" y1="274" x2="1200" y2="274" stroke="#C8FF1E" stroke-opacity=".22"/>
+<rect x="48" y="132" width="344" height="284" rx="18" fill="url(#pg)" stroke="#262626"/>
+<circle cx="94" cy="176" r="18" fill="#0a0a0a" stroke="#C8FF1E" stroke-opacity=".85"/>
+<text x="94" y="180.5" font-size="13" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-weight="600" text-anchor="middle">01</text>
+<text x="124" y="180.5" font-size="12" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="2">PUBLISH</text>
+<text x="76" y="236" font-size="20" fill="#EDEDED" font-weight="600">One DNS record</text>
+<text x="76" y="268" font-size="14.5" fill="#8F8F8F">Name your EVM address in one record:</text>
+<text x="76" y="290" font-size="14.5" fill="#8F8F8F"><tspan >a TXT at </tspan><tspan fill="#CFCFCF" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">_wallet.&lt;domain&gt;</tspan><tspan >, or the</tspan></text>
+<text x="76" y="312" font-size="14.5" fill="#8F8F8F">native WALLET record, type 262. Then</text>
+<text x="76" y="334" font-size="14.5" fill="#8F8F8F">turn on DNSSEC at your DNS host.</text>
+<rect x="76" y="360" width="112.64" height="24" rx="12" fill="#161616" stroke="#333"/><text x="132.32" y="375.96" font-size="11" fill="#D6D6D6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="1.2">TXT _WALLET</text>
+<rect x="196.64" y="360" width="87.92" height="24" rx="12" fill="#161616" stroke="#333"/><text x="240.6" y="375.96" font-size="11" fill="#D6D6D6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="1.2">TYPE 262</text>
+<rect x="292.56" y="360" width="71.44" height="24" rx="12" fill="#161616" stroke="#333"/><text x="328.28" y="375.96" font-size="11" fill="#D6D6D6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="1.2">DNSSEC</text>
+<rect x="428" y="132" width="344" height="284" rx="18" fill="url(#pg)" stroke="#262626"/>
+<circle cx="474" cy="176" r="18" fill="#0a0a0a" stroke="#C8FF1E" stroke-opacity=".85"/>
+<text x="474" y="180.5" font-size="13" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-weight="600" text-anchor="middle">02</text>
+<text x="504" y="180.5" font-size="12" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="2">RESOLVE</text>
+<text x="456" y="236" font-size="20" fill="#EDEDED" font-weight="600">Resolved over DNS</text>
+<text x="456" y="268" font-size="14.5" fill="#8F8F8F">Any wallet or AI agent asks DNS.</text>
+<text x="456" y="290" font-size="14.5" fill="#8F8F8F">Cloudflare and Google answer over</text>
+<text x="456" y="312" font-size="14.5" fill="#8F8F8F">DNS-over-HTTPS; check that they agree</text>
+<text x="456" y="334" font-size="14.5" fill="#8F8F8F">and the answer is DNSSEC-signed.</text>
+<rect x="456" y="360" width="104.4" height="24" rx="12" fill="#161616" stroke="#333"/><text x="508.2" y="375.96" font-size="11" fill="#D6D6D6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="1.2">CLOUDFLARE</text>
+<rect x="568.4" y="360" width="71.44" height="24" rx="12" fill="#161616" stroke="#333"/><text x="604.12" y="375.96" font-size="11" fill="#D6D6D6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="1.2">GOOGLE</text>
+<rect x="647.84" y="360" width="96.16" height="24" rx="12" fill="#161616" stroke="#333"/><text x="695.92" y="375.96" font-size="11" fill="#D6D6D6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="1.2">2/2 AGREE</text>
+<rect x="808" y="132" width="344" height="284" rx="18" fill="url(#pg)" stroke="#262626"/>
+<circle cx="854" cy="176" r="18" fill="#0a0a0a" stroke="#C8FF1E" stroke-opacity=".85"/>
+<text x="854" y="180.5" font-size="13" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-weight="600" text-anchor="middle">03</text>
+<text x="884" y="180.5" font-size="12" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="2">PAY</text>
+<text x="836" y="236" font-size="20" fill="#EDEDED" font-weight="600">Paid on Robinhood Chain</text>
+<text x="836" y="268" font-size="14.5" fill="#8F8F8F">USDG or ETH goes straight to the</text>
+<text x="836" y="290" font-size="14.5" fill="#8F8F8F">published address on chain 4663.</text>
+<text x="836" y="312" font-size="14.5" fill="#8F8F8F">No record yet? Send it to escrow and</text>
+<text x="836" y="334" font-size="14.5" fill="#8F8F8F">the owner claims it with DNSSEC.</text>
+<rect x="836" y="360" width="54.96" height="24" rx="12" fill="#161616" stroke="#333"/><text x="863.48" y="375.96" font-size="11" fill="#D6D6D6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="1.2">USDG</text>
+<rect x="898.96" y="360" width="46.72" height="24" rx="12" fill="#161616" stroke="#333"/><text x="922.32" y="375.96" font-size="11" fill="#D6D6D6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="1.2">ETH</text>
+<rect x="953.68" y="360" width="104.4" height="24" rx="12" fill="#161616" stroke="#333"/><text x="1005.88" y="375.96" font-size="11" fill="#D6D6D6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="1.2">CHAIN 4663</text>
+<circle cx="410" cy="274" r="11.7" fill="#C8FF1E" opacity=".18" filter="url(#blur)"/><circle cx="410" cy="274" r="4.5" fill="#C8FF1E"/><circle cx="410" cy="274" r="2.025" fill="#F7FFE0"/>
+<circle cx="790" cy="274" r="11.7" fill="#C8FF1E" opacity=".18" filter="url(#blur)"/><circle cx="790" cy="274" r="4.5" fill="#C8FF1E"/><circle cx="790" cy="274" r="2.025" fill="#F7FFE0"/>
+<line x1="220" y1="416" x2="220" y2="458" stroke="#C8FF1E" stroke-opacity=".55" stroke-dasharray="2 4"/>
+<circle cx="220" cy="437" r="9.1" fill="#C8FF1E" opacity=".18" filter="url(#blur)"/><circle cx="220" cy="437" r="3.5" fill="#C8FF1E"/><circle cx="220" cy="437" r="1.575" fill="#F7FFE0"/>
+<rect x="48" y="458" width="1104" height="162" rx="16" fill="#0c0c0c" stroke="#262626"/>
+<text x="76" y="490" font-size="11.5" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="2">THE RECORD</text>
+<text x="1124" y="490" font-size="11.5" fill="#8F8F8F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="end" letter-spacing="0.6">zone file · two ways to publish the same pair</text>
+<line x1="48" y1="508" x2="1152" y2="508" stroke="#262626"/>
+<text x="76" y="542" font-size="14" fill="#EDEDED" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">example.com.</text>
+<text x="300" y="542" font-size="14" fill="#8F8F8F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">3600</text>
+<text x="356" y="542" font-size="14" fill="#8F8F8F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">IN</text>
+<text x="392" y="542" font-size="14" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">WALLET</text>
+<text x="470" y="542" font-size="14" fill="#B7A0FF" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">&quot;ETH&quot; &quot;0x7a1fe1c2b0d3a4f5e6d7c8b9a0f1e2d3c4b5c0de&quot;</text>
+<text x="76" y="570" font-size="14" fill="#EDEDED" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">_wallet.example.com.</text>
+<text x="300" y="570" font-size="14" fill="#8F8F8F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">3600</text>
+<text x="356" y="570" font-size="14" fill="#8F8F8F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">IN</text>
+<text x="392" y="570" font-size="14" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">TXT</text>
+<text x="470" y="570" font-size="14" fill="#B7A0FF" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">&quot;ETH 0x7a1fe1c2b0d3a4f5e6d7c8b9a0f1e2d3c4b5c0de&quot;</text>
+<text x="76" y="600" font-size="12.5" fill="#6E6E6E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">; the TXT form works on every DNS host and is the record escrow claims prove</text>
+</g>
+</svg>
