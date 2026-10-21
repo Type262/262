@@ -9,14 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- The Unclaimed Board and the domain profiles show Solana, first: every domain with money waiting in its vault or a pump.fun coin launched for it, its balances, supporters, claims and activity, next to escrow and pons coins on Robinhood Chain. Totals and rankings are in dollars across both chains, and the landing page's live board follows.
+- The app's vault deposits and coin launches carry a board reference (`5GQzZAjkdEfEU5CNL9KakKjZeWC1bFUdYKMXtajtZX8H`, a read-only account nothing can sign for), so one `getSignaturesForAddress` finds them with no indexer. Deposits also carry the memo `TYPE/262 deposit <domain>`; a launch keeps its single transaction, and its domain goes in the coin's metadata as `type262.domain`. The board checks every entry on-chain: a deposit counts only if it reached that domain's vault, a launch only if the coin's creator is that vault.
+- `POST /metadata` takes the launch's `domain`.
 - `type262 link` makes Solana Pay links: SOL by default, or USDC with `link <domain> <amount> USDC`. `USDG` and `ETH` still make EIP-681 links on Robinhood Chain.
 
 ### Changed
 
 - The README, its diagrams and screenshots, the social preview, `DEPLOY.md` and the package metadata lead with Solana, and present Robinhood Chain as also supported. New diagrams show the Solana architecture and the domain vault flow; the Robinhood Chain contract diagram moves into its own section.
+- The worker accepts requests from `https://type262.com` and `https://www.type262.com`, as well as the onrender.com address.
+- The app's side rail drops its Docs entry, which the top bar already has.
 
 ### Fixed
 
+- The app's side rail scrolls when the window is too short for every entry, so none of them is cut off.
+- On phones, a profile's top supporters keep their rank, address and amount on one line.
 - `type262 link` refuses an asset it doesn't know. It used to build an ETH link for anything other than USDG, so `link yoursite.com 5 USDC` asked for 5 ETH.
 
 ## [0.2.0] - 2026-10-21

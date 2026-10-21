@@ -1,6 +1,6 @@
 # TYPE/262 on Solana
 
-Solana is TYPE/262's main network, and it is live today through domain vaults: every domain has its own Solana address, which anyone can pay in SOL, USDC or any SPL token, and which pump.fun coins launched for the domain name as their creator. The TYPE/262 worker (`upload/worker.mjs`, served by `upload/server.mjs`) pays a vault out to the wallet the domain's DNSSEC-signed record names, once Cloudflare and Google both return it and report it DNSSEC-authenticated. See [On Solana](https://type262.onrender.com/docs.html#solana) and the [Worker API](https://type262.onrender.com/docs.html#solana-worker).
+Solana is TYPE/262's main network, and it is live today through domain vaults: every domain has its own Solana address, which anyone can pay in SOL, USDC or any SPL token, and which pump.fun coins launched for the domain name as their creator. The TYPE/262 worker (`upload/worker.mjs`, served by `upload/server.mjs`) pays a vault out to the wallet the domain's DNSSEC-signed record names, once Cloudflare and Google both return it and report it DNSSEC-authenticated. See [On Solana](https://type262.com/docs.html#solana) and the [Worker API](https://type262.com/docs.html#solana-worker).
 
 This directory is the next step: an on-chain program that verifies DNSSEC on Solana itself. It is built and tested, covered by the LiteSVM suites and the end-to-end run below, and not deployed yet. Deploying it would move the DNSSEC check on-chain, as the contracts already do on Robinhood Chain, which TYPE/262 also supports.
 
@@ -14,12 +14,12 @@ This directory is self-contained. The live vault worker lives in `../upload`, an
 
 ## Documentation
 
-- [On-chain program](https://type262.onrender.com/docs.html#solana-program), in the site's docs: what the program does and how it is tested, next to the live vault flow it would replace. The source is `../docs.html`.
+- [On-chain program](https://type262.com/docs.html#solana-program), in the site's docs: what the program does and how it is tested, next to the live vault flow it would replace. The source is `../docs.html`.
 - The program's source, `programs/type262/src`, and its IDL: every instruction with its arguments and accounts, the PDAs and seeds, the events and the errors.
 - [`docs/DNSSEC.md`](docs/DNSSEC.md): the DNSSEC rules the program enforces, the account layouts, and the measurements on real proofs.
 - [`docs/PUMP.md`](docs/PUMP.md): how the launcher uses pump.fun and PumpSwap, checked against mainnet. The live vault flow uses the same pump.fun instructions, with the domain's vault as the creator, through `scripts/pump-lib.mjs` and `scripts/pump-ix.mjs`.
 - `target/idl/type262.json`: the IDL, written by `anchor build`.
-- [Testing](https://type262.onrender.com/docs.html#testing-solana): the LiteSVM suites, the precompile tests in WSL and the end-to-end run on a local validator, with the commands below.
+- [Testing](https://type262.com/docs.html#testing-solana): the LiteSVM suites, the precompile tests in WSL and the end-to-end run on a local validator, with the commands below.
 
 ## Layout
 

@@ -211,6 +211,21 @@ Object.assign(tests, {
     const d = V.depositOf(tx, VAULT)
     assert.deepEqual([d.amount, d.program], [990n, TOKEN_2022])
   },
+  'deposit: a board-tagged deposit (reference after the owner, so the RPC names it multisigAuthority, plus a memo) is still a deposit from its sender': () => {
+    // The app's deposits carry the board reference (assets/solana-vault.js withReference) and a "TYPE/262 deposit" memo.
+    const REF = addr('board reference')
+    const memoIx = text => ({ program: 'spl-memo', programId: addr('memo'), parsed: text })
+    const tagged = { program: 'spl-token', programId: TOKEN, parsed: { type: 'transferChecked', info: { source: ALICE_ATA, mint: MINT, destination: VAULT_ATA, multisigAuthority: ALICE, signers: [REF], tokenAmount: { amount: '250000000', decimals: 6 } } } }
+    const tx = parsedTx({ keys: [ALICE_ATA, VAULT_ATA, MINT, VAULT, REF], ixs: [tagged, memoIx('TYPE/262 deposit example.com')], pre: [bal(1, ALICE, 1000_000000)], post: [bal(1, ALICE, 750_000000), bal(2, VAULT, 250_000000)] })
+    const d = V.depositOf(tx, VAULT)
+    assert.deepEqual([d.mint, d.amount, d.from, d.account], [MINT, 250_000000n, ALICE, VAULT_ATA])
+    // without a pre-balance for the source, the sender is still the multisigAuthority the RPC reports
+    const bare = parsedTx({ keys: [ALICE_ATA, VAULT_ATA, MINT, VAULT, REF], ixs: [tagged], post: [bal(2, VAULT, 250_000000)] })
+    assert.equal(V.depositOf(bare, VAULT).from, ALICE)
+    // a tagged SOL transfer parses as a plain transfer: the RPC ignores the extra account
+    const sol = V.depositOf(parsedTx({ keys: [VAULT, SYSTEM, REF], ixs: [solIx(ALICE, VAULT, 7_000_000), memoIx('TYPE/262 deposit example.com')] }), VAULT)
+    assert.deepEqual([sol.mint, sol.amount, sol.from], ['SOL', 7_000_000n, ALICE])
+  },
   'deposit: refused for the vault\'s own transactions, failed ones, other destinations, several senders or assets': () => {
     const no = (tx, error) => assert.throws(() => V.depositOf(tx, VAULT), e => e.refusal && e.error === error)
     no(parsedTx({ signers: [addr('gas'), VAULT], keys: [ALICE], ixs: [solIx(addr('gas'), VAULT, 5)] }), 'Not a deposit')

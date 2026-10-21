@@ -35,7 +35,7 @@ services:
       - key: PINATA_JWT # Pinata API key (JWT) allowed to upload files. Set it in the Render dashboard; never commit it.
         sync: false
       - key: ALLOW_ORIGINS
-        value: https://type262.onrender.com
+        value: https://type262.com,https://www.type262.com,https://type262.onrender.com
       - key: ROBINHOOD_RPC_URL # optional keyed Robinhood Chain RPC for /rpc, tried before the public one; never commit it
         sync: false
       - key: SOLANA_RPC_URL # keyed Solana RPC for /rpc/solana and the vault worker, tried before the public nodes; it must allow getProgramAccounts (pump.fun coins); never commit it

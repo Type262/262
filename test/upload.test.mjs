@@ -307,6 +307,10 @@ try {
   ok(r.status === 200 && plain.image === 'https://example.com/coin.png' && plain.description === '' && !('twitter' in plain), 'metadata: a plain https image is kept and empty socials are left out')
   r = await meta({ name: 'Gate', symbol: 'GT', image: `https://ipfs.io/ipfs/${imageCid}` }, { ip: '10.2.0.2' })
   ok(r.status === 200, 'metadata: an https gateway image link is accepted')
+  r = await meta({ ...good, domain: 'Shop.Example.COM' }, { ip: '10.2.0.3' })
+  const withDomain = JSON.parse(pinned.at(-1).body.match(/\{"name".*\}/)[0])
+  ok(r.status === 200 && withDomain.type262 && withDomain.type262.domain === 'shop.example.com' && Object.keys(withDomain).at(-1) === 'type262', 'metadata: the launch\'s domain is pinned, canonical, as type262.domain after pump.fun\'s fields')
+  ok(!('type262' in pinnedJson) && !('domain' in pinnedJson), 'metadata: without a domain there is no type262 field')
 
   pins = pinned.length
   const refusals = [
@@ -327,6 +331,9 @@ try {
     [{ ...good, website: 'https://' + 'a'.repeat(200) + '.com' }, 'a website over 200 characters'],
     [{ ...good, showName: false }, 'showName false'],
     [{ ...good, creator: 'someone' }, 'an unknown field'],
+    [{ ...good, domain: 'not a domain' }, 'a domain that is not a domain name'],
+    [{ ...good, domain: 'a'.repeat(300) + '.com' }, 'a domain that is too long'],
+    [{ ...good, domain: 42 }, 'a non-text domain'],
     [{ ...good, name: 42 }, 'a non-text name'],
     [[good], 'an array'],
   ]

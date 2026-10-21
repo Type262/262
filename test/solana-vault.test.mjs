@@ -292,6 +292,36 @@ test('launch: no opening buy is the create alone; bad input and a paused create_
   await assert.rejects(V.launchTxs({ payer, vault, name: 'A', symbol: 'A', uri: 'x', buyLamports: 1n, mintKeypair, settings: SETTINGS }), /too small/)
 })
 
+test('launch: on the board, the create\'s transaction carries the reference and an opening buy still rides along', async () => {
+  const settings = SETTINGS.mainnet || SETTINGS
+  const uri = 'https://ipfs.io/ipfs/bafkreigh2akiscaildcqabsyg3dfr6chu3fgpregiymsck7e7aqa4s52zy'
+  const refIn = ix => ix.keys.at(-1).pubkey === V.BOARD_REFERENCE && !ix.keys.at(-1).isSigner && !ix.keys.at(-1).isWritable
+  const tagged = ixs => ixs.filter(ix => ix.keys.some(k => k.pubkey === V.BOARD_REFERENCE))
+  const sizes = []
+  for (const [name, symbol, link, buy, single] of [
+    ['Your Site', 'SITE', uri, 0n, true], // the create alone: the reference rides on a zero-lamport transfer
+    ['Your Site', 'SITE', uri, 1_500_000_000n, true], // a typical launch stays one transaction
+    ['x'.repeat(32), 'Y'.repeat(10), uri, 1_500_000_000n, true], // the longest name and ticker still fit
+    ['x'.repeat(32), 'Y'.repeat(10), 'https://' + 'u'.repeat(192), 2_000_000_000n, false], // a long link splits, as before
+  ]) {
+    const payer = fresh(), vault = fresh(), mintKeypair = throwaway()
+    const plan = await V.launchTxs({ payer, vault, name, symbol, uri: link, buyLamports: buy, mintKeypair, settings, board: true })
+    assert.equal(plan.single, single, `${name.length}/${symbol.length}/${link.length}: ${plan.size} bytes`)
+    const create = plan.txs[0].instructions
+    assert.equal(tagged(create).length, 1, 'one tagged instruction in the create\'s transaction')
+    assert.ok(refIn(tagged(create)[0]))
+    if (buy && single) assert.equal(tagged(create)[0].programId, sol.ATA_PROGRAM, 'on the buyer\'s token-account instruction')
+    else assert.deepEqual(norm(tagged(create)[0]), norm(V.launchTag(payer)))
+    for (const t of plan.txs.slice(1)) assert.equal(tagged(t.instructions).length, 0, 'only the create\'s transaction is tagged')
+    for (const t of plan.txs) assert.ok(V.legacySize(payer, t.instructions) <= V.LEGACY_LIMIT, `${t.kind}: ${V.legacySize(payer, t.instructions)} bytes`)
+    sizes.push(`${plan.txs.map(t => t.kind).join('+')} ${plan.size} bytes`)
+  }
+  // off the board, nothing changes
+  const bare = await V.launchTxs({ payer: fresh(), vault: fresh(), name: 'A', symbol: 'A', uri, mintKeypair: throwaway(), settings })
+  assert.equal(tagged(bare.txs[0].instructions).length, 0)
+  console.log(`     (on the board: ${sizes.join('; ')})`)
+})
+
 // ---------- the worker API ----------
 
 test('GET /solana/vault: the vault, its USDC account derived and checked, cached per domain', async () => {

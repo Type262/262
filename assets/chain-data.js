@@ -117,12 +117,12 @@ export async function activity() {
   return data
 }
 
-/** Block timestamps (seconds) for a set of block numbers, batched and cached. */
+/** Block timestamps (seconds) for a set of block numbers, batched and cached. A block that couldn't be read is asked again. */
 const times = new Map()
 export async function blockTimes(blocks) {
   const need = [...new Set(blocks)].filter(b => !times.has(b))
   const res = await batch(need.map(b => ({ method: 'eth_getBlockByNumber', params: [hex(b), false] })))
-  need.forEach((b, i) => times.set(b, res[i] ? parseInt(res[i].timestamp, 16) : 0))
+  need.forEach((b, i) => { if (res[i] && res[i].timestamp) times.set(b, parseInt(res[i].timestamp, 16)) })
   return times
 }
 

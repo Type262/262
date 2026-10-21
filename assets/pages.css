@@ -16,6 +16,10 @@
 .pg-stats em { font: 400 0.8125rem/1.4 var(--mono); font-style: normal; color: var(--dim); overflow-wrap: anywhere; }
 .pg-fund { width: min(40rem, 100%); }
 .pg-fund-err { margin: -0.75rem 0 0; min-height: 1.2em; font-size: 0.875rem; color: var(--hot); }
+.pg-note { margin: 0; font-size: 0.875rem; color: var(--dim); }
+.pg-note:empty, .pf-vault:empty { display: none; }
+.pf-vault { display: block; margin-top: 0.375rem; font-size: 0.8125rem; color: var(--dim); }
+.pf-vault a { color: var(--fg); }
 
 /* board */
 .pg-board { margin-bottom: 3rem; }
@@ -58,6 +62,7 @@
 .pg-ev-k.launch { color: #b79cff; border-color: rgba(139, 92, 255, .5); }
 .pg-ev-t { min-width: 0; color: var(--dim); overflow-wrap: anywhere; }
 .pg-ev-t strong, .pg-ev-t b { color: var(--fg); font-weight: 600; }
+.pg-ev-t .mono { white-space: nowrap; }
 .pg-ev-a { font: 400 0.75rem/1 var(--mono); color: var(--faint); white-space: nowrap; }
 .pg-ev:hover .pg-ev-a { color: var(--fg); }
 
@@ -113,7 +118,7 @@
   .pg-tools .seg { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
   /* phones: the domain gets its own line, the amount and the buttons share the next one */
   .pg-row { grid-template-columns: minmax(0, 1fr) auto; }
-  .pg-rank { display: none; }
+  .pg-row .pg-rank { display: none; }
   .pg-dom { grid-column: 1 / -1; }
   .pg-row .pg-amt { justify-items: start; text-align: left; }
   .pg-row .pg-amt em { white-space: normal; }

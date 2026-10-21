@@ -32,8 +32,8 @@ const CHAIN = {
 
 // ---------- network: Solana is the main chain, Robinhood Chain the second ----------
 const NET_KEY = 't262-net'
-// ?net=robinhood or ?net=solana picks the network for this page load: the board and profiles show Robinhood Chain
-// money, so their links must open the Robinhood Chain screens. It is not saved; the switch below saves a choice.
+// ?net=robinhood or ?net=solana picks the network for this page load: the board and profiles link each chain's
+// money to that chain's screens. It is not saved; the switch below saves a choice.
 const NET_PARAM = new URLSearchParams(location.search).get('net')
 let network = NET_PARAM === 'robinhood' || NET_PARAM === 'solana' ? NET_PARAM
   : (() => { try { return localStorage.getItem(NET_KEY) === 'robinhood' ? 'robinhood' : 'solana' } catch { return 'solana' } })()

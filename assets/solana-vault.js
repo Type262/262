@@ -29,6 +29,26 @@ export const LEGACY_LIMIT = 1232
 export const claimMemo = domain => `type262:claim:${domain}`
 export const refundMemo = signature => `type262:refund:${signature}`
 
+// The board's index. Every deposit into a vault and every coin launched from the app carries BOARD_REFERENCE as a
+// read-only account (the Solana Pay "reference" pattern), so one getSignaturesForAddress lists them all with no
+// indexer (solana-board.js). The reference is a program address of the memo program, so nothing can sign for it.
+// A deposit also carries a memo naming the domain; it doesn't start with "type262:", the prefix of the worker's own
+// claim and refund memos, so a tagged deposit is still a deposit to every reader of a vault's history. A launch has
+// no room for a memo (its one transaction is within bytes of the limit): its domain is in the coin's metadata.
+export const BOARD_REFERENCE = '5GQzZAjkdEfEU5CNL9KakKjZeWC1bFUdYKMXtajtZX8H'
+export const MEMO_PROGRAM = 'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'
+export const boardMemo = (kind, domain) => `TYPE/262 ${kind} ${domain}`
+export const memoIx = text => ({ programId: MEMO_PROGRAM, keys: [], data: new TextEncoder().encode(text) })
+/** The instruction with BOARD_REFERENCE appended as a read-only, non-signer account, which transfers ignore. */
+export const withReference = ix => ({ ...ix, keys: [...ix.keys, { pubkey: BOARD_REFERENCE, isSigner: false, isWritable: false }] })
+/** { kind: 'deposit', domain } for a board memo, null for anything else. */
+export function parseBoardMemo(text) {
+  const m = /^TYPE\/262 (deposit) (\S{1,253})$/.exec(String(text || ''))
+  return m ? { kind: m[1], domain: m[2] } : null
+}
+/** A launch without an opening buy carries the reference on a zero-lamport transfer to the payer itself. */
+export const launchTag = payer => withReference(sol.systemTransfer(payer, payer, 0n))
+
 // pump.fun (solana/docs/PUMP.md has where each comes from; the tests derive the PDAs again)
 export const PUMP = {
   program: '6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P',
@@ -220,7 +240,7 @@ export function rentExempt(size) {
 }
 
 /** getProgramAccounts through the read-only fallback first: public RPCs refuse it on pump.fun's program. */
-async function programAccounts(params) {
+export async function programAccounts(params) {
   try {
     const res = await fetch(FALLBACK_RPC, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getProgramAccounts', params }), signal: AbortSignal.timeout(75_000) })
     const j = await res.json()
@@ -624,9 +644,13 @@ const pickBuyback = list => {
  * (it does with metadata on an IPFS gateway: 1,194 bytes at most, measured in the tests); otherwise the create,
  * then the buy right after it, which asks for 5% fewer tokens because someone may trade in between. The new mint's
  * keypair co-signs the create.
+ * With `board`, the create's transaction also carries BOARD_REFERENCE, so the coin shows on the board: on the buyer's
+ * token-account instruction when the opening buy rides along (33 bytes, 1,227 at most in all, which leaves no room for
+ * the compute budget instructions: such a launch goes without them), on a zero-lamport transfer (launchTag) otherwise.
+ * The board finds the domain in the coin's metadata.
  * Returns { mint, mintKeypair, tokens, single, size, txs: [{ kind: 'launch' | 'create' | 'buy', instructions, extraSigners }] }.
  */
-export async function launchTxs({ payer, vault, name, symbol, uri, buyLamports = 0n, mintKeypair, settings }) {
+export async function launchTxs({ payer, vault, name, symbol, uri, buyLamports = 0n, mintKeypair, settings, board = false }) {
   if (!sol.isAddress(vault)) throw new Error('No vault address for this domain yet.')
   if (!String(name || '').trim() || !String(symbol || '').trim() || !String(uri || '').trim()) throw new Error('A coin needs a name, a ticker and its metadata.')
   settings ||= await pumpSettings()
@@ -636,19 +660,20 @@ export async function launchTxs({ payer, vault, name, symbol, uri, buyLamports =
   const price = computeUnitPrice(LAUNCH.microLamports)
   const create = await createV2({ mint, user: payer, creator: vault, name, symbol, uri })
   const buy = BigInt(buyLamports)
-  const createOnly = [computeUnitLimit(LAUNCH.createUnits), price, create]
+  const createOnly = [computeUnitLimit(LAUNCH.createUnits), price, create, ...(board ? [launchTag(payer)] : [])]
   if (buy <= 0n) return { mint, mintKeypair, tokens: 0n, single: true, size: legacySize(payer, createOnly), txs: [{ kind: 'launch', instructions: createOnly, extraSigners: [mintKeypair] }] }
   const tokens = quoteOpeningBuy(settings, buy)
   if (tokens <= 0n) throw new Error('That opening buy is too small to buy any tokens.')
   const buyback = pickBuyback(settings.global.buybackFeeRecipients)
-  const buyIxs = async amount => [
-    await ataIdempotent({ payer, owner: payer, mint, tokenProgram: TOKEN_2022 }),
+  const buyIxs = async (amount, tagged = false) => [
+    (tagged ? withReference : ix => ix)(await ataIdempotent({ payer, owner: payer, mint, tokenProgram: TOKEN_2022 })),
     await buyV3({ mint, user: payer, amount, maxSolCost: buy, buyback }),
   ]
   // The opening buy is safest in the create's own transaction, before anyone else can trade: if the compute budget
-  // instructions don't leave room for it (a long name, ticker and link), it goes without them (the runtime then
-  // allows 200k compute units per instruction, more than enough, and the wallet sets the priority fee).
-  const buying = await buyIxs(tokens)
+  // instructions don't leave room for it (the board's reference, or a long name, ticker and link), it goes without
+  // them (the runtime then allows 200k compute units per instruction, more than enough, and the wallet sets the
+  // priority fee).
+  const buying = await buyIxs(tokens, board)
   for (const instructions of [[computeUnitLimit(LAUNCH.bothUnits), price, create, ...buying], [create, ...buying]]) {
     const size = legacySize(payer, instructions)
     if (size <= LEGACY_LIMIT) return { mint, mintKeypair, tokens, single: true, size, txs: [{ kind: 'launch', instructions, extraSigners: [mintKeypair] }] }

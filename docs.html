@@ -7,7 +7,7 @@
   <meta name="description" content="Documentation for TYPE/262: the DNS WALLET record (RRTYPE 262), the SDK and CLI, x402 verification for agents, domain vaults, DNSSEC-checked claims and the pump.fun launchpad on Solana, and the on-chain escrow and launchpad on Robinhood Chain. Open source, MIT.">
   <meta name="theme-color" content="#0b0b0b">
   <link rel="icon" type="image/webp" href="assets/art/emblem.webp">
-  <meta property="og:image" content="https://type262.onrender.com/assets/art/logo-lockup.webp">
+  <meta property="og:image" content="https://type262.com/assets/art/logo-lockup.webp">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,700..900&family=Geist:wght@300..800&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet">
@@ -68,7 +68,7 @@
 <li><strong>Check an x402 <code>payTo</code>.</strong> Before an agent pays an HTTP 402 requirement, <code>verifyPayTo</code> confirms that the address is published by the domain it is talking to. See <a href="#agents">Agents and x402</a>.</li>
 <li><strong>Pay a domain that has not published yet.</strong> On Solana, send to the domain's vault, an address of its own; the TYPE/262 worker pays it out to the owner once the domain's DNSSEC-signed record names a wallet. On Robinhood Chain, send to <code>DomainEscrow</code>, which pays the owner against a DNSSEC proof checked on-chain. If nobody claims, senders can take their money back after 180 days. See <a href="#solana-vaults">Domain vaults</a> and, on Robinhood Chain, <a href="#escrow">Escrow</a>.</li>
 <li><strong>Launch a coin that pays a domain.</strong> Launch with creator fees routed to a domain instead of a wallet: on pump.fun on Solana (see <a href="#solana-launch">pump.fun launchpad</a>), or on pons v2 on Robinhood Chain (see <a href="#launchpad">Launchpad</a>).</li>
-<li><strong>See who is owed what.</strong> The Unclaimed Board ranks every domain with money waiting on Robinhood Chain, and each domain has a public profile. See <a href="#board">Board and profiles</a>.</li>
+<li><strong>See who is owed what.</strong> The Unclaimed Board ranks every domain with money waiting in its vault on Solana or in escrow on Robinhood Chain, and each domain has a public profile. See <a href="#board">Board and profiles</a>.</li>
 <li><strong>Let an AI agent pay by name.</strong> Add the MCP server to Claude, Cursor or any MCP client, and your agent can resolve, verify and pay domains on Robinhood Chain within limits you set. See <a href="#mcp">MCP server</a>.</li>
 </ul>
 <h3 id="intro-three-pieces">The three pieces</h3>
@@ -120,7 +120,7 @@ launch    trades ──▶ pons fee escrow ──collect──▶ DomainFeeForwa
 <div class="dx-scroll"><table class="dx-table"><thead><tr><th>Path</th><th>Contents</th></tr></thead><tbody>
 <tr><td><code>index.html</code></td><td>Landing page with a live resolver and a live adoption scan of well-known domains</td></tr>
 <tr><td><code>app.html</code></td><td>The app: Resolve, Pay, Escrow, Publish, Verify, Badge and Launch, on Solana or Robinhood Chain</td></tr>
-<tr><td><code>board.html</code>, <code>domain.html</code></td><td>The Unclaimed Board (<code>/board</code>) and domain profiles (<code>/d/&lt;domain&gt;</code>), read from Robinhood Chain</td></tr>
+<tr><td><code>board.html</code>, <code>domain.html</code></td><td>The Unclaimed Board (<code>/board</code>) and domain profiles (<code>/d/&lt;domain&gt;</code>), read from Solana and Robinhood Chain</td></tr>
 <tr><td><code>docs.html</code></td><td>This documentation</td></tr>
 <tr><td><code>lib/wallet262.js</code></td><td>Zero-dependency SDK for browsers and Node 18+</td></tr>
 <tr><td><code>bin/type262.mjs</code></td><td>CLI</td></tr>
@@ -138,7 +138,7 @@ launch    trades ──▶ pons fee escrow ──collect──▶ DomainFeeForwa
 </tbody></table></div>
 <p><code>render.yaml</code> defines two Render services: <code>type262</code>, a static site with the landing page, app, docs, board and profiles, built by <code>scripts/build.sh</code>; and <code>type262-upload</code>, the worker: a small Node service that runs Solana vault claims, collects and refunds, and pins Launch-form images and coin metadata to IPFS through Pinata, so its keys never reach the browser. Claims on Robinhood Chain need no server, because they are DNSSEC proofs checked on-chain. See <a href="#self-hosting">Self-hosting</a>.</p>
 <ul>
-<li><strong>App:</strong> <a href="https://type262.onrender.com/app.html">type262.onrender.com/app.html</a></li>
+<li><strong>App:</strong> <a href="https://type262.com/app.html">type262.com/app.html</a></li>
 </ul>
 <div class="dx-note tip">Resolve, Pay, Escrow, Publish, Verify and Badge read a domain from the URL hash, so you can link straight to a filled-in tool, for example <code>app.html#resolve/yoursite.com</code>. Resolve, Pay and Escrow run the lookup immediately.</div>
       </section>
@@ -149,7 +149,7 @@ launch    trades ──▶ pons fee escrow ──collect──▶ DomainFeeForwa
 <h3 id="qs-publish">Make your domain payable</h3>
 <p>You need a domain whose DNS you control and a Solana wallet address. To be paid on Robinhood Chain too, add an EVM address: use a regular wallet address there, not a multisig or smart-contract wallet, because other software reads the <code>ETH</code> code and may pay that address on Ethereum or another EVM chain.</p>
 <ol class="dx-steps">
-<li><strong>Open Publish.</strong> Go to <a href="https://type262.onrender.com/app.html#publish">app.html#publish</a> and enter your domain. A URL or an email address also works; the app reduces it to the host name. Keep the default TTL of 1 hour, or pick 5 minutes or 1 day.</li>
+<li><strong>Open Publish.</strong> Go to <a href="https://type262.com/app.html#publish">app.html#publish</a> and enter your domain. A URL or an email address also works; the app reduces it to the host name. Keep the default TTL of 1 hour, or pick 5 minutes or 1 day.</li>
 <li><strong>Pick a network and paste your address.</strong> Leave the network on <strong>Solana</strong>, the default, and paste your Solana address, or click <strong>Use my wallet</strong> to fill it from a connected wallet. Paste a <code>0x</code> or Bitcoin address and the network switches for you; <strong>Other</strong> takes any coin code of 2 to 16 characters. Click <strong>+ Add another address</strong> to publish more than one, for example a Solana and a Robinhood Chain address.</li>
 <li><strong>Add the TXT record at your DNS host.</strong> Copy the record the app shows: type <code>TXT</code>, name <code>_wallet</code>, content <code>SOL &lt;your address&gt;</code> (or <code>ETH 0x…</code> for Robinhood Chain), and your TTL. For a subdomain such as <code>shop.yoursite.com</code>, the name is <code>_wallet.shop</code>. Some hosts want the full name, <code>_wallet.yoursite.com</code>.</li>
 <li><strong>Turn on DNSSEC.</strong> Enable DNSSEC at your DNS host. On Cloudflare: DNS, Settings, Enable DNSSEC. If your registrar is a different company, add the DS record Cloudflare shows you at the registrar.</li>
@@ -167,7 +167,7 @@ launch    trades ──▶ pons fee escrow ──collect──▶ DomainFeeForwa
 <h3 id="qs-code">Resolve and pay from code</h3>
 <p>The SDK is one zero-dependency ES module, <code>wallet262.js</code>, for browsers and Node 18 or later.</p>
 <h4>1. Get the SDK</h4>
-<pre class="dx-code" data-lang="bash"><code>curl -O https://type262.onrender.com/lib/wallet262.js</code></pre>
+<pre class="dx-code" data-lang="bash"><code>curl -O https://type262.com/lib/wallet262.js</code></pre>
 <p>Save it next to your code. It imports nothing, so there is nothing else to install.</p>
 <h4>2. Resolve a domain</h4>
 <pre class="dx-code" data-lang="js"><code>// resolve.mjs, saved next to wallet262.js. Run: node resolve.mjs
@@ -478,10 +478,10 @@ const failed = r.resolvers.filter(x =&gt; !x.ok).map(x =&gt; x.resolver) // e.g.
 
 <h3 id="sdk-install">Install</h3>
 <p>Download the module from the TYPE/262 site and import it by path:</p>
-<pre class="dx-code" data-lang="bash"><code>curl -O https://type262.onrender.com/lib/wallet262.js</code></pre>
+<pre class="dx-code" data-lang="bash"><code>curl -O https://type262.com/lib/wallet262.js</code></pre>
 <pre class="dx-code" data-lang="js"><code>import { resolveWallets, verifyPayTo } from './wallet262.js'</code></pre>
 <p>In the browser or Deno you can import it straight from the site:</p>
-<pre class="dx-code" data-lang="js"><code>import { resolveWallets } from 'https://type262.onrender.com/lib/wallet262.js'</code></pre>
+<pre class="dx-code" data-lang="js"><code>import { resolveWallets } from 'https://type262.com/lib/wallet262.js'</code></pre>
 <p>It is ESM only; from CommonJS, load it with <code>await import('./wallet262.js')</code>. It has no dependencies.</p>
 
 <h4>In the browser</h4>
@@ -930,8 +930,8 @@ check.resolvedAt // 'shop.test'</code></pre>
 <h3 id="cli-run">Run the CLI</h3>
 <p>The CLI is <code>bin/type262.mjs</code>, registered as the <code>type262</code> binary in <code>package.json</code>. It needs Node 18 or later.</p>
 <pre class="dx-code" data-lang="bash"><code># Download the CLI and the SDK it imports, then run it
-curl --create-dirs -o type262/bin/type262.mjs https://type262.onrender.com/bin/type262.mjs \
-     -o type262/lib/wallet262.js https://type262.onrender.com/lib/wallet262.js
+curl --create-dirs -o type262/bin/type262.mjs https://type262.com/bin/type262.mjs \
+     -o type262/lib/wallet262.js https://type262.com/lib/wallet262.js
 node type262/bin/type262.mjs resolve yoursite.com</code></pre>
 <p>Run it with no command, an unknown command, or a missing required argument to print the usage text. This exits with status 0.</p>
 <pre class="dx-code" data-lang="txt"><code>type262 &lt;command&gt;
@@ -1132,7 +1132,7 @@ if (res.status === 402) {
 
 <h3 id="mcp-install">Install</h3>
 <p>You need Node.js 18 or later. Download the server:</p>
-<pre class="dx-code" data-lang="bash"><code>curl -fsSL https://type262.onrender.com/mcp/type262-mcp.mjs -o ~/type262-mcp.mjs</code></pre>
+<pre class="dx-code" data-lang="bash"><code>curl -fsSL https://type262.com/mcp/type262-mcp.mjs -o ~/type262-mcp.mjs</code></pre>
 <p>Then add it to your client. For Claude Desktop, edit <code>claude_desktop_config.json</code> (Settings → Developer → Edit Config); Cursor and most other clients take the same block in their MCP settings:</p>
 <pre class="dx-code" data-lang="json"><code>{
   "mcpServers": {
@@ -1278,46 +1278,56 @@ paymentUri(record.address, { amount: '25', chainId: 4663, token: USDG, decimals:
 
 <h3 id="payments-badge">A pay button for your site</h3>
 <p>The app's <a href="app.html#badge">Badge</a> tab generates a small "Pay via DNS" button and a pay link for your domain. The link opens <code>app.html#pay/yoursite.com</code>, which resolves your domain live when someone clicks it, so nobody can swap the address by editing your HTML.</p>
-<pre class="dx-code" data-lang="html"><code>&lt;a href="https://type262.onrender.com/app.html#pay/yoursite.com"&gt;Pay yoursite.com via DNS&lt;/a&gt;</code></pre>
+<pre class="dx-code" data-lang="html"><code>&lt;a href="https://type262.com/app.html#pay/yoursite.com"&gt;Pay yoursite.com via DNS&lt;/a&gt;</code></pre>
 
 <h3 id="payments-unpublished">Paying a domain that hasn't published</h3>
 <p>If the domain publishes no wallet yet, send to its vault on Solana (see <a href="#solana-vaults">Domain vaults</a>) or to <a href="#escrow">escrow</a> on Robinhood Chain instead. The money waits for the domain until its owner claims it with a DNSSEC-signed record, and you can take it back after 180 days if nobody does.</p>
       </section>
 
       <section class="dx-section" id="board" data-group="Build">
-        <div class="dx-section-head"><span class="dx-kicker">Build</span><h2>Board and profiles</h2><p class="dx-lead">Every domain with money waiting gets a public page, and the Unclaimed Board ranks them all, read live from Robinhood Chain.</p></div>
-<p>The <a href="board">Unclaimed Board</a> lists every website that has been sent money through <code>DomainEscrow</code> on Robinhood Chain or had a pons coin launched for it through <code>DomainLauncher</code>, with how much is waiting, how many people sent it and what has been claimed. Each domain also has a profile at <code>/d/&lt;domain&gt;</code>: its wallet status in DNS, the money waiting for it in escrow on Robinhood Chain, its top supporters, the pons coins whose creator fees pay it, and its recent activity.</p>
+        <div class="dx-section-head"><span class="dx-kicker">Build</span><h2>Board and profiles</h2><p class="dx-lead">Every domain with money waiting gets a public page, and the Unclaimed Board ranks them all, read live from Solana and Robinhood Chain.</p></div>
+<p>The <a href="board">Unclaimed Board</a> lists every website with money waiting in its vault on Solana or a pump.fun coin launched for it, and every website sent money through <code>DomainEscrow</code> or with a pons coin on Robinhood Chain: how much is waiting, how many people sent it and what has been claimed. Each domain also has a profile at <code>/d/&lt;domain&gt;</code>: its wallet status in DNS, its vault on Solana and what it holds, its escrow on Robinhood Chain, its top supporters, the coins whose creator fees pay it, and its recent activity on both chains.</p>
 
 <h3 id="board-links">Links</h3>
 <p>Every page takes the domain in its path, so you can link straight to it from anywhere.</p>
 <div class="dx-scroll"><table class="dx-table"><thead><tr><th>Link</th><th>Opens</th></tr></thead><tbody>
 <tr><td><code>/board</code></td><td>The Unclaimed Board, sorted by money waiting</td></tr>
 <tr><td><code>/d/yoursite.com</code></td><td>The profile for <code>yoursite.com</code></td></tr>
-<tr><td><code>/app.html?net=robinhood#escrow/yoursite.com</code></td><td>Send <code>yoursite.com</code> money in escrow on Robinhood Chain, or claim it as the owner</td></tr>
-<tr><td><code>/app.html?net=robinhood#launch/new/yoursite.com</code></td><td>Launch a pons coin on Robinhood Chain whose creator fees go to <code>yoursite.com</code></td></tr>
-<tr><td><code>/app.html?net=robinhood#publish/yoursite.com</code></td><td>Make the <code>_wallet</code> record for <code>yoursite.com</code>, starting with an EVM address</td></tr>
+<tr><td><code>/app.html#escrow/yoursite.com</code></td><td>Send <code>yoursite.com</code> money in its vault on Solana, or claim the vault as the owner</td></tr>
+<tr><td><code>/app.html#launch/new/yoursite.com</code></td><td>Launch a pump.fun coin whose creator fees go to <code>yoursite.com</code></td></tr>
+<tr><td><code>/app.html#publish/yoursite.com</code></td><td>Make the <code>_wallet</code> record for <code>yoursite.com</code></td></tr>
+<tr><td><code>/app.html?net=robinhood#escrow/yoursite.com</code></td><td>Send <code>yoursite.com</code> money in escrow on Robinhood Chain, or claim it there</td></tr>
 </tbody></table></div>
-<p><code>?net=robinhood</code> opens the app on Robinhood Chain, where the board's money is; <code>?net=solana</code> opens it on Solana. Without it, the app opens on the network the visitor chose last, Solana by default. Either way the visitor can switch, and the link's choice is not saved.</p>
-<pre class="dx-code" data-lang="html"><code>&lt;a href="https://type262.onrender.com/d/yoursite.com"&gt;Support yoursite.com on-chain&lt;/a&gt;</code></pre>
+<p><code>?net=robinhood</code> opens the app on Robinhood Chain and <code>?net=solana</code> on Solana. Without it, the app opens on the network the visitor chose last, Solana by default. Either way the visitor can switch, and the link's choice is not saved.</p>
+<pre class="dx-code" data-lang="html"><code>&lt;a href="https://type262.com/d/yoursite.com"&gt;Support yoursite.com on-chain&lt;/a&gt;</code></pre>
 
 <h3 id="board-ranking">Ranking</h3>
 <div class="dx-scroll"><table class="dx-table"><thead><tr><th>Sort</th><th>Order</th></tr></thead><tbody>
-<tr><td>Most waiting</td><td>Current escrow balance in US dollars, highest first. USDG counts at $1; ETH uses the live spot price.</td></tr>
-<tr><td>Newest</td><td>The domain's first deposit or launch, most recent first</td></tr>
-<tr><td>Most supporters</td><td>Distinct addresses that have deposited for the domain</td></tr>
-<tr><td>Has coins</td><td>Only domains with a coin launched for them, most coins first</td></tr>
+<tr><td>Most waiting</td><td>What waits for the domain in US dollars, highest first: the SOL and USDC in its vault, the pump.fun creator fees waiting to be collected into it, and its escrow balance on Robinhood Chain. USDC and USDG count at $1; SOL and ETH use live spot prices.</td></tr>
+<tr><td>Newest</td><td>The domain's first deposit or launch on either chain, most recent first</td></tr>
+<tr><td>Most supporters</td><td>Distinct addresses that have deposited for the domain, on both chains</td></tr>
+<tr><td>Has coins</td><td>Only domains with a coin launched for them, on pump.fun or pons, most coins first</td></tr>
 </tbody></table></div>
 <p>A profile's rank is its position under Most waiting.</p>
 
 <h3 id="board-data">Where the numbers come from</h3>
-<p>There is no indexer or database. The page reads the chain directly from your browser:</p>
+<p>There is no indexer or database. The page reads both chains directly from your browser.</p>
+<p><strong>On Solana</strong></p>
+<ul>
+<li><strong>The index.</strong> Every deposit into a vault and every coin launched from the app carries the board reference, <code>5GQzZAjkdEfEU5CNL9KakKjZeWC1bFUdYKMXtajtZX8H</code>, as a read-only account, the way a Solana Pay reference works. It is the memo program's address for the seed <code>type262:board</code>, so nothing can sign for it. One <code>getSignaturesForAddress</code> on it lists every tagged transaction. A deposit also carries the memo <code>TYPE/262 deposit &lt;domain&gt;</code>; a launch has no room for one, so its domain is in the coin's metadata, as <code>type262.domain</code>.</li>
+<li><strong>The checks.</strong> A memo or metadata only says where to look. A deposit counts when its transaction moved SOL or USDC into that domain's vault, and a launch when the coin's creator is that domain's vault. Anyone can tag a transaction, but nothing reaches the board on a tag alone.</li>
+<li><strong>Balances.</strong> The SOL and USDC in the vault, and the creator fees pump.fun holds for it, read live. A claim pays them out, less the 0.5% fee.</li>
+<li><strong>Claims and refunds.</strong> The worker's own transactions, found in its gas wallet's history by their memos, <code>type262:claim:&lt;domain&gt;</code> and <code>type262:refund:&lt;signature&gt;</code>.</li>
+<li><strong>Coins.</strong> The pump.fun coins whose creator is the vault, so a coin launched for the domain anywhere else counts too.</li>
+</ul>
+<p><strong>On Robinhood Chain</strong></p>
 <ul>
 <li><strong>History.</strong> <code>Deposited</code>, <code>Claimed</code> and <code>Refunded</code> events from <code>DomainEscrow</code>, and <code>DomainTokenLaunched</code> from <code>DomainLauncher</code>, fetched with <code>eth_getLogs</code> from the deployment block (<code>FROM_BLOCK</code> in <code>assets/config.js</code>) onward. When a query returns too many logs, the range is split in half and retried.</li>
 <li><strong>Balances.</strong> The amount waiting is read with <code>balanceOf(domain, token)</code> for USDG and ETH, so it always matches what a claim would pay before the 0.5% fee.</li>
 <li><strong>Coins.</strong> Name, symbol, curve reserves and graduation status are read from each pons token and its curve.</li>
-<li><strong>Prices.</strong> The ETH spot price comes from Coinbase, falling back to CoinGecko. It only affects the dollar figures, never what anyone can claim.</li>
 </ul>
-<p>Results are cached for 30 seconds, and the board reads the chain again every 30 seconds while its tab is visible. The profile's wallet status is a live DNS lookup through the same resolvers as the <a href="#resolution">SDK</a>; <strong>Pay directly</strong> appears only when the domain publishes an EVM address and the resolvers agree.</p>
+<p><strong>Prices.</strong> SOL and ETH spot prices come from Coinbase, falling back to CoinGecko. They only affect the dollar figures, never what anyone can claim.</p>
+<p>Results are cached for 30 seconds, and the board reads the chains again every 30 seconds while its tab is visible. A deposit or launch made outside the app carries no reference: its money still shows on the domain's profile, which reads the vault directly, and the domain joins the board with its first tagged deposit or launch. The profile's wallet status is a live DNS lookup through the same resolvers as the <a href="#resolution">SDK</a>; <strong>Pay directly</strong> appears when the domain publishes a Solana or EVM address and the resolvers agree.</p>
       </section>
 
       <section class="dx-section" id="solana" data-group="Solana">
@@ -1422,6 +1432,7 @@ const signature = await sol.send([
   sol.transferChecked({ source, mint: sol.USDC.mint, destination: usdcAccount, owner: from, amount: 25_000_000n, decimals: 6 }),
 ])
 // for SOL: sol.send([sol.systemTransfer(from, vault, lamports)])</code></pre>
+<p>The app's deposits also carry the board reference, <code>5GQzZAjkdEfEU5CNL9KakKjZeWC1bFUdYKMXtajtZX8H</code>, as a read-only account on the transfer, and the memo <code>TYPE/262 deposit &lt;domain&gt;</code>. That puts them on the <a href="#board">Unclaimed Board</a>. Neither is required: a plain transfer is a deposit like any other, and refunds read both the same way.</p>
 <p>Keep the transaction signature: a refund asks for it. Refunds go back to the address that sent the deposit, so send from a wallet you control rather than straight from an exchange.</p>
 <div class="dx-note">A vault holds what is sent to it as is. It never converts, stakes or lends anything, and the worker only ever moves it in a claim or a refund.</div>
 
@@ -1509,14 +1520,14 @@ const ix = createV2({
 <p><code>solana/docs/PUMP.md</code> lists the 16 accounts of <code>create_v2</code>, the opening buy and every fee instruction, each simulated against mainnet. In the browser, <code>launchTxs</code> in <code>assets/solana-vault.js</code>, a port of these encoders, builds the launch, with the opening buy when it fits.</p>
 
 <h3 id="solana-launch-metadata">Metadata</h3>
-<p>pump.fun reads a coin's name, image and links from the JSON at its <code>uri</code>. The app's upload service pins it to IPFS: <code>POST /image</code> pins the image, and <code>POST /metadata</code> pins the JSON in the shape pump.fun's own uploader writes and returns <code>https://ipfs.io/ipfs/&lt;cid&gt;</code>. The service caps the name at 32 bytes, the ticker at 10 bytes and the description at 1,000 characters, and takes only <code>https</code> links. Any other https host works as well. The URI cannot change once the coin exists, so host it somewhere that stays up. See <a href="#self-hosting-upload">The worker and uploads</a>.</p>
+<p>pump.fun reads a coin's name, image and links from the JSON at its <code>uri</code>. The app's upload service pins it to IPFS: <code>POST /image</code> pins the image, and <code>POST /metadata</code> pins the JSON in the shape pump.fun's own uploader writes and returns <code>https://ipfs.io/ipfs/&lt;cid&gt;</code>. It also takes the launch's <code>domain</code>, pinned as <code>type262.domain</code>: the <a href="#board">Unclaimed Board</a> reads it back and lists the coin when its creator is that domain's vault. The service caps the name at 32 bytes, the ticker at 10 bytes and the description at 1,000 characters, and takes only <code>https</code> links. Any other https host works as well. The URI cannot change once the coin exists, so host it somewhere that stays up. See <a href="#self-hosting-upload">The worker and uploads</a>.</p>
 <pre class="dx-code" data-lang="json"><code>{
   "name": "Your Site",
   "symbol": "SITE",
   "description": "Creator fees go to yoursite.com",
   "showName": true,
   "image": "https://ipfs.io/ipfs/bafy…",
-  "createdOn": "https://type262.onrender.com",
+  "createdOn": "https://type262.com",
   "website": "https://yoursite.com"
 }</code></pre>
 
@@ -1709,7 +1720,7 @@ cast send $ESCROW "refund(string,address)" yoursite.com $USDG --account my-walle
 import { keccak256, toBytes } from 'viem'
 
 const domain = normalizeDomain('https://YourSite.com/pay') // 'yoursite.com'
-const domainHash = keccak256(toBytes(domain))           // the pool key DomainEscrow uses</code></pre><h3 id="escrow-app-depositors">Pay a domain with the app</h3><ol class="dx-steps"><li><strong>Open Escrow.</strong> Go to <a href="https://type262.onrender.com/app.html#escrow/yoursite.com"><code>app.html#escrow/yoursite.com</code></a>, or open the Escrow tab and enter the domain. The app normalizes what you type and shows the USDG and ETH waiting for it.</li><li><strong>Choose the asset and amount.</strong> Under <strong>Send to escrow</strong>, pick USDG or ETH and enter an amount.</li><li><strong>Send.</strong> Click <strong>Send</strong> and confirm in your wallet. The app switches your wallet to Robinhood Chain (4663) if needed. For USDG it first asks you to approve the exact amount when your allowance is lower, then calls <code>depositToken</code>.</li><li><strong>Track your deposit.</strong> With your wallet connected, the view lists your deposit per asset and the date it becomes refundable.</li><li><strong>Refund if nobody claims.</strong> After the delay a <strong>Refund</strong> button appears next to your deposit. If the domain claimed first, your deposit was paid to its wallet and is no longer listed.</li></ol><h3 id="escrow-app-owners">Claim as a domain owner with the app</h3><ol class="dx-steps"><li><strong>Publish a <code>_wallet</code> TXT record.</strong> The Publish tab generates it for you: <code>_wallet.yoursite.com TXT "ETH 0xYourWallet"</code>. At most DNS hosts the Name field is just <code>_wallet</code>. Use a regular wallet address, not a multisig or smart-contract wallet.</li><li><strong>Turn on DNSSEC.</strong> On Cloudflare: DNS, Settings, Enable DNSSEC, then add the DS record Cloudflare shows you at your registrar if it is somewhere else. Your zone must use a <a href="#dnssec-supported-zones">supported algorithm</a>.</li><li><strong>Look up your domain in Escrow.</strong> The app reports the address it found in your <code>_wallet</code> record and whether the record is DNSSEC-signed. The claim button stays disabled until it finds a signed record with an EVM address.</li><li><strong>Claim.</strong> Click <strong>Claim to 0x…</strong>, or <strong>Register 0x…</strong> when nothing is waiting. Your browser builds the DNSSEC proof, then your wallet asks you to confirm. The connected wallet only pays gas.</li><li><strong>Receive the funds.</strong> The wallet in your record receives each pool, minus the 0.5% fee, in the same transaction.</li></ol>
+const domainHash = keccak256(toBytes(domain))           // the pool key DomainEscrow uses</code></pre><h3 id="escrow-app-depositors">Pay a domain with the app</h3><ol class="dx-steps"><li><strong>Open Escrow.</strong> Go to <a href="https://type262.com/app.html#escrow/yoursite.com"><code>app.html#escrow/yoursite.com</code></a>, or open the Escrow tab and enter the domain. The app normalizes what you type and shows the USDG and ETH waiting for it.</li><li><strong>Choose the asset and amount.</strong> Under <strong>Send to escrow</strong>, pick USDG or ETH and enter an amount.</li><li><strong>Send.</strong> Click <strong>Send</strong> and confirm in your wallet. The app switches your wallet to Robinhood Chain (4663) if needed. For USDG it first asks you to approve the exact amount when your allowance is lower, then calls <code>depositToken</code>.</li><li><strong>Track your deposit.</strong> With your wallet connected, the view lists your deposit per asset and the date it becomes refundable.</li><li><strong>Refund if nobody claims.</strong> After the delay a <strong>Refund</strong> button appears next to your deposit. If the domain claimed first, your deposit was paid to its wallet and is no longer listed.</li></ol><h3 id="escrow-app-owners">Claim as a domain owner with the app</h3><ol class="dx-steps"><li><strong>Publish a <code>_wallet</code> TXT record.</strong> The Publish tab generates it for you: <code>_wallet.yoursite.com TXT "ETH 0xYourWallet"</code>. At most DNS hosts the Name field is just <code>_wallet</code>. Use a regular wallet address, not a multisig or smart-contract wallet.</li><li><strong>Turn on DNSSEC.</strong> On Cloudflare: DNS, Settings, Enable DNSSEC, then add the DS record Cloudflare shows you at your registrar if it is somewhere else. Your zone must use a <a href="#dnssec-supported-zones">supported algorithm</a>.</li><li><strong>Look up your domain in Escrow.</strong> The app reports the address it found in your <code>_wallet</code> record and whether the record is DNSSEC-signed. The claim button stays disabled until it finds a signed record with an EVM address.</li><li><strong>Claim.</strong> Click <strong>Claim to 0x…</strong>, or <strong>Register 0x…</strong> when nothing is waiting. Your browser builds the DNSSEC proof, then your wallet asks you to confirm. The connected wallet only pays gas.</li><li><strong>Receive the funds.</strong> The wallet in your record receives each pool, minus the 0.5% fee, in the same transaction.</li></ol>
       </section>
 
       <section class="dx-section" id="dnssec-proofs" data-group="Robinhood Chain">
@@ -2159,7 +2170,7 @@ cd dist &amp;&amp; python -m http.server 5262 --bind 127.0.0.1</code></pre>
 <p>The Launch form's <strong>Choose image</strong> button posts the file to <code>POST /image</code>, which pins it to IPFS through Pinata and returns <code>ipfs://&lt;cid&gt;</code>. For a pump.fun launch on Solana, the form then posts the coin's metadata JSON to <code>POST /metadata</code>, which pins it the same way and returns its <code>https://ipfs.io/ipfs/&lt;cid&gt;</code> link for the coin's <code>uri</code>. Image uploads are optional: without them, creators paste an image link instead.</p>
 <div class="dx-scroll"><table class="dx-table"><thead><tr><th>Variable</th><th>Default</th><th>Meaning</th></tr></thead><tbody>
 <tr><td><code>PINATA_JWT</code></td><td>required</td><td>A Pinata API key (JWT) that can upload files. Without it, uploads answer 503 and the form asks for a link.</td></tr>
-<tr><td><code>ALLOW_ORIGINS</code></td><td><code>https://type262.onrender.com</code></td><td>Comma-separated origins allowed to upload. Uploads from any other origin, or with no <code>Origin</code> header, are refused.</td></tr>
+<tr><td><code>ALLOW_ORIGINS</code></td><td><code>https://type262.com</code>, its <code>www</code> and the onrender.com address</td><td>Comma-separated origins allowed to upload. Uploads from any other origin, or with no <code>Origin</code> header, are refused.</td></tr>
 <tr><td><code>RATE_MAX</code></td><td><code>12</code></td><td>Uploads allowed per IP address per 10 minutes, for <code>/image</code> and <code>/metadata</code> each.</td></tr>
 <tr><td><code>IPFS_GATEWAY</code></td><td><code>https://ipfs.io</code></td><td>The gateway in the links <code>/metadata</code> returns, as pump.fun uses.</td></tr>
 <tr><td><code>PORT</code></td><td><code>8787</code></td><td>The port to listen on.</td></tr>
@@ -2278,6 +2289,7 @@ npm test</code></pre>
 <tr><td><code>test/vault.test.mjs</code></td><td>The vault rules in <code>upload/vault.mjs</code>: key derivation, canonical domains, the fee, what DNS must say, which addresses can be paid, what counts as a deposit, and memos.</td></tr>
 <tr><td><code>test/vault-worker.test.mjs</code></td><td>The vault worker in <code>upload/worker.mjs</code> against a mocked Solana RPC and stub DNS: every transaction it sends, the lock, gas checks, refund rules, retries and priority fees.</td></tr>
 <tr><td><code>test/chain-data.test.mjs</code></td><td>The board and profile event decoders in <code>assets/chain-data.js</code> match viem, then one read-only call to the live escrow.</td></tr>
+<tr><td><code>test/solana-board.test.mjs</code></td><td>The board's Solana side in <code>assets/solana-board.js</code> against a mocked RPC: the board reference and memo, parsing deposits and claims, and that only money that reached a domain's vault, or a coin whose creator is that vault, makes the board.</td></tr>
 <tr><td><code>test/mcp.test.mjs</code></td><td>The bundled MCP server over stdio: the protocol, every tool, dry runs, spend limits and the repeat guard, key and URL scrubbing, and payment decisions against a mock DNS-over-HTTPS resolver. <code>npm run test:mcp:fork</code> adds real payments on a local anvil fork.</td></tr>
 </tbody></table></div>
 <p><code>chain-data</code> and <code>mcp</code> make read-only calls to live DNS-over-HTTPS and the Robinhood Chain RPC. The rest run offline: DNS is mocked, and the upload test runs its own mock Pinata and RPC upstreams.</p>
@@ -2477,7 +2489,7 @@ FORK_RPC=https://rpc.mainnet.chain.robinhood.com forge test --evm-version osaka 
 <div class="dx-scroll"><table class="dx-table"><thead><tr><th>Path</th><th>What it is</th></tr></thead><tbody>
 <tr><td><code>index.html</code></td><td>Landing page, with a live resolver and a live adoption scan</td></tr>
 <tr><td><code>app.html</code></td><td>The app: Resolve, Pay, Escrow, Publish, Verify, Badge and Launch, on Solana or Robinhood Chain</td></tr>
-<tr><td><code>board.html</code>, <code>domain.html</code></td><td>The Unclaimed Board and domain profiles, read from Robinhood Chain, with <code>assets/pages.js</code> and <code>assets/chain-data.js</code></td></tr>
+<tr><td><code>board.html</code>, <code>domain.html</code></td><td>The Unclaimed Board and domain profiles, read from Solana and Robinhood Chain, with <code>assets/pages.js</code>, <code>assets/board-data.js</code>, <code>assets/solana-board.js</code> and <code>assets/chain-data.js</code></td></tr>
 <tr><td><code>docs.html</code></td><td>This documentation, with <code>assets/docs.js</code> and <code>assets/docs.css</code></td></tr>
 <tr><td><code>lib/wallet262.js</code></td><td>The zero-dependency SDK and the package's main export</td></tr>
 <tr><td><code>bin/type262.mjs</code></td><td>The <code>type262</code> CLI</td></tr>
@@ -2489,6 +2501,7 @@ FORK_RPC=https://rpc.mainnet.chain.robinhood.com forge test --evm-version osaka 
 <tr><td><code>assets/solana-proof.js</code></td><td>Builds DNSSEC proofs for the on-chain program and plans their transactions</td></tr>
 <tr><td><code>assets/solana-type262.js</code></td><td>The on-chain program's instructions and account readers</td></tr>
 <tr><td><code>assets/solana-escrow.js</code>, <code>assets/solana-launch.js</code></td><td>The Escrow and Launch screens on Solana</td></tr>
+<tr><td><code>assets/solana-board.js</code>, <code>assets/board-data.js</code></td><td>The board's Solana side, tagged deposits and launches checked on-chain, and the merge with Robinhood Chain for the board and profiles</td></tr>
 <tr><td><code>assets/dnssec.js</code></td><td>Builds DNSSEC proofs in the browser for Robinhood Chain claims</td></tr>
 <tr><td><code>assets/config.js</code></td><td>Deployed addresses, endpoints and the board's first block; <code>scripts/post-deploy.mjs</code> writes the Robinhood Chain ones</td></tr>
 <tr><td><code>assets/vendor/</code></td><td>A pinned copy of <code>@ensdomains/dnsprovejs</code> 1.0.1</td></tr>

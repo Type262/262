@@ -6,7 +6,7 @@
 // relay a transaction the wallet already signed. Keys stay on the server. Zero dependencies (Node 18+).
 //
 //   PINATA_JWT     Pinata API key (JWT) that can upload files. Required.
-//   ALLOW_ORIGINS  comma-separated origins allowed to upload (default https://type262.onrender.com)
+//   ALLOW_ORIGINS  comma-separated origins allowed to upload (default https://type262.com, www and the onrender.com address)
 //   RATE_MAX       uploads per IP per 10 minutes, for /image and /metadata each (default 12)
 //   PINATA_URL     upload endpoint (default Pinata v3); tests point it at a mock
 //   IPFS_GATEWAY   gateway in the metadata URIs /metadata returns (default https://ipfs.io, as pump.fun uses)
@@ -28,11 +28,12 @@
 //   SOLANA_USDC_MINT, DOH_RESOLVERS, PRIORITY_FEE_MIN/MAX, MAX_TOKENS_PER_CLAIM: see worker.mjs (tests and tuning)
 import http from 'node:http'
 import { createWorker } from './worker.mjs'
+import { canonicalDomain } from './vault.mjs'
 
 const PORT = Number(process.env.PORT || 8787)
 const JWT = (process.env.PINATA_JWT || '').trim()
 const PINATA_URL = process.env.PINATA_URL || 'https://uploads.pinata.cloud/v3/files'
-const ORIGINS = new Set((process.env.ALLOW_ORIGINS || 'https://type262.onrender.com').split(',').map(s => s.trim()).filter(Boolean))
+const ORIGINS = new Set((process.env.ALLOW_ORIGINS || 'https://type262.com,https://www.type262.com,https://type262.onrender.com').split(',').map(s => s.trim()).filter(Boolean))
 const RATE_MAX = Number(process.env.RATE_MAX || 12)
 const RATE_WINDOW = 10 * 60 * 1000
 const MAX_BYTES = 5 * 1024 * 1024 // same limit as pons
@@ -101,7 +102,7 @@ async function pin(bytes, format) {
 // https://ipfs.io/ipfs/<cid> and use the same gateway for the image, so /metadata does too.
 const IPFS_GATEWAY = (process.env.IPFS_GATEWAY || 'https://ipfs.io').trim().replace(/\/+$/, '')
 const META_MAX_BODY = 8 * 1024
-const META_FIELDS = new Set(['name', 'symbol', 'description', 'image', 'twitter', 'telegram', 'website', 'showName'])
+const META_FIELDS = new Set(['name', 'symbol', 'description', 'image', 'twitter', 'telegram', 'website', 'showName', 'domain'])
 const CONTROL = /[\u0000-\u001f\u007f]/
 const invalid = message => Object.assign(new Error(message), { status: 400 })
 
@@ -155,6 +156,10 @@ function tokenMetadata(input, origin) {
   for (const field of ['twitter', 'telegram', 'website']) {
     const url = link(input[field], field)
     if (url) meta[field] = url
+  }
+  // The domain whose vault is the coin's creator: the Unclaimed Board reads it back and checks it against the creator.
+  if (input.domain !== undefined && input.domain !== '') {
+    try { meta.type262 = { domain: canonicalDomain(input.domain) } } catch { throw invalid('The domain must be a domain name, like example.com.') }
   }
   return meta
 }

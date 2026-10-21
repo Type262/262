@@ -66,7 +66,7 @@ Set it once. A different secret gives every domain a different vault, and the va
 | `SOLANA_PUBLIC_RPC_URLS` | `https://solana-rpc.publicnode.com,https://api.mainnet-beta.solana.com` | Public RPCs tried after it, in order |
 | `SOLANA_GAS_KEYPAIR` | none | Optional: a Solana CLI keypair JSON (64 numbers) for a gas wallet you fund directly. Without it, the gas wallet derives from `VAULT_MASTER_SEED` |
 | `PINATA_JWT` | required for uploads | A Pinata API key (JWT) that can upload files |
-| `ALLOW_ORIGINS` | `https://type262.onrender.com` | Origins allowed to send claims, collects, refunds, uploads and RPC requests |
+| `ALLOW_ORIGINS` | `https://type262.com`, its `www` and the onrender.com address | Origins allowed to send claims, collects, refunds, uploads and RPC requests |
 | `VAULT_RATE_MAX` | `10` | Claims, collects and refunds per IP per 10 minutes, together |
 | `ROBINHOOD_RPC_URL` | none | Optional keyed Robinhood Chain RPC for `/rpc` |
 

@@ -1,6 +1,6 @@
 <div align="center">
 
-<a href="https://type262.onrender.com"><img src=".github/assets/banner.png" alt="TYPE/262: every domain is a wallet" width="100%"></a>
+<a href="https://type262.com"><img src=".github/assets/banner.png" alt="TYPE/262: every domain is a wallet" width="100%"></a>
 
 <h1>Every domain is a wallet.</h1>
 
@@ -24,15 +24,15 @@ Publish one record, and any person or AI agent can <b>resolve</b> your domain, <
 </p>
 
 <p>
-<a href="https://type262.onrender.com"><b>Website</b></a>
+<a href="https://type262.com"><b>Website</b></a>
 &nbsp;·&nbsp;
-<a href="https://type262.onrender.com/app.html"><b>Open the app</b></a>
+<a href="https://type262.com/app.html"><b>Open the app</b></a>
 &nbsp;·&nbsp;
-<a href="https://type262.onrender.com/app.html#launch/new"><b>Launch a coin</b></a>
+<a href="https://type262.com/app.html#launch/new"><b>Launch a coin</b></a>
 &nbsp;·&nbsp;
-<a href="https://type262.onrender.com/docs.html"><b>Docs</b></a>
+<a href="https://type262.com/docs.html"><b>Docs</b></a>
 &nbsp;·&nbsp;
-<a href="https://type262.onrender.com/board"><b>Unclaimed Board</b></a>
+<a href="https://type262.com/board"><b>Unclaimed Board</b></a>
 &nbsp;·&nbsp;
 <a href="#give-your-agent-a-wallet"><b>MCP for agents</b></a>
 &nbsp;·&nbsp;
@@ -134,7 +134,7 @@ Everything also runs on Robinhood Chain: `DomainEscrow` with ENS's DNSSEC oracle
 <td valign="top">
 
 #### The Unclaimed Board
-A live leaderboard of money waiting for websites on Robinhood Chain, read straight from the chain, plus a public profile for every domain at `/d/<domain>`.
+A live leaderboard of money waiting for websites, in their vaults on Solana and in escrow on Robinhood Chain, read straight from the chains, plus a public profile for every domain at `/d/<domain>`.
 
 </td>
 <td valign="top">
@@ -150,15 +150,15 @@ One self-contained file that gives Claude, Cursor or any MCP client five tools t
 
 <table>
 <tr>
-<td colspan="2"><a href="https://type262.onrender.com"><img src=".github/assets/screen-landing.png" alt="The TYPE/262 landing page"></a></td>
+<td colspan="2"><a href="https://type262.com"><img src=".github/assets/screen-landing.png" alt="The TYPE/262 landing page"></a></td>
 </tr>
 <tr>
-<td width="50%" valign="top"><a href="https://type262.onrender.com/app.html#publish"><img src=".github/assets/screen-app.png" alt="Publishing a Solana address for a domain in the TYPE/262 app"></a><p align="center"><sub><b>Publish.</b> One record makes your domain payable on Solana.</sub></p></td>
-<td width="50%" valign="top"><a href="https://type262.onrender.com/app.html#launch/new"><img src=".github/assets/screen-launch.png" alt="Launching a pump.fun coin whose creator fees go to a domain"></a><p align="center"><sub><b>Launch.</b> A pump.fun coin whose creator fees go to a domain.</sub></p></td>
+<td width="50%" valign="top"><a href="https://type262.com/app.html#publish"><img src=".github/assets/screen-app.png" alt="Publishing a Solana address for a domain in the TYPE/262 app"></a><p align="center"><sub><b>Publish.</b> One record makes your domain payable on Solana.</sub></p></td>
+<td width="50%" valign="top"><a href="https://type262.com/app.html#launch/new"><img src=".github/assets/screen-launch.png" alt="Launching a pump.fun coin whose creator fees go to a domain"></a><p align="center"><sub><b>Launch.</b> A pump.fun coin whose creator fees go to a domain.</sub></p></td>
 </tr>
 <tr>
-<td width="50%" valign="top"><a href="https://type262.onrender.com/app.html#escrow"><img src=".github/assets/screen-escrow.png" alt="A domain's vault on Solana"></a><p align="center"><sub><b>Vaults.</b> Pay any website on Solana before it publishes.</sub></p></td>
-<td width="50%" valign="top"><a href="https://type262.onrender.com/board"><img src=".github/assets/screen-board.png" alt="The Unclaimed Board"></a><p align="center"><sub><b>The Unclaimed Board.</b> Money waiting on Robinhood Chain.</sub></p></td>
+<td width="50%" valign="top"><a href="https://type262.com/app.html#escrow"><img src=".github/assets/screen-escrow.png" alt="A domain's vault on Solana"></a><p align="center"><sub><b>Vaults.</b> Pay any website on Solana before it publishes.</sub></p></td>
+<td width="50%" valign="top"><a href="https://type262.com/board"><img src=".github/assets/screen-board.png" alt="The Unclaimed Board"></a><p align="center"><sub><b>The Unclaimed Board.</b> Money waiting for the internet.</sub></p></td>
 </tr>
 </table>
 
@@ -171,7 +171,7 @@ One self-contained file that gives Claude, Cursor or any MCP client five tools t
 - **Resolution** queries two independent DNS-over-HTTPS resolvers and compares their answers. A record counts as verified only when every resolver answered, they all agree, and every one of them DNSSEC-authenticated it; each resolver's status is reported. It reads the `WALLET` record (type 262) and the `_wallet` TXT fallback in the same round trip, and counts only answers owned by the name itself, never a CNAME target's.
 - **Payments** go straight from the payer's wallet to the address the domain publishes: SOL or USDC on Solana, USDG or ETH on Robinhood Chain. There is no TYPE/262 server in the payment path.
 - **Claims** pay only the wallet a domain's DNSSEC-signed record names. On Solana, the worker pays a vault out once Cloudflare and Google agree on that record and both validated it. On Robinhood Chain, ENS's oracle checks the DNSSEC signatures on-chain, from the root keys down, with no server involved.
-- **The site** is plain static files, so it can be hosted anywhere. One small Node service, the worker, runs Solana vault claims, collects and refunds, and pins launch images and coin metadata to IPFS. The board and the domain profiles read contract events and balances directly from Robinhood Chain in your browser.
+- **The site** is plain static files, so it can be hosted anywhere. One small Node service, the worker, runs Solana vault claims, collects and refunds, and pins launch images and coin metadata to IPFS. The board and the domain profiles read Solana and Robinhood Chain directly in your browser.
 
 <p align="center">
   <img src=".github/assets/architecture.svg" alt="Clients resolve through DNS-over-HTTPS; on Solana, payments, domain vaults, pump.fun launches and the worker's claims; Robinhood Chain also supported" width="100%">
@@ -181,7 +181,7 @@ One self-contained file that gives Claude, Cursor or any MCP client five tools t
 
 ### Make your domain payable
 
-Add the record at your DNS host and turn on DNSSEC. The app's [Publish](https://type262.onrender.com/app.html#publish) tab writes these lines for your address and shows the exact Name and Value to paste at your DNS host.
+Add the record at your DNS host and turn on DNSSEC. The app's [Publish](https://type262.com/app.html#publish) tab writes these lines for your address and shows the exact Name and Value to paste at your DNS host.
 
 ```text
 _wallet.yoursite.com.  3600 IN TXT     "SOL 9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM"
@@ -200,7 +200,7 @@ One Solana address (`SOL`) receives SOL, USDC, vault claims and launch fees on S
 ### Resolve and pay from code
 
 ```bash
-curl -O https://type262.onrender.com/lib/wallet262.js
+curl -O https://type262.com/lib/wallet262.js
 ```
 
 ```js
@@ -219,7 +219,7 @@ console.log(paymentUri(to, { amount: '25', splToken: USDC }))
 // solana:9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM?amount=25&spl-token=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
 ```
 
-`verified` is true when records were found, every resolver answered, they all agree and every record is DNSSEC-authenticated on every resolver; `r.resolvers` shows each resolver's status. The SDK accepts domains, URLs and email addresses (`bob@shop.com` resolves `shop.com`), and also runs in Node 18+. To send from a browser wallet instead, the [docs](https://type262.onrender.com/docs.html#payments) show the app's Solana client and the Robinhood Chain transfer.
+`verified` is true when records were found, every resolver answered, they all agree and every record is DNSSEC-authenticated on every resolver; `r.resolvers` shows each resolver's status. The SDK accepts domains, URLs and email addresses (`bob@shop.com` resolves `shop.com`), and also runs in Node 18+. To send from a browser wallet instead, the [docs](https://type262.com/docs.html#payments) show the app's Solana client and the Robinhood Chain transfer.
 
 ### Verify an x402 payTo
 
@@ -239,8 +239,8 @@ if (res.status === 402) {
 ### From the terminal
 
 ```bash
-curl --create-dirs -o type262/bin/type262.mjs https://type262.onrender.com/bin/type262.mjs \
-     -o type262/lib/wallet262.js https://type262.onrender.com/lib/wallet262.js
+curl --create-dirs -o type262/bin/type262.mjs https://type262.com/bin/type262.mjs \
+     -o type262/lib/wallet262.js https://type262.com/lib/wallet262.js
 
 node type262/bin/type262.mjs resolve yoursite.com                  # wallets a domain publishes
 node type262/bin/type262.mjs verify https://api.yoursite.com 9WzD…  # does this payTo belong to the domain?
@@ -314,13 +314,13 @@ The worker is the `type262-upload` service at `https://type262-upload.onrender.c
 | `POST /solana/refund` | `{ domain, signature }` | `{ domain, refunded: { mint, amount, decimals, to }, signature }` |
 | `GET /solana/status` | | `{ ready, gasWallet, gasLamports, feeWallet, feeBps, refundDelayDays }` |
 
-Amounts are decimal strings in base units, and `mint` is `"SOL"` for SOL. Errors are JSON, `{ error, reason }`, with a plain-language reason. The `POST` endpoints accept the site's origins only and are rate-limited per IP. The [Worker API](https://type262.onrender.com/docs.html#solana-worker) docs list every field.
+Amounts are decimal strings in base units, and `mint` is `"SOL"` for SOL. Errors are JSON, `{ error, reason }`, with a plain-language reason. The `POST` endpoints accept the site's origins only and are rate-limited per IP. The [Worker API](https://type262.com/docs.html#solana-worker) docs list every field.
 
 ### Trust model
 
 On Solana, vaults are custodial: the TYPE/262 worker holds the master secret every vault key derives from, and pays a vault out only after checking the domain's DNSSEC-signed record through two independent resolvers. Every vault and every payout is public on-chain. On Robinhood Chain, the contracts verify DNSSEC on-chain and no server takes part in a claim.
 
-The repository also holds `type262`, a Solana program that verifies DNSSEC on-chain from the root keys and holds domain funds in program accounts, so Solana claims would need no server either. It is built and tested in [`solana/`](solana/README.md), with 86 LiteSVM tests and an end-to-end run on a local validator, and not deployed; see [On-chain program](https://type262.onrender.com/docs.html#solana-program).
+The repository also holds `type262`, a Solana program that verifies DNSSEC on-chain from the root keys and holds domain funds in program accounts, so Solana claims would need no server either. It is built and tested in [`solana/`](solana/README.md), with 86 LiteSVM tests and an end-to-end run on a local validator, and not deployed; see [On-chain program](https://type262.com/docs.html#solana-program).
 
 ## Robinhood Chain
 
@@ -375,7 +375,7 @@ The MCP server pays on Robinhood Chain, in USDG or ETH. A domain whose DNSSEC-si
 ### Give your agent a wallet
 
 ```bash
-curl -fsSL https://type262.onrender.com/mcp/type262-mcp.mjs -o ~/type262-mcp.mjs
+curl -fsSL https://type262.com/mcp/type262-mcp.mjs -o ~/type262-mcp.mjs
 ```
 
 Add it to Claude Desktop (`claude_desktop_config.json`), Cursor or any MCP client:
@@ -418,7 +418,7 @@ Then ask your agent to *"send yoursite.com 5 USDG"*. Without a key, resolving, v
 | `escrow_status` | USDG and ETH waiting in `DomainEscrow` for a domain |
 | `wallet_status` | The agent wallet's address, balances, limits and what it spent today |
 
-Spend limits live in the server's environment, not in the prompt: by default 25 USDG per payment and 100 per UTC day, 0.01 ETH per payment and 0.05 per day. Payments run one at a time in each server process, and a lock file shared by every process keeps the daily limit across them. A payment the client cancels before it starts is never sent. The key is read once and never logged, and every successful result carries a one-line summary the agent can repeat to you (refusals carry a one-line error). Full reference: [docs › MCP server](https://type262.onrender.com/docs.html#mcp).
+Spend limits live in the server's environment, not in the prompt: by default 25 USDG per payment and 100 per UTC day, 0.01 ETH per payment and 0.05 per day. Payments run one at a time in each server process, and a lock file shared by every process keeps the daily limit across them. A payment the client cancels before it starts is never sent. The key is read once and never logged, and every successful result carries a one-line summary the agent can repeat to you (refusals carry a one-line error). Full reference: [docs › MCP server](https://type262.com/docs.html#mcp).
 
 ## Deployments
 
@@ -428,7 +428,7 @@ Solana mainnet. Vaults are ordinary addresses and launches use pump.fun's own pr
 
 | | |
 |---|---|
-| Worker | `https://type262-upload.onrender.com`, see [Worker API](https://type262.onrender.com/docs.html#solana-worker) |
+| Worker | `https://type262-upload.onrender.com`, see [Worker API](https://type262.com/docs.html#solana-worker) |
 | Gas and fee wallet | [`3sde4YJpX2oYMSWaozHareWrXn6MASLxhQgfuCKJNPoK`](https://solscan.io/account/3sde4YJpX2oYMSWaozHareWrXn6MASLxhQgfuCKJNPoK) |
 | Claim fee, refund delay | 0.5%, 180 days after each deposit |
 | USDC | `EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v` (6 decimals) |
@@ -476,7 +476,7 @@ The full record, including the signature algorithms and digests, is in [`deploym
 ├── contracts/                          Foundry: escrow, verifier, launcher, forwarder on Robinhood Chain
 ├── deployments/                        addresses and transactions of the Robinhood Chain deployment
 ├── scripts/                            site build and post-deploy scripts
-└── test/                               SDK, ABI, chain-data, upload, MCP and Solana client tests
+└── test/                               SDK, ABI, board, upload, MCP and Solana client tests
 ```
 
 ## Development
@@ -489,7 +489,7 @@ cd 262
 npm ci
 
 npm run dev                         # serves the site at http://127.0.0.1:5262
-npm test                            # SDK, ABI, chain-data, worker and MCP tests
+npm test                            # SDK, ABI, board (both chains), worker and MCP tests
 npm run test:mcp:fork               # MCP payments end to end on a local Robinhood Chain fork
 npm run mcp:build                   # rebuild mcp/type262-mcp.mjs
 node test/solana.test.mjs           # Solana client (12 tests)
@@ -524,7 +524,7 @@ Found a vulnerability? Report it privately through [GitHub's private vulnerabili
 
 ## Contributing
 
-Issues and pull requests are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md); the [docs](https://type262.onrender.com/docs.html) cover every module in depth.
+Issues and pull requests are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md); the [docs](https://type262.com/docs.html) cover every module in depth.
 
 ## License
 
@@ -533,9 +533,9 @@ Issues and pull requests are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.
 <br>
 
 <div align="center">
-  <a href="https://type262.onrender.com"><img src="assets/art/emblem.webp" alt="TYPE/262" width="64"></a>
+  <a href="https://type262.com"><img src="assets/art/emblem.webp" alt="TYPE/262" width="64"></a>
   <br>
-  <sub><a href="https://type262.onrender.com">type262.onrender.com</a> · <a href="https://x.com/type_262">@type_262 on X</a></sub>
+  <sub><a href="https://type262.com">type262.com</a> · <a href="https://x.com/type_262">@type_262 on X</a></sub>
   <br>
   <sub>Payments settle on Solana, with Robinhood Chain (4663) also supported. Not affiliated with IANA, ICANN, Solana, pump.fun, Robinhood or the x402 project.</sub>
 </div>

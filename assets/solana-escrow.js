@@ -490,7 +490,8 @@ function render(domain, s) {
       if (isSol) {
         if (lamports < units + SOL_FEE) throw new Error(`Not enough SOL: this wallet has ${fmtUnits(lamports, 9)}.`)
         if (units < sol.MIN_ACCOUNT_LAMPORTS && s.bal.lamports === 0n) throw new Error(`The vault is new on Solana, so its first SOL deposit must be at least ${fmtUnits(sol.MIN_ACCOUNT_LAMPORTS, 9)} SOL.`)
-        instructions = [sol.systemTransfer(payer, s.vault, units)]
+        // The reference and the memo put the deposit on the board (solana-vault.js BOARD_REFERENCE).
+        instructions = [V.withReference(sol.systemTransfer(payer, s.vault, units)), V.memoIx(V.boardMemo('deposit', domain))]
       } else {
         await sol.verifyMint(sol.USDC)
         const src = await sol.associatedTokenAddress(payer, sol.USDC.mint)
@@ -501,7 +502,8 @@ function render(domain, s) {
         instructions = [
           // Idempotent: opens the vault's USDC account if this is its first USDC, does nothing otherwise.
           sol.createAssociatedTokenAccountIdempotent({ payer, ata: s.usdcAccount, owner: s.vault, mint: sol.USDC.mint }),
-          sol.transferChecked({ source: src, mint: sol.USDC.mint, destination: s.usdcAccount, owner: payer, amount: units, decimals: 6 }),
+          V.withReference(sol.transferChecked({ source: src, mint: sol.USDC.mint, destination: s.usdcAccount, owner: payer, amount: units, decimals: 6 })),
+          V.memoIx(V.boardMemo('deposit', domain)),
         ]
       }
       st.innerHTML = ''

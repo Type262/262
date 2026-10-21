@@ -19,7 +19,7 @@ This page covers what is in scope, how to report privately, what happens next, a
 Upstream code and services belong with their own project: pump.fun and PumpSwap, the Cloudflare and Google DNS-over-HTTPS resolvers, Anchor, the Solana runtime and its precompiles, ENS's DNSSEC oracle, pons v2, OpenZeppelin, forge-std and dnsprovejs.
 How TYPE/262 deploys, configures or calls that code is in scope.
 
-The [trust model](https://type262.onrender.com/docs.html#security) documents the intended behaviour, such as the worker's custody of Solana vaults, instant claims by whoever controls a DNSSEC-signed zone, the keys pump.fun keeps over its own coins, or pons's timelocked fee-recipient changes.
+The [trust model](https://type262.com/docs.html#security) documents the intended behaviour, such as the worker's custody of Solana vaults, instant claims by whoever controls a DNSSEC-signed zone, the keys pump.fun keeps over its own coins, or pons's timelocked fee-recipient changes.
 Reports that the documented model itself is weaker than stated are welcome.
 
 ## Deployments
@@ -34,7 +34,7 @@ Solana runs no TYPE/262 program: vaults are ordinary addresses, held by the work
 | Gas wallet | [`3sde4YJpX2oYMSWaozHareWrXn6MASLxhQgfuCKJNPoK`](https://solscan.io/account/3sde4YJpX2oYMSWaozHareWrXn6MASLxhQgfuCKJNPoK) |
 | Fee wallet | [`3sde4YJpX2oYMSWaozHareWrXn6MASLxhQgfuCKJNPoK`](https://solscan.io/account/3sde4YJpX2oYMSWaozHareWrXn6MASLxhQgfuCKJNPoK) |
 
-The settings, endpoints and checks are listed in [Worker API](https://type262.onrender.com/docs.html#solana-worker).
+The settings, endpoints and checks are listed in [Worker API](https://type262.com/docs.html#solana-worker).
 
 ### Robinhood Chain
 
@@ -47,7 +47,7 @@ Robinhood Chain mainnet, chain id 4663, deployed from block 93,920,186.
 | `DnssecVerifier` | [`0x2dfB277A25ea096b182F86665D130B9b53B15758`](https://robinhoodchain.blockscout.com/address/0x2dfB277A25ea096b182F86665D130B9b53B15758) |
 | `DNSSECImpl` (ENS DNSSEC oracle, no owner) | [`0xB6bDbff51a51Fb8743dAaa115317d9a72fEbDaE1`](https://robinhoodchain.blockscout.com/address/0xB6bDbff51a51Fb8743dAaa115317d9a72fEbDaE1) |
 
-The oracle's algorithm and digest contracts, every creation transaction and the escrow settings are recorded in [`deployments/robinhood-4663.json`](deployments/robinhood-4663.json) and listed in [Deployments](https://type262.onrender.com/docs.html#deployments).
+The oracle's algorithm and digest contracts, every creation transaction and the escrow settings are recorded in [`deployments/robinhood-4663.json`](deployments/robinhood-4663.json) and listed in [Deployments](https://type262.com/docs.html#deployments).
 
 ## Report a vulnerability
 

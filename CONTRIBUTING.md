@@ -6,7 +6,7 @@ Solana is the main network; Robinhood Chain is also supported.
 Domains that haven't published yet can be paid through their own vault on Solana or an escrow on Robinhood Chain, and pump.fun coins can send their creator fees to a domain.
 
 Thanks for helping build it. This guide covers the layout, setup, tests, builds, conventions and how to send a change.
-The full documentation lives in [`docs.html`](https://type262.onrender.com/docs.html).
+The full documentation lives in [`docs.html`](https://type262.com/docs.html).
 
 ## Contents
 
@@ -28,7 +28,7 @@ The full documentation lives in [`docs.html`](https://type262.onrender.com/docs.
 |---|---|
 | `index.html` | Landing page with a live resolver and a live adoption scan |
 | `app.html` | The app: Resolve, Pay, Escrow, Publish, Verify, Badge and Launch, on Solana or Robinhood Chain |
-| `board.html`, `domain.html` | The Unclaimed Board (`/board`) and domain profiles (`/d/<domain>`), read from Robinhood Chain |
+| `board.html`, `domain.html` | The Unclaimed Board (`/board`) and domain profiles (`/d/<domain>`), read from Solana and Robinhood Chain |
 | `docs.html` | The full documentation, with `assets/docs.js` and `assets/docs.css` |
 | `lib/wallet262.js` | The zero-dependency SDK for browsers and Node 18+, and the package's main export |
 | `bin/type262.mjs` | The `type262` CLI |
@@ -40,6 +40,7 @@ The full documentation lives in [`docs.html`](https://type262.onrender.com/docs.
 | `assets/solana-vault.js` | The vault client: the worker's API, reads of a vault and its history, and pump.fun launches and collects sent from the user's wallet |
 | `assets/solana-proof.js`, `assets/solana-type262.js` | Clients for the on-chain program: DNSSEC proofs for it, and its instructions and account readers |
 | `assets/solana-escrow.js`, `assets/solana-launch.js` | The Escrow and Launch screens on Solana |
+| `assets/solana-board.js`, `assets/board-data.js` | The board's Solana side, tagged deposits and launches checked on-chain, and the merge with Robinhood Chain (`assets/chain-data.js`) for the board and profiles |
 | `solana/programs/type262/` | The on-chain Solana program, built and tested, not deployed: escrow, on-chain DNSSEC verifier and pump.fun launcher (Anchor) |
 | `solana/tests-rs/` | The program's LiteSVM tests, in their own Cargo workspace |
 | `solana/docs/` | `DNSSEC.md` and `PUMP.md`, the specifications the program implements |
@@ -101,7 +102,7 @@ Open [http://127.0.0.1:5262](http://127.0.0.1:5262).
 The clean URLs `/board` and `/d/<domain>` are rewrites on the host (see `render.yaml`), so use the `.html` paths locally.
 Pages load native ES modules and must be served over HTTP. Opening the files directly won't work.
 
-The app reads the live worker and contracts by default. `assets/config.js` is its only configuration; see [Self-hosting](https://type262.onrender.com/docs.html#self-hosting).
+The app reads the live worker and contracts by default. `assets/config.js` is its only configuration; see [Self-hosting](https://type262.com/docs.html#self-hosting).
 
 ### The worker (optional)
 
@@ -132,6 +133,7 @@ npm test
 | `test/vault.test.mjs` | The vault rules in `upload/vault.mjs`: key derivation, canonical domains, the fee, what DNS must say, which addresses can be paid, what counts as a deposit, and memos |
 | `test/vault-worker.test.mjs` | The vault worker in `upload/worker.mjs` against a mocked Solana RPC and stub DNS: every transaction it sends, the lock, gas checks, refund rules, retries and priority fees |
 | `test/chain-data.test.mjs` | The board and profile event decoders in `assets/chain-data.js` match viem, then one read-only call to the live escrow |
+| `test/solana-board.test.mjs` | The board's Solana side in `assets/solana-board.js` against a mocked RPC: the board reference and memo, deposit and claim parsing, and that only money that reached a domain's vault, or a coin whose creator is that vault, makes the board |
 | `test/upload.test.mjs` | The upload endpoints against a mock Pinata: health, pinning, CORS and the origin allowlist, content checks, the 5 MB limit, the rate limit |
 | `test/mcp.test.mjs` | The bundled MCP server over stdio: protocol, live DNS, dry runs, spending limits, key handling, mock DNS |
 
@@ -286,7 +288,7 @@ The Robinhood Chain contracts are immutable. A contract change ships as a new de
 
 | Where | What |
 |---|---|
-| [`docs.html`](https://type262.onrender.com/docs.html) | The full reference: quickstart, the WALLET record, resolution, SDK, CLI, agents and x402, MCP server, payments, board and profiles, Solana (vaults, claims and refunds, the pump.fun launchpad, the worker API, the on-chain program), the Robinhood Chain contracts, self-hosting, testing, security |
+| [`docs.html`](https://type262.com/docs.html) | The full reference: quickstart, the WALLET record, resolution, SDK, CLI, agents and x402, MCP server, payments, board and profiles, Solana (vaults, claims and refunds, the pump.fun launchpad, the worker API, the on-chain program), the Robinhood Chain contracts, self-hosting, testing, security |
 | [`mcp/README.md`](mcp/README.md) | MCP server tools, configuration and limits |
 | [`solana/README.md`](solana/README.md) | Building and testing the on-chain Solana program: toolchain, LiteSVM, WSL, the local validator |
 | [`solana/docs/`](solana/docs) | `DNSSEC.md` and `PUMP.md`, the specifications and measurements behind the program |

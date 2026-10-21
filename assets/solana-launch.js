@@ -352,11 +352,12 @@ async function launch() {
       uri = await pinMetadata({
         name, symbol, description: v('description'), image: logo, showName: true,
         twitter: v('twitter'), telegram: v('telegram'), website: v('website') || `https://${domain}`,
+        domain, // the board reads it back, and checks the coin's creator is this domain's vault
       })
     } catch (err) { pin(0, 'fail'); throw err }
     pin(0, 'done', null, 'Pinned')
     // The new mint's keypair is in the create's extraSigners: it co-signs after the wallet, then stays in this page.
-    plan = await V.launchTxs({ payer, vault: info.vault, name, symbol, uri, buyLamports: buy, settings })
+    plan = await V.launchTxs({ payer, vault: info.vault, name, symbol, uri, buyLamports: buy, settings, board: true })
     coin = { mint: plan.mint, domain, vault: info.vault, name, symbol, logo }
     const buyLine = `Opening buy: ${fmtUnits(buy, 9)} SOL of $${symbol}`
     const LABEL = { launch: `Launch $${symbol} on pump.fun${buy ? `, with a ${fmtUnits(buy, 9)} SOL opening buy` : ''}`, create: `Launch $${symbol} on pump.fun`, buy: buyLine }

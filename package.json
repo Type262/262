@@ -2,7 +2,7 @@
   "name": "type262",
   "version": "0.2.0",
   "description": "Every domain is a wallet. Resolve, verify and publish DNS WALLET (RRTYPE 262) records, and pay domains in SOL or USDC on Solana, or in USDG or ETH on Robinhood Chain.",
-  "homepage": "https://type262.onrender.com",
+  "homepage": "https://type262.com",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Type262/262.git"
@@ -27,7 +27,7 @@
   },
   "scripts": {
     "dev": "python -m http.server 5262 --bind 127.0.0.1",
-    "test": "node test/wallet262.test.mjs && node test/abi.test.mjs && node test/chain-data.test.mjs && node test/upload.test.mjs && node test/vault.test.mjs && node test/vault-worker.test.mjs && node test/mcp.test.mjs",
+    "test": "node test/wallet262.test.mjs && node test/abi.test.mjs && node test/chain-data.test.mjs && node test/upload.test.mjs && node test/vault.test.mjs && node test/vault-worker.test.mjs && node test/solana-board.test.mjs && node test/mcp.test.mjs",
     "test:contracts": "cd contracts && forge test",
     "test:mcp:fork": "node test/mcp.test.mjs --fork",
     "upload:dev": "node upload/server.mjs",

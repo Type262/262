@@ -1,7 +1,7 @@
 blank_issues_enabled: false
 contact_links:
   - name: Documentation
-    url: https://type262.onrender.com/docs.html
+    url: https://type262.com/docs.html
     about: Quickstart, the WALLET record, Solana vaults and the pump.fun launchpad, SDK, CLI, MCP server, and the Robinhood Chain contracts.
   - name: Report a security vulnerability
     url: https://github.com/Type262/262/security/advisories/new
