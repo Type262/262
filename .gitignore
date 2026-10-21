@@ -1,0 +1,7 @@
+.env
+contracts/broadcast/
+contracts/cache/
+contracts/out/
+contracts/test/fixtures/
+dist/
+node_modules/

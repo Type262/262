@@ -1,0 +1,50 @@
+{
+  "name": "type262",
+  "version": "0.1.0",
+  "description": "Resolve, verify and publish DNS WALLET (RRTYPE 262) records. Every domain is a wallet.",
+  "homepage": "https://type262.onrender.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Type262/262.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Type262/262/issues"
+  },
+  "author": "TYPE/262",
+  "type": "module",
+  "exports": "./lib/wallet262.js",
+  "bin": {
+    "type262": "bin/type262.mjs"
+  },
+  "files": [
+    "lib",
+    "bin"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "dev": "python -m http.server 5262 --bind 127.0.0.1",
+    "test": "node test/wallet262.test.mjs && node test/abi.test.mjs && node test/upload.test.mjs",
+    "test:contracts": "cd contracts && forge test",
+    "upload:dev": "node upload/server.mjs"
+  },
+  "keywords": [
+    "dns",
+    "wallet",
+    "rrtype-262",
+    "x402",
+    "robinhood-chain",
+    "usdg",
+    "dnssec",
+    "dns-wallet",
+    "escrow",
+    "ens",
+    "web3"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "@ensdomains/dnsprovejs": "^1.0.1",
+    "viem": "^2.57.7"
+  }
+}
