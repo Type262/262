@@ -1,0 +1,79 @@
+{
+  "network": "Robinhood Chain",
+  "chainId": 4663,
+  "deployedAt": "2026-10-21T02:04:54.323Z",
+  "commit": "b663228",
+  "contracts": {
+    "DNSSECImpl": "0xb6bdbff51a51fb8743daaa115317d9a72febdae1",
+    "RSASHA1Algorithm": "0xb5d5879fee6fcd8875926b354293a12a9184bafd",
+    "RSASHA256Algorithm": "0x3efc8eef78cc46513e8d301a81b15a663afa375e",
+    "P256SHA256Algorithm": "0x3de4e42c7f9f6ffccdde89c26c4050c2b541f83b",
+    "SHA1Digest": "0xb9a0bec3d07c72f6d27a3f02970e4c1fe6a0c787",
+    "SHA256Digest": "0x5857564502806cd4f83acd248e06d96334d77aa1",
+    "DnssecVerifier": "0x2dfb277a25ea096b182f86665d130b9b53b15758",
+    "DomainEscrow": "0x9fd2f1dc0b42e8a2e86e3cf231a293654691e8d5",
+    "DomainLauncher": "0x022657ac8bdd969fa5149e7a86fbbda2afaf716f"
+  },
+  "transactions": [
+    {
+      "contract": "DNSSECImpl",
+      "hash": "0xd9757da01e8ffc8481b5259abf56c26304ebcd3ac9622473f54c863d9cd5075f"
+    },
+    {
+      "contract": "RSASHA1Algorithm",
+      "hash": "0x4af78b345cf4da7dc74a95ff48fb71bee46bf54b069f7bc5d7a5f6bf5d187718"
+    },
+    {
+      "contract": "RSASHA256Algorithm",
+      "hash": "0xa6b3cb178e767b5d74b2b09ec12d180c982f92140e4f8a0f75156da68a4ec5e5"
+    },
+    {
+      "contract": "P256SHA256Algorithm",
+      "hash": "0x64745be26cbce4651678fcac2634282e257fafb57816b91075f76d12b07656a6"
+    },
+    {
+      "contract": "SHA1Digest",
+      "hash": "0x10d760542d50300f32ec381fb582cbbc2989b78bbe4b9fca61e0f15d3be3e087"
+    },
+    {
+      "contract": "SHA256Digest",
+      "hash": "0xb54bc6672884b3ab4ed83ce7aedf5df874084aaf65a3f9108e0d824c57549549"
+    },
+    {
+      "contract": "DnssecVerifier",
+      "hash": "0x9c255a15c006357085d6208f03719828969ea176fc26fa672cf0184f0442c72d"
+    },
+    {
+      "contract": "DomainEscrow",
+      "hash": "0x35b4b031a00b14bfcf1152b830c6c425cf51bcd40b1172f4a9bfb33ff949ebc7"
+    },
+    {
+      "contract": "DomainLauncher",
+      "hash": "0xa8237df0b237a2dcd593e087886698018a14edb91dcfa4f7f0abb2803060c3a5"
+    }
+  ],
+  "blocks": [
+    93920186,
+    93920207,
+    93920231,
+    93920255,
+    93920279,
+    93920303,
+    93920327,
+    93920351,
+    93920375,
+    93920399,
+    93920423,
+    93920447,
+    93920471,
+    93920495,
+    93920519,
+    93920543
+  ],
+  "config": {
+    "admin": "0x37c6099d58Bb65D85c9CcF6D97de418BD26dD7f0",
+    "feeRecipient": "0x37c6099d58Bb65D85c9CcF6D97de418BD26dD7f0",
+    "feeBps": 50,
+    "refundDelaySeconds": 15552000
+  }
+}
