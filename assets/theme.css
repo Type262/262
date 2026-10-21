@@ -1,0 +1,159 @@
+/* TYPE/262 — "chrome nature" skin. Loaded after style.css.
+   Liquid chrome + bioluminescence: black, silver, acid lime, a touch of violet. */
+:root {
+  --bg: #050505;
+  --glass: rgba(14, 14, 14, .62);
+  --glass-2: rgba(22, 22, 22, .72);
+  --bg-2: var(--glass);
+  --bg-3: rgba(30, 30, 30, .8);
+  --acid: #c8ff1e;
+  --violet: #8b5cff;
+  --line: rgba(255, 255, 255, .07);
+  --line-2: rgba(255, 255, 255, .14);
+  --wide: 'Archivo', var(--font);
+  --chrome: linear-gradient(180deg, #ffffff 0%, #dadad6 20%, #7d7d79 47%, #f7f7f3 53%, #a3a39e 74%, #ffffff 100%);
+  --edge: linear-gradient(135deg, rgba(255, 255, 255, .5), rgba(255, 255, 255, .05) 34%, rgba(200, 255, 30, .38) 66%, rgba(139, 92, 255, .45));
+}
+body { background: var(--bg); }
+
+/* ---------- ambient: drifting light + bioluminescent spores ---------- */
+.ambient { position: fixed; inset: 0; z-index: -2; pointer-events: none; overflow: hidden; }
+.ambient::before, .ambient::after { content: ""; position: absolute; width: 70vmax; height: 70vmax; border-radius: 50%; filter: blur(9vmax); }
+.ambient::before { background: var(--acid); left: -32vmax; top: -38vmax; opacity: .09; animation: drift-a 28s ease-in-out infinite alternate; }
+.ambient::after { background: var(--violet); right: -30vmax; bottom: -40vmax; opacity: .13; animation: drift-b 34s ease-in-out infinite alternate; }
+@keyframes drift-a { to { transform: translate(20vmax, 26vmax) scale(1.2); } }
+@keyframes drift-b { to { transform: translate(-22vmax, -18vmax) scale(1.15); } }
+#spores { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+
+/* ---------- type ---------- */
+.display, .h2 { font-family: var(--wide); font-stretch: 125%; font-weight: 800; text-transform: uppercase; letter-spacing: -.02em; line-height: .94; }
+.display { font-size: clamp(2.25rem, 4.6vw, 4.75rem); }
+.h2 { font-size: clamp(1.875rem, 3.9vw, 4rem); }
+.split2 .h2, .story-intro .h2 { font-size: clamp(1.75rem, 3vw, 3rem); }
+.view-head .h2 { font-size: clamp(2rem, 4vw, 3.75rem); }
+.cta .h2 { font-size: clamp(2rem, 4.4vw, 4.5rem); }
+.accent { color: var(--acid); text-shadow: 0 0 1.75rem rgba(200, 255, 30, .35); }
+.chrome-t { background: var(--chrome); background-size: 100% 240%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: sheen 7s ease-in-out infinite; filter: drop-shadow(-1px 0 0 rgba(200, 255, 30, .55)) drop-shadow(1px 0 0 rgba(139, 92, 255, .6)); }
+@keyframes sheen { 0%, 100% { background-position: 0 0; } 50% { background-position: 0 100%; } }
+.eyebrow::before { background: var(--acid); box-shadow: 0 0 .75rem var(--acid); }
+
+/* ---------- surfaces: glass with a chrome edge ---------- */
+.cmp, .flow > div, .term, .card, .result, .field, .badge, .node, .note, .rail a.on, .pb-row, .pb-table, .chain-pill, .code {
+  border: 1px solid transparent !important;
+  background: linear-gradient(var(--glass), var(--glass)) padding-box, var(--edge) border-box !important;
+  -webkit-backdrop-filter: blur(14px) saturate(1.3); backdrop-filter: blur(14px) saturate(1.3);
+}
+.field:focus-within { --edge: linear-gradient(90deg, var(--acid), var(--violet)); box-shadow: 0 0 0 4px rgba(200, 255, 30, .08), 0 0 2.5rem rgba(200, 255, 30, .12); }
+.code { --glass: rgba(6, 6, 6, .8); }
+.note.warn { --edge: linear-gradient(90deg, rgba(255, 90, 54, .7), rgba(255, 90, 54, .2)); }
+.note.good { --edge: linear-gradient(90deg, var(--acid), rgba(200, 255, 30, .2)); --glass: rgba(200, 255, 30, .06); }
+
+/* ---------- buttons ---------- */
+.btn { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+.btn:not(.primary):not(.solid):not(.invert):not(.dark) { border: 1px solid transparent; background: linear-gradient(var(--glass), var(--glass)) padding-box, var(--edge) border-box; }
+.btn:not(.primary):not(.solid):not(.invert):not(.dark):hover { --edge: linear-gradient(90deg, #fff, #fff); }
+.btn.primary, .btn.solid { box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55), 0 0 0 rgba(200, 255, 30, 0); }
+.btn.primary:hover, .btn.solid:hover { background: var(--acid); color: var(--on-acid); border-color: var(--acid); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55), 0 0 2.25rem rgba(200, 255, 30, .5); }
+.btn.invert, .btn.dark { background: #f4f4f0; color: #050505; border-color: #f4f4f0; }
+
+/* ---------- header ---------- */
+.hud.solid, .app-page .hud { background: rgba(5, 5, 5, .55); }
+.logo { gap: .75rem; }
+.logo i { display: none; }
+.logo img { width: 2rem; height: 2rem; filter: drop-shadow(0 0 .5rem rgba(200, 255, 30, .35)); }
+.wm { font: 800 1rem/1 var(--wide); font-stretch: 125%; letter-spacing: -.01em; }
+.wm b { color: var(--acid); font-weight: 800; }
+
+/* ---------- sections ---------- */
+.section { border-top: 0; isolation: isolate; overflow: clip; }
+.section::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .16) 30%, rgba(200, 255, 30, .4) 50%, rgba(139, 92, 255, .35) 70%, transparent); }
+.bg-art { position: absolute; z-index: -1; pointer-events: none; user-select: none; transform: translate3d(0, var(--par, 0px), 0); will-change: transform; }
+
+/* ---------- hero ---------- */
+.hero { isolation: isolate; padding-top: calc(var(--hud) + 1.5rem); padding-bottom: 7rem; }
+.hero .flora { inset: -6% -4%; width: 108%; height: 112%; object-fit: cover; opacity: .9; transform: translate3d(var(--fx, 0px), calc(var(--fy, 0px) + var(--par, 0px)), 0) scale(1.03); transition: transform 1.4s var(--out); }
+.hero-inner { gap: 1.5rem; }
+.hero-mark { position: relative; width: min(52rem, 88vw); aspect-ratio: 1536 / 590; margin: -.75rem 0 -1.25rem; perspective: 70rem; opacity: 0; transform: translateY(2.5rem) scale(.94); filter: blur(10px); transition: opacity 1.6s var(--out), transform 1.6s var(--out), filter 1.4s var(--out); }
+.ready .hero-mark { opacity: 1; transform: none; filter: none; }
+.hero-mark .float { position: absolute; inset: 0; animation: bob 7s ease-in-out infinite; }
+.hero-mark img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 49%; transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform .9s var(--out); }
+.hero-mark::before { content: ""; position: absolute; inset: 18% 12%; z-index: -1; background: radial-gradient(closest-side, rgba(200, 255, 30, .2), rgba(139, 92, 255, .08) 60%, transparent 80%); filter: blur(2.5rem); animation: glow 5s ease-in-out infinite; }
+@keyframes bob { 50% { transform: translateY(-1.1rem); } }
+@keyframes glow { 50% { opacity: .55; transform: scale(1.08); } }
+.hero h1 .ln > span { color: #f4f4f0; }
+.hero .flap b { background: rgba(16, 16, 16, .85); border-color: rgba(255, 255, 255, .12); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08); }
+
+/* ---------- 01 slot ---------- */
+.bg-orbit { right: -18%; top: 4%; width: 78%; opacity: .42; }
+.cmp .num { background: var(--chrome); background-size: 100% 240%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: sheen 7s ease-in-out infinite; }
+.cmp.now { --edge: linear-gradient(135deg, var(--acid), rgba(200, 255, 30, .1) 45%, var(--violet)); color: var(--fg); box-shadow: 0 0 4rem rgba(200, 255, 30, .08); }
+.cmp.now .label, .cmp.now .dim { color: var(--dim); }
+.cmp.now .track { background: var(--line-2); }
+.cmp .track i { background: #f4f4f0; }
+.cmp.now .track i { background: var(--acid); box-shadow: 0 0 .75rem var(--acid); }
+
+/* ---------- 02 story ---------- */
+.story-pin { isolation: isolate; }
+.bg-roots { left: 50%; top: -6%; width: min(110rem, 120%); transform: translateX(-50%); opacity: .34; -webkit-mask-image: linear-gradient(#000 55%, transparent); mask-image: linear-gradient(#000 55%, transparent); }
+.stage { border: 1px solid transparent; background:
+  linear-gradient(rgba(255, 255, 255, .025) 1px, transparent 1px) 0 0 / 2rem 2rem padding-box,
+  linear-gradient(90deg, rgba(255, 255, 255, .025) 1px, transparent 1px) 0 0 / 2rem 2rem padding-box,
+  linear-gradient(rgba(8, 8, 8, .78), rgba(8, 8, 8, .78)) padding-box, var(--edge) border-box;
+  -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); box-shadow: 0 2rem 6rem rgba(0, 0, 0, .55); }
+.hop i, .zone, .pay { background-color: transparent; }
+
+/* ---------- 03 agents ---------- */
+.term { box-shadow: 0 2rem 6rem rgba(0, 0, 0, .5); }
+.console { color: #d8d8d2; }
+
+/* ---------- 04 escrow ---------- */
+.escrow-head { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(2rem, 5vw, 5rem); align-items: center; margin-bottom: clamp(3rem, 5vw, 5rem); }
+.escrow-head .copy { display: grid; gap: 1.5rem; justify-items: start; }
+.seed { position: relative; aspect-ratio: 1; width: min(34rem, 100%); justify-self: center; }
+.seed img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; animation: bob 8s ease-in-out infinite; }
+.seed::before { content: ""; position: absolute; inset: 22%; background: radial-gradient(closest-side, rgba(200, 255, 30, .28), transparent 75%); filter: blur(2rem); animation: glow 4.5s ease-in-out infinite; }
+.flow-bar i { background: linear-gradient(90deg, var(--acid), var(--violet)); }
+.flow > div.on { --edge: linear-gradient(135deg, var(--acid), rgba(200, 255, 30, .12) 50%, var(--violet)); --glass: rgba(200, 255, 30, .05); background: linear-gradient(var(--glass), var(--glass)) padding-box, var(--edge) border-box !important; color: var(--fg); }
+.flow > div.on .label, .flow > div.on p { color: var(--dim); }
+.flow > div.on .v { color: var(--acid); text-shadow: 0 0 1.5rem rgba(200, 255, 30, .4); }
+@media (max-width: 900px) { .escrow-head { grid-template-columns: 1fr; } .seed { width: min(22rem, 80%); } }
+
+/* ---------- 05 adoption ---------- */
+.bg-myc { inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .38; }
+.adopt .num #count { background: var(--chrome); background-size: 100% 240%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: sheen 7s ease-in-out infinite; }
+.board .row .flap b { background: rgba(26, 26, 26, .9); }
+
+/* ---------- CTA ---------- */
+.cta .lockup { position: relative; width: min(38rem, 84vw); aspect-ratio: 1254 / 470; margin: 0 auto 2rem; }
+.cta .lockup img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 52%; animation: bob 9s ease-in-out infinite; }
+.cta .lockup::before { content: ""; position: absolute; inset: 25% 15%; background: radial-gradient(closest-side, rgba(200, 255, 30, .18), rgba(139, 92, 255, .1) 60%, transparent 80%); filter: blur(2.5rem); animation: glow 5s ease-in-out infinite; }
+
+/* ---------- app ---------- */
+.app-art { position: fixed; z-index: -1; right: -14%; top: 6%; width: 62%; opacity: .26; pointer-events: none; }
+.rail { background: rgba(5, 5, 5, .45); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+.rail a:hover { background: rgba(255, 255, 255, .03); }
+.rail a.on::before { box-shadow: 0 0 .75rem var(--acid); }
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-mark { opacity: 1; transform: none; filter: none; }
+}
+
+/* ---------- launch ---------- */
+.ln-card, .ln-box, .ln-kpis, .seg, .ln-to {
+  border: 1px solid transparent !important;
+  background: linear-gradient(var(--glass), var(--glass)) padding-box, var(--edge) border-box !important;
+  -webkit-backdrop-filter: blur(14px) saturate(1.3); backdrop-filter: blur(14px) saturate(1.3);
+}
+.ln-to { --glass: rgba(200, 255, 30, .04); --edge: linear-gradient(90deg, rgba(200, 255, 30, .35), rgba(139, 92, 255, .25)); }
+a.ln-card:hover { --edge: linear-gradient(135deg, var(--acid), rgba(200, 255, 30, .1) 45%, var(--violet)); box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, .45), 0 0 3rem rgba(200, 255, 30, .08); }
+.seg > .on { background: var(--acid); color: var(--on-acid); box-shadow: 0 0 1.25rem rgba(200, 255, 30, .3); }
+.ln-feebox { --edge: linear-gradient(135deg, rgba(200, 255, 30, .55), rgba(255, 255, 255, .06) 45%, rgba(139, 92, 255, .5)); }
+.ln-logo, .ln-thumb { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .06); }
+
+.pb-nets button { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+.pb-nets button[aria-checked="true"] { box-shadow: inset 0 0 0 1px var(--acid), 0 0 1.25rem rgba(200, 255, 30, .15); }
+.pb-row.good { --edge: linear-gradient(135deg, rgba(200, 255, 30, .55), rgba(255, 255, 255, .06) 45%, rgba(139, 92, 255, .4)); }
+.pb-row.bad { --edge: linear-gradient(90deg, rgba(255, 90, 54, .7), rgba(255, 90, 54, .2)); }
+
+/* buttons inside a field keep only their left divider */
+.field .btn:not(.primary):not(.solid):not(.invert):not(.dark) { border-width: 0 0 0 1px; }

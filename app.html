@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TYPE/262 · App</title>
+  <meta name="description" content="Resolve, pay, escrow, publish and verify DNS WALLET (TYPE262) records, and launch tokens whose fees go to a domain, on Robinhood Chain.">
+  <meta name="theme-color" content="#0b0b0b">
+  <link rel="icon" type="image/webp" href="assets/art/emblem.webp">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,700..900&family=Geist:wght@300..800&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/style.css">
+  <link rel="stylesheet" href="assets/theme.css">
+</head>
+<body class="app-page ready">
+  <header class="hud">
+    <div class="container">
+      <a class="logo" href="./"><img src="assets/art/emblem.webp" alt=""><span class="wm">TYPE<b>/</b>262</span></a>
+      <div class="end">
+        <a class="btn sm hide-sm" href="./">Home</a>
+        <a class="btn sm hide-sm" href="docs.html">Docs</a>
+        <a class="btn sm icon hide-sm" href="https://x.com/type_262" target="_blank" rel="noopener" aria-label="TYPE/262 on X" title="@type_262 on X"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a><a class="btn sm icon hide-sm" href="https://github.com/Type262/262" target="_blank" rel="noopener" aria-label="TYPE/262 on GitHub" title="Type262/262 on GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></a>
+        <button id="connect" class="btn primary sm" type="button"><span>Connect wallet</span></button>
+      </div>
+    </div>
+  </header>
+
+  <img class="app-art" src="assets/art/chrome-orbit.webp" alt="" aria-hidden="true">
+  <div class="app">
+    <nav class="rail" aria-label="Tools">
+      <a href="#resolve" data-v="resolve"><small>01</small><strong>Resolve</strong><em>Look up a domain's wallets</em></a>
+      <a href="#pay" data-v="pay"><small>02</small><strong>Pay</strong><em>Send USDG to a name</em></a>
+      <a href="#escrow" data-v="escrow"><small>03</small><strong>Escrow</strong><em>Pay before they publish</em></a>
+      <a href="#publish" data-v="publish"><small>04</small><strong>Publish</strong><em>Make your domain payable</em></a>
+      <a href="#verify" data-v="verify"><small>05</small><strong>Verify</strong><em>Check an x402 payTo</em></a>
+      <a href="#badge" data-v="badge"><small>06</small><strong>Badge</strong><em>A pay button for your site</em></a>
+      <a href="#launch" data-v="launch"><small>07</small><strong>Launch</strong><em>Tokens that pay a domain</em></a>
+      <a href="docs.html" class="rail-docs"><small>08</small><strong>Docs</strong><em>Guides and API reference</em></a>
+    </nav>
+
+    <main class="panel"><div class="panel-in">
+      <!-- resolve -->
+      <section class="view" id="v-resolve">
+        <div class="view-head">
+          <span class="eyebrow">01 — Resolve</span>
+          <h2 class="h2">Look up any <span class="accent">name.</span></h2>
+          <p class="body">See the wallets a domain publishes in DNS: two resolvers, DNSSEC status, and the <span class="mono">_wallet</span> TXT fallback.</p>
+        </div>
+        <form class="field" data-form="resolve" autocomplete="off">
+          <span class="pre">dig</span>
+          <input name="d" placeholder="yoursite.com" aria-label="Domain" spellcheck="false">
+          <button class="btn primary" type="submit">Resolve</button>
+        </form>
+        <div class="result" id="resolve-out" aria-live="polite"></div>
+        <details id="resolve-raw" style="margin-top:1rem" hidden><summary class="label" style="cursor:pointer;padding:0.75rem 0">Raw resolver answers</summary><pre class="code" id="resolve-json"></pre></details>
+      </section>
+
+      <!-- pay -->
+      <section class="view" id="v-pay">
+        <div class="view-head">
+          <span class="eyebrow">02 — Pay</span>
+          <h2 class="h2">Pay a <span class="accent">name.</span></h2>
+          <p class="body">Send to a domain instead of an address. We resolve its WALLET record and check DNSSEC, then your wallet sends USDG or ETH on Robinhood Chain.</p>
+        </div>
+        <form class="field" data-form="pay" autocomplete="off">
+          <span class="pre">pay</span>
+          <input name="d" placeholder="yoursite.com" aria-label="Domain to pay" spellcheck="false">
+          <button class="btn primary" type="submit">Find wallet</button>
+        </form>
+        <div id="pay-step" class="stack" style="margin-top:1rem"></div>
+      </section>
+
+      <!-- escrow -->
+      <section class="view" id="v-escrow">
+        <div class="view-head">
+          <span class="eyebrow">03 — Escrow</span>
+          <h2 class="h2">Pay them <span class="accent">first.</span></h2>
+          <p class="body">Pay a domain that hasn't published a wallet yet. The money waits on Robinhood Chain until the owner claims it with one DNS record. <b>Unclaimed after 180 days? You get it back.</b></p>
+        </div>
+        <div id="esc-cfg"></div>
+        <form class="field" data-form="escrow" autocomplete="off">
+          <span class="pre">to</span>
+          <input name="d" placeholder="yoursite.com" aria-label="Domain" spellcheck="false">
+          <button class="btn primary" type="submit">Look up</button>
+        </form>
+        <div id="esc-out" class="stack" style="margin-top:1rem"></div>
+      </section>
+
+      <!-- publish -->
+      <section class="view" id="v-publish">
+        <div class="view-head">
+          <span class="eyebrow">04 — Publish</span>
+          <h2 class="h2">Make it <span class="accent">payable.</span></h2>
+          <p class="body">Tell the internet where your domain gets paid. Pick a network, paste an address, and copy one record into your DNS.</p>
+          <span class="chain-pill"><img src="assets/chains/robinhood.png" alt="" width="20" height="20">Settles on Robinhood Chain<em>4663</em></span>
+        </div>
+
+        <div class="pb-step">
+          <div class="pb-head"><small>01</small><h3>Your domain</h3></div>
+          <div class="pb-domain">
+            <div class="field"><span class="pre">domain</span><input id="pub-d" placeholder="yoursite.com" spellcheck="false" autocomplete="off" aria-label="Domain"></div>
+            <div class="field sm pb-ttl"><select id="pub-ttl" aria-label="TTL"><option value="300">TTL 5 min</option><option value="3600" selected>TTL 1 hour</option><option value="86400">TTL 1 day</option></select></div>
+          </div>
+        </div>
+
+        <div class="pb-step">
+          <div class="pb-head"><small>02</small><h3>Where you get paid</h3><p>Paste any address; the network is detected for you.</p></div>
+          <div class="pb-rows" id="pub-entries"></div>
+          <button class="btn sm" id="pub-add" type="button">+ Add another address</button>
+        </div>
+
+        <div id="pub-out"></div>
+      </section>
+
+      <!-- verify -->
+      <section class="view" id="v-verify">
+        <div class="view-head">
+          <span class="eyebrow">05 — Verify</span>
+          <h2 class="h2">Trust, <span class="accent">verified.</span></h2>
+          <p class="body">An x402 server says "pay this address". Does that address really belong to the domain? Paste a URL and an address, or a whole 402 response.</p>
+        </div>
+        <form class="stack" data-form="verify" autocomplete="off">
+          <div class="row-2">
+            <div><span class="label lbl">URL or domain</span><div class="field sm"><input name="u" placeholder="https://api.yoursite.com/data" spellcheck="false"></div></div>
+            <div><span class="label lbl">payTo address</span><div class="field sm"><input name="a" placeholder="0x…" spellcheck="false"></div></div>
+          </div>
+          <div><span class="label lbl">Or paste a 402 response body (optional)</span><div class="field area"><textarea name="j" placeholder='{"x402Version":1,"accepts":[{"payTo":"0x…"}]}' spellcheck="false"></textarea></div></div>
+          <div><button class="btn primary" type="submit">Verify</button></div>
+        </form>
+        <div id="verify-out" class="stack" style="margin-top:1rem"></div>
+      </section>
+
+      <!-- badge -->
+      <section class="view" id="v-badge">
+        <div class="view-head">
+          <span class="eyebrow">06 — Badge</span>
+          <h2 class="h2">Get paid <span class="accent">anywhere.</span></h2>
+          <p class="body">A "pay via DNS" button for your site. It opens a pay page that resolves your domain live, so nobody can swap the address in your HTML.</p>
+        </div>
+        <div class="field sm"><input id="badge-d" placeholder="yoursite.com" spellcheck="false" aria-label="Domain"></div>
+        <div id="badge-out" class="stack" style="margin-top:1rem"></div>
+      </section>
+      <!-- launch -->
+      <section class="view" id="v-launch">
+        <div class="view-head">
+          <span class="eyebrow">07 — Launch</span>
+          <h2 class="h2">Launch for a <span class="accent">domain.</span></h2>
+          <p class="body">Launch a token on <a class="ul" href="https://ponsfamily.com/launchpad" target="_blank" rel="noopener">pons</a>. Its creator fees go to a domain instead of a wallet, and the domain's owner claims them with one DNS record.</p>
+        </div>
+        <div id="ln-cfg"></div>
+        <div class="seg ln-switch">
+          <a href="#launch" data-lv="board">Board</a>
+          <a href="#launch/new" data-lv="new">Launch a token</a>
+        </div>
+
+        <div class="ln-pane" id="ln-board">
+          <div class="ln-tools">
+            <form class="field sm" data-form="ln-find" autocomplete="off">
+              <span class="pre">fees</span>
+              <input name="d" placeholder="Filter by domain" spellcheck="false" aria-label="Domain">
+              <button class="btn" type="submit">Find</button>
+            </form>
+            <div class="seg sm" data-group="sort">
+              <button type="button" data-val="new" class="on">New</button>
+              <button type="button" data-val="near">Near graduation</button>
+              <button type="button" data-val="grad">Graduated</button>
+            </div>
+            <div class="seg sm" data-group="pair">
+              <button type="button" data-val="any" class="on">Any pair</button>
+              <button type="button" data-val="eth">ETH</button>
+              <button type="button" data-val="usdg">USDG</button>
+            </div>
+          </div>
+          <div id="ln-fees"></div>
+          <div class="ln-grid" id="ln-grid" aria-live="polite"></div>
+        </div>
+
+        <div class="ln-pane" id="ln-new">
+          <form class="ln-form" data-form="ln-create" autocomplete="off" novalidate>
+            <fieldset>
+              <legend><small>01</small> Identity <em>Give it a name and a face.</em></legend>
+              <div class="ln-face" id="ln-drop">
+                <button class="ln-thumb" id="ln-thumb" type="button" aria-label="Choose an image"></button>
+                <div class="ln-in">
+                  <span class="label">Image <i>PNG, JPEG or WebP · square · up to 5 MB</i></span>
+                  <div class="ln-upload">
+                    <input type="file" id="ln-file" accept="image/png,image/jpeg,image/webp" hidden>
+                    <button class="btn sm" type="button" id="ln-choose">Choose image</button>
+                    <span class="ln-upstat" id="ln-upstat">or drop it here. It's stored on IPFS, like on pons.</span>
+                  </div>
+                  <details class="ln-link"><summary>Use a link instead</summary>
+                    <div class="field sm"><input name="logo" placeholder="ipfs://… or https://…" spellcheck="false" aria-label="Image link"></div>
+                  </details>
+                </div>
+              </div>
+              <div class="row-2">
+                <label class="ln-in"><span class="label">Name <i data-count="name">0/32</i></span>
+                  <div class="field sm"><input name="name" maxlength="32" placeholder="Your Site"></div></label>
+                <label class="ln-in"><span class="label">Ticker <i data-count="symbol">0/10</i></span>
+                  <div class="field sm"><input name="symbol" maxlength="10" placeholder="SITE" spellcheck="false"></div></label>
+              </div>
+              <label class="ln-in"><span class="label">Description <i data-count="description">0/256</i></span>
+                <div class="field area"><textarea name="description" maxlength="256" rows="3" placeholder="A line or two about the token."></textarea></div></label>
+              <div class="row-3">
+                <label class="ln-in"><span class="label">X</span><div class="field sm"><input name="twitter" placeholder="https://x.com/…" spellcheck="false"></div></label>
+                <label class="ln-in"><span class="label">Telegram</span><div class="field sm"><input name="telegram" placeholder="https://t.me/…" spellcheck="false"></div></label>
+                <label class="ln-in"><span class="label">Website</span><div class="field sm"><input name="website" placeholder="https://yoursite.com" spellcheck="false"></div></label>
+              </div>
+            </fieldset>
+            <fieldset>
+              <legend><small>02</small> Economics <em>Point the fees at a domain.</em></legend>
+              <label class="ln-in"><span class="label">Creator fees go to</span>
+                <div class="field"><span class="pre">to</span><input name="domain" placeholder="yoursite.com" spellcheck="false" required></div></label>
+              <div class="ln-hint" id="ln-dest"></div>
+              <div class="row-2 ln-econ">
+                <div class="ln-in"><span class="label">Trades against</span>
+                  <div class="seg block" data-group="newpair">
+                    <button type="button" data-val="eth" class="on">ETH</button>
+                    <button type="button" data-val="usdg">USDG</button>
+                  </div></div>
+                <label class="ln-in"><span class="label">Creator fee <i id="ln-tax-v">2%</i></span>
+                  <input class="range" type="range" name="tax" min="0" max="1000" step="25" value="200"></label>
+              </div>
+              <label class="ln-in" id="ln-open"><span class="label">Opening buy <i>optional · ETH · skips the launch snipe tax</i></span>
+                <div class="field sm"><input name="buy" inputmode="decimal" placeholder="0"></div></label>
+            </fieldset>
+            <div class="ln-go">
+              <div class="ln-total" id="ln-total"></div>
+              <button class="btn primary" type="submit" id="ln-submit">Launch</button>
+            </div>
+            <div id="ln-status"></div>
+          </form>
+          <aside class="ln-side">
+            <span class="label">On the board</span>
+            <div id="ln-preview"></div>
+            <dl class="ln-facts" id="ln-facts"></dl>
+          </aside>
+        </div>
+
+        <div class="ln-pane" id="ln-token"></div>
+      </section>
+    </div></main>
+  </div>
+
+  <script type="module" src="assets/app.js"></script>
+</body>
+</html>
