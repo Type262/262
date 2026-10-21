@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="866" viewBox="0 0 1200 866" role="img" aria-labelledby="t d">
 <title id="t">TYPE/262 architecture</title>
-<desc id="d">Clients (web app, SDK lib/wallet262.js, CLI, x402 agents checking payTo) resolve domains over DNS-over-HTTPS from Cloudflare and Google, reading the WALLET record or _wallet TXT in a DNSSEC-signed zone, and settle on Robinhood Chain: DomainEscrow asks DnssecVerifier, which uses the ENS DNSSECImpl oracle anchored to the IANA root keys. DomainLauncher launches tokens on pons v2 whose creator fees reach DomainEscrow through DomainFeeForwarder. Assets are USDG and ETH.</desc>
+<desc id="d">Clients (web app, SDK lib/wallet262.js, CLI, MCP server for AI agents) resolve domains over DNS-over-HTTPS from Cloudflare and Google, reading the WALLET record or _wallet TXT in a DNSSEC-signed zone, and settle on Robinhood Chain: DomainEscrow asks DnssecVerifier, which uses the ENS DNSSECImpl oracle anchored to the IANA root keys. DomainLauncher launches tokens on pons v2 whose creator fees reach DomainEscrow through DomainFeeForwarder. Assets are USDG and ETH.</desc>
 <defs>
 <linearGradient id="pg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#141414"/><stop offset="1" stop-color="#0d0d0d"/></linearGradient>
 <radialGradient id="ga" gradientUnits="userSpaceOnUse" cx="120" cy="0" r="620"><stop offset="0" stop-color="#C8FF1E" stop-opacity=".09"/><stop offset="1" stop-color="#C8FF1E" stop-opacity="0"/></radialGradient>
@@ -35,9 +35,9 @@
 <line x1="741.0" y1="238" x2="741.0" y2="268" stroke="#C8FF1E" stroke-opacity=".45"/>
 <circle cx="741" cy="268" r="3" fill="#C8FF1E"/><circle cx="741" cy="268" r="1.35" fill="#F7FFE0"/>
 <rect x="894" y="134" width="258" height="104" rx="16" fill="url(#pg)" stroke="#262626"/>
-<text x="916" y="164" font-size="11.5" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="2">X402 AGENTS</text>
-<text x="916" y="192" font-size="14" fill="#EDEDED" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">verifyPayTo(url, payTo)</text>
-<text x="916" y="218" font-size="13.5" fill="#8F8F8F">Check payTo before paying</text>
+<text x="916" y="164" font-size="11.5" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="2">MCP SERVER</text>
+<text x="916" y="192" font-size="14" fill="#EDEDED" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">mcp/type262-mcp.mjs</text>
+<text x="916" y="218" font-size="13.5" fill="#8F8F8F">Lets AI agents pay by name</text>
 <line x1="1023.0" y1="238" x2="1023.0" y2="268" stroke="#C8FF1E" stroke-opacity=".45"/>
 <circle cx="1023" cy="268" r="3" fill="#C8FF1E"/><circle cx="1023" cy="268" r="1.35" fill="#F7FFE0"/>
 <line x1="177" y1="268" x2="1023" y2="268" stroke="#C8FF1E" stroke-opacity=".45"/>

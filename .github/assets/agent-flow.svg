@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="846" viewBox="0 0 1200 846" role="img" aria-labelledby="t d">
+<title id="t">TYPE/262 MCP server: how pay_domain decides</title>
+<desc id="d">The agent calls pay_domain. The server resolves the domain over DNS-over-HTTPS from Cloudflare and Google. A DNSSEC-signed EVM wallet that every resolver returns is paid directly. No wallet, an unsigned record or a failed resolver means the money is deposited into DomainEscrow for the owner, unless allow_escrow is false. Resolvers that disagree, or a domain that does not exist (NXDOMAIN), means the payment is refused. Spend limits per payment and per UTC day are enforced by the server before anything is sent.</desc>
+<defs>
+<linearGradient id="pg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#141414"/><stop offset="1" stop-color="#0d0d0d"/></linearGradient>
+<radialGradient id="ga" gradientUnits="userSpaceOnUse" cx="120" cy="0" r="620"><stop offset="0" stop-color="#C8FF1E" stop-opacity=".09"/><stop offset="1" stop-color="#C8FF1E" stop-opacity="0"/></radialGradient>
+<radialGradient id="gv" gradientUnits="userSpaceOnUse" cx="1140" cy="846" r="640"><stop offset="0" stop-color="#8B5CFF" stop-opacity=".12"/><stop offset="1" stop-color="#8B5CFF" stop-opacity="0"/></radialGradient>
+<filter id="blur" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="3"/></filter>
+<marker id="ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M1 1.5 8.5 5 1 8.5" fill="none" stroke="#C8FF1E" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></marker>
+<marker id="av" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M1 1.5 8.5 5 1 8.5" fill="none" stroke="#B7A0FF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></marker>
+<marker id="ad" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M1 1.5 8.5 5 1 8.5" fill="none" stroke="#7A7A7A" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></marker>
+</defs>
+<rect width="1200" height="846" rx="20" fill="#0a0a0a"/>
+<rect width="1200" height="846" rx="20" fill="url(#ga)"/>
+<rect width="1200" height="846" rx="20" fill="url(#gv)"/>
+<rect x=".5" y=".5" width="1199" height="845" rx="19.5" fill="none" stroke="#262626"/>
+<g font-family="Inter, 'Segoe UI', -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif">
+<rect x="48" y="53" width="8" height="8" fill="#C8FF1E"/><text x="66" y="62" font-size="12" fill="#8F8F8F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="2.4">MCP SERVER FOR AI AGENTS</text><text x="48" y="104" font-size="30" fill="#EDEDED" font-weight="700"><tspan >How </tspan><tspan fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">pay_domain</tspan><tspan > decides.</tspan></text><text x="1152" y="62" font-size="11.5" fill="#8F8F8F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="end" letter-spacing="1.2">5 TOOLS · STDIO · ANY MCP CLIENT</text>
+<rect x="48" y="150" width="360" height="124" rx="16" fill="url(#pg)" stroke="#262626"/>
+<text x="70" y="182" font-size="11.5" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="2">THE AGENT CALLS</text>
+<text x="70" y="212" font-size="13" fill="#EDEDED" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" xml:space="preserve">pay_domain {</text>
+<text x="70" y="234" font-size="13" fill="#CFCFCF" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" xml:space="preserve">  domain: &quot;yoursite.com&quot;, amount: &quot;5&quot;</text>
+<text x="70" y="256" font-size="13" fill="#EDEDED" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" xml:space="preserve">}</text>
+<path d="M228.0 274 V320" fill="none" stroke="#C8FF1E" stroke-opacity="0.7" stroke-width="1.4" marker-end="url(#ah)"/>
+<rect x="48" y="324" width="360" height="144" rx="16" fill="url(#pg)" stroke="#262626"/>
+<text x="70" y="356" font-size="11.5" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="2">RESOLVE</text>
+<text x="70" y="384" font-size="17" fill="#EDEDED" font-weight="600">Look up the domain in DNS</text>
+<text x="70" y="412" font-size="13.5" fill="#8F8F8F">WALLET record and _wallet TXT, asked</text>
+<text x="70" y="432" font-size="13.5" fill="#8F8F8F">of Cloudflare and Google over DoH.</text>
+<text x="70" y="452" font-size="13.5" fill="#8F8F8F">Answers compared, DNSSEC status read.</text>
+<rect x="48" y="546" width="360" height="96" rx="16" fill="url(#pg)" stroke="#262626"/>
+<text x="70" y="578" font-size="11.5" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="2">DRY RUN</text>
+<text x="70" y="606" font-size="13.5" fill="#8F8F8F"><tspan fill="#CFCFCF" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">dry_run: true</tspan><tspan > returns the full plan</tspan></text>
+<text x="70" y="626" font-size="13.5" fill="#8F8F8F">and sends nothing.</text>
+<path d="M408 396.0 H474" fill="none" stroke="#C8FF1E" stroke-opacity="0.7" stroke-width="1.4" marker-end="url(#ah)"/>
+<circle cx="500" cy="396.0" r="30" fill="#C8FF1E" opacity=".12" filter="url(#blur)"/>
+<path d="M500 374.0 L522 396.0 L500 418.0 L478 396.0 Z" fill="#0a0a0a" stroke="#C8FF1E" stroke-width="1.3"/>
+<text x="500" y="401" font-size="15" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-weight="700" text-anchor="middle">?</text>
+<text x="500" y="360" font-size="10.5" fill="#8F8F8F" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="1.4">WHAT DNS SAYS</text>
+<rect x="672" y="150" width="480" height="126" rx="16" fill="url(#pg)" stroke="#3b4a14"/>
+<rect x="672" y="172" width="3" height="82" rx="1.5" fill="#C8FF1E" opacity=".85"/>
+<text x="698" y="182" font-size="11.5" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="2">PAID DIRECTLY</text>
+<text x="698" y="210" font-size="15" fill="#EDEDED">A DNSSEC-signed EVM wallet, and every</text>
+<text x="698" y="230" font-size="15" fill="#EDEDED">resolver returns it</text>
+<text x="698" y="256" font-size="13.5" fill="#8F8F8F">Paid straight to that address, in USDG or ETH.</text>
+<rect x="672" y="294" width="480" height="204" rx="16" fill="url(#pg)" stroke="#3a2f5c"/>
+<rect x="672" y="316" width="3" height="160" rx="1.5" fill="#B7A0FF" opacity=".85"/>
+<text x="698" y="326" font-size="11.5" fill="#B7A0FF" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="2">DEPOSITED INTO ESCROW</text>
+<text x="698" y="354" font-size="15" fill="#EDEDED">No wallet, an unsigned record, or a</text>
+<text x="698" y="374" font-size="15" fill="#EDEDED">resolver failed to answer</text>
+<text x="698" y="400" font-size="13.5" fill="#8F8F8F">Held in DomainEscrow under the domain's name.</text>
+<text x="698" y="420" font-size="13.5" fill="#8F8F8F">Only its DNSSEC-proven owner can claim it; the</text>
+<text x="698" y="440" font-size="13.5" fill="#8F8F8F">agent wallet can refund it after 180 days.</text>
+<rect x="698" y="458" width="326.88" height="24" rx="12" fill="#141020" stroke="#3a2f5c"/><text x="861.44" y="473.96" font-size="11" fill="#B7A0FF" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="1.2">allow_escrow: false → refused instead</text>
+<rect x="672" y="516" width="480" height="126" rx="16" fill="url(#pg)" stroke="#262626"/>
+<rect x="672" y="538" width="3" height="82" rx="1.5" fill="#A8A8A8" opacity=".85"/>
+<text x="698" y="548" font-size="11.5" fill="#A8A8A8" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="2">REFUSED</text>
+<text x="698" y="576" font-size="15" fill="#EDEDED">The resolvers disagree, or the domain</text>
+<text x="698" y="596" font-size="15" fill="#EDEDED">doesn't exist (NXDOMAIN)</text>
+<text x="698" y="622" font-size="13.5" fill="#8F8F8F">Nothing is sent.</text>
+<path d="M522 396.0 H668" fill="none" stroke="#B7A0FF" stroke-opacity="0.75" stroke-width="1.4" marker-end="url(#av)"/>
+<path d="M522 396.0 H548 Q560 396.0 560 384.0 V225 Q560 213 572 213 H668" fill="none" stroke="#C8FF1E" stroke-opacity="0.8" stroke-width="1.4" marker-end="url(#ah)"/>
+<path d="M500 418.0 V567 Q500 579 512 579 H668" fill="none" stroke="#7A7A7A" stroke-opacity="0.8" stroke-width="1.4" stroke-dasharray="4 5" marker-end="url(#ad)"/>
+<rect x="590" y="176" width="32" height="250" rx="16" fill="#12160a" stroke="#C8FF1E" stroke-opacity=".55"/>
+<text x="0" y="0" font-size="11" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="2" text-anchor="middle" transform="translate(610.0 304.5) rotate(-90)">SPEND LIMITS</text>
+<circle cx="606.0" cy="213" r="4" fill="#C8FF1E"/>
+<circle cx="606.0" cy="396" r="4" fill="#C8FF1E"/>
+<rect x="48" y="672" width="1104" height="118" rx="16" fill="url(#pg)" stroke="#262626"/>
+<text x="76" y="706" font-size="11.5" fill="#C8FF1E" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" letter-spacing="2">SPEND LIMITS · ENFORCED BY THE SERVER, NOT THE MODEL</text>
+<text x="76" y="734" font-size="14.5" fill="#EDEDED">Each payment is checked against the per-payment cap and today's UTC total before anything is sent.</text>
+<rect x="76" y="750" width="162.08" height="24" rx="12" fill="#161616" stroke="#333"/><text x="157.04" y="765.96" font-size="11" fill="#D6D6D6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="1.2">USDG 25 / payment</text>
+<rect x="246.08" y="750" width="170.32" height="24" rx="12" fill="#161616" stroke="#333"/><text x="331.24" y="765.96" font-size="11" fill="#D6D6D6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="1.2">USDG 100 / UTC day</text>
+<rect x="424.4" y="750" width="170.32" height="24" rx="12" fill="#161616" stroke="#333"/><text x="509.56" y="765.96" font-size="11" fill="#D6D6D6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="1.2">ETH 0.01 / payment</text>
+<rect x="602.72" y="750" width="170.32" height="24" rx="12" fill="#161616" stroke="#333"/><text x="687.88" y="765.96" font-size="11" fill="#D6D6D6" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle" letter-spacing="1.2">ETH 0.05 / UTC day</text>
+<text x="791.04" y="766" font-size="12.5" fill="#8F8F8F">defaults, set in the client config</text>
+<text x="600" y="824" font-size="11.5" fill="#7A7A7A" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" text-anchor="middle">TYPE262_REQUIRE_DNSSEC=false also pays an unsigned record directly when every resolver agrees on it.</text>
+</g>
+</svg>
