@@ -1,0 +1,18 @@
+[toolchain]
+
+[features]
+resolution = true
+skip-lint = false
+
+# Local test id only (its keypair is target/deploy/type262-keypair.json, never committed).
+# The mainnet id is added at deployment; see README.md.
+[programs.localnet]
+type262 = "3fhiMDY5kyCpX47HU1whuEe6vMQFHPa1hwGhc4Pp72NT"
+
+[provider]
+cluster = "localnet"
+wallet = "~/.config/solana/id.json"
+
+# `anchor run test` runs the LiteSVM suite (no validator needed). README.md has the details.
+[scripts]
+test = "cd tests-rs && cargo test"

@@ -1,0 +1,5 @@
+# LiteSVM 0.16 (Agave 4.2) needs a newer Rust than the machine default (it uses
+# MaybeUninit::write_copy_of_slice). Pinned here so only this crate moves; the program itself
+# builds with the Solana platform tools, whatever this says.
+[toolchain]
+channel = "1.98.1"

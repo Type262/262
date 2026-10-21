@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>TYPE/262 · Tokenize any app by its domain</title>
-  <meta name="description" content="Launch a coin for any app, web game or website. Its creator fees go to the domain, the one identity nobody can spoof, and only the real owner can claim them. On Robinhood Chain.">
+  <meta name="description" content="Launch a coin on pump.fun for any app, web game or website. Its creator fees go to the domain, the one identity nobody can spoof, and only the real owner can claim them. On Solana, with Robinhood Chain also supported.">
   <meta property="og:title" content="TYPE/262 · Tokenize any app by its domain">
-  <meta property="og:description" content="Launch a coin for any app, web game or website. Its fees go to the domain, the one identity nobody can spoof.">
+  <meta property="og:description" content="Launch a coin on pump.fun for any app, web game or website. Its fees go to the domain, the one identity nobody can spoof.">
   <meta name="theme-color" content="#0b0b0b">
   <link rel="icon" type="image/webp" href="assets/art/emblem.webp">
   <meta property="og:image" content="https://type262.onrender.com/assets/art/logo-lockup.webp">
@@ -27,7 +27,7 @@
         <a href="#launch">Launchpad</a>
         <a href="#how">How it works</a>
         <a href="#agents">Agents</a>
-        <a href="#escrow">Escrow</a>
+        <a href="#escrow">Vaults</a>
         <a href="#adoption">Adoption</a>
       </nav>
       <div class="end"><a class="btn sm" href="docs.html">Docs</a><a class="btn sm icon hide-sm" href="https://x.com/type_262" target="_blank" rel="noopener" aria-label="TYPE/262 on X" title="@type_262 on X"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a><a class="btn sm icon hide-sm" href="https://github.com/Type262/262" target="_blank" rel="noopener" aria-label="TYPE/262 on GitHub" title="Type262/262 on GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></a><a class="btn primary sm" href="app.html#launch/new">Launch a coin</a></div>
@@ -44,7 +44,7 @@
           <span class="ln"><span>Every <span class="flap" id="hero-flap"><b>d</b><b>o</b><b>m</b><b>a</b><b>i</b><b>n</b></span></span></span>
           <span class="ln"><span>is a <span class="accent">wallet.</span></span></span>
         </h1>
-        <p class="body hero-fade">Launch a coin for your app, or for any app, web game or website you love. <b>Its creator fees go to the domain, the one name nobody can spoof.</b></p>
+        <p class="body hero-fade">Launch a coin on pump.fun for your app, or for any app, web game or website you love. <b>Its creator fees go to the domain, the one name nobody can spoof.</b></p>
         <div class="search hero-fade">
           <form class="field" id="try-form" autocomplete="off">
             <span class="pre">coin for</span>
@@ -65,7 +65,7 @@
         <div class="section-head center">
           <span class="eyebrow" data-reveal>01 — The launchpad</span>
           <h2 class="h2 split">Tokenize the apps <span class="accent">you love.</span></h2>
-          <p class="body" data-reveal>Launch a coin for your app, or for any app, web game or website you love. Every trade pays a creator fee to its domain, and the fees wait on-chain until the real owner claims them.</p>
+          <p class="body" data-reveal>Launch a coin on pump.fun for your app, or for any app, web game or website you love. Every trade pays a creator fee to its domain's vault on Solana, and the fees wait there until the real owner claims them.</p>
         </div>
         <div class="compare">
           <article class="cmp" data-track data-reveal>
@@ -76,9 +76,9 @@
           </article>
           <article class="cmp now" data-track data-reveal data-d="1">
             <div class="cmp-top"><span class="num">.com</span><span class="tag">Domain</span></div>
-            <div><h3 class="h3">Can't be spoofed</h3><p class="dim" style="margin-top:0.5rem">Only the real owner controls an app's domain. DNSSEC proves it on-chain, so the coin's fees can only ever reach them.</p></div>
+            <div><h3 class="h3">Can't be spoofed</h3><p class="dim" style="margin-top:0.5rem">Only the real owner controls an app's domain. The coin's fees collect in that domain's vault, and DNSSEC decides who claims them, so they can only ever reach the owner.</p></div>
             <div><div class="track" style="--max:1"><i></i></div><div class="ends"><span>yourapp.com</span><span>DNSSEC ✓</span></div></div>
-            <span class="label">Proven on-chain</span>
+            <span class="label">Proven by DNSSEC</span>
           </article>
         </div>
       </div>
@@ -97,7 +97,7 @@
             <ol class="steps-list">
               <li class="step-item on"><span class="n">01</span><div><h3 class="h3">Publish</h3><div class="desc"><div><p class="body">Add a WALLET record to your DNS: a coin and an address. Sign the zone with DNSSEC and you're done.</p></div></div><i class="bar"><b></b></i></div></li>
               <li class="step-item"><span class="n">02</span><div><h3 class="h3">Resolve</h3><div class="desc"><div><p class="body">Any wallet, app or AI agent asks DNS one question. The answer is cached worldwide and cryptographically signed.</p></div></div><i class="bar"><b></b></i></div></li>
-              <li class="step-item"><span class="n">03</span><div><h3 class="h3">Pay</h3><div class="desc"><div><p class="body">USDG or ETH goes straight to the published address and settles on Robinhood Chain in seconds.</p></div></div><i class="bar"><b></b></i></div></li>
+              <li class="step-item"><span class="n">03</span><div><h3 class="h3">Pay</h3><div class="desc"><div><p class="body">USDC or SOL goes straight to the published address and settles on Solana in seconds. Robinhood Chain works too.</p></div></div><i class="bar"><b></b></i></div></li>
             </ol>
           </div>
 
@@ -125,20 +125,20 @@
                 <div class="hop"><i></i><b>1.1.1.1</b><span>cache miss · recursing</span></div>
                 <div class="hop"><i></i><b>. root</b><span>referral → com.</span></div>
                 <div class="hop"><i></i><b>com.</b><span>referral → yoursite.com.</span></div>
-                <div class="hop ans"><i></i><b>yoursite.com</b><span>ANSWER  ETH 0x7a1f…c0de</span></div>
+                <div class="hop ans"><i></i><b>yoursite.com</b><span>ANSWER  SOL 9xQe…Wb4h</span></div>
               </div>
-              <div class="answer" id="answer"><span>WALLET <b>ETH 0x7a1f…c0de</b></span><span>DNSSEC <b>✓</b></span><span>2/2 resolvers agree</span></div>
+              <div class="answer" id="answer"><span>WALLET <b>SOL 9xQe…Wb4h</b></span><span>DNSSEC <b>✓</b></span><span>2/2 resolvers agree</span></div>
               <div class="scene-foot"><span class="label">Cloudflare + Google · DoH</span><span class="label" id="hop-ms">0 ms</span></div>
             </div>
 
             <!-- 3 · pay -->
             <div class="scene" data-scene="2">
-              <div class="scene-bar"><span class="label">Pay a name</span><span class="chip-s">Robinhood Chain · 4663</span></div>
+              <div class="scene-bar"><span class="label">Pay a name</span><span class="chip-s">Solana · mainnet</span></div>
               <div class="pay">
-                <div class="pay-to">yoursite.com <span class="mono">→ 0x7a1f…c0de</span></div>
-                <div class="pay-amt num"><span id="pay-amt">0.00</span><small>USDG</small></div>
+                <div class="pay-to">yoursite.com <span class="mono">→ 9xQe…Wb4h</span></div>
+                <div class="pay-amt num"><span id="pay-amt">0.00</span><small>USDC</small></div>
                 <div class="pay-steps" id="pay-steps"><span>Resolve</span><span>Sign</span><span>Broadcast</span><span>Settled</span></div>
-                <div class="receipt" id="receipt"><span>✓ 5.00 USDG settled</span><span>to yoursite.com</span></div>
+                <div class="receipt" id="receipt"><span>✓ 5.00 USDC settled</span><span>to yoursite.com</span></div>
               </div>
               <div class="scene-foot"><span class="label">No account · no checkout</span><span class="label" id="pay-state">Ready</span></div>
             </div>
@@ -164,14 +164,14 @@
       </div>
     </section>
 
-    <!-- 04 escrow -->
+    <!-- 04 vaults (the section id stays "escrow" so existing links keep working) -->
     <section class="section" id="escrow">
       <div class="container">
         <div class="escrow-head">
           <div class="copy">
-            <span class="eyebrow" data-reveal>04 — Claimable escrow</span>
+            <span class="eyebrow" data-reveal>04 — A vault for every domain</span>
             <h2 class="h2 split">Pay them <span class="accent">before</span> they're here.</h2>
-            <p class="body" data-reveal>Coin fees and payments can go to any domain, even one that has never heard of TYPE/262. They wait on-chain like a seed, until the owner adds one record. <b>Every website on Earth can already be paid.</b></p>
+            <p class="body" data-reveal>Coin fees and payments can go to any domain, even one that has never heard of TYPE/262. They wait in the domain's own vault on Solana like a seed, until the owner adds one record. <b>Every website on Earth can already be paid.</b></p>
             <a class="btn primary" href="app.html#escrow" data-reveal>Send to any domain</a>
           </div>
           <div class="seed" data-reveal data-d="1"><img loading="lazy" decoding="async" src="assets/art/seed.webp" alt="" aria-hidden="true"></div>
@@ -179,10 +179,10 @@
         <div class="flow-bar" id="flow-bar"><i></i></div>
         <div class="flow" id="flow">
           <div><span class="label">01 · Send</span><span class="v" id="flow-amt">$0</span><p>A coin's fees, or anyone, send money to yourapp.com.</p></div>
-          <div><span class="label">02 · Wait</span><span class="v">On-chain</span><p>Funds sit in escrow, keyed by the domain name.</p></div>
+          <div><span class="label">02 · Wait</span><span class="v">Vault</span><p>Funds sit in the domain's own vault, visible on-chain.</p></div>
           <div><span class="label">03 · Publish</span><span class="v">_wallet</span><p>The owner adds one DNS record with their wallet and turns on DNSSEC.</p></div>
-          <div><span class="label">04 · Prove</span><span class="v">DNSSEC</span><p>The contract checks the DNS signatures on-chain, all the way up to the root.</p></div>
-          <div><span class="label">05 · Paid</span><span class="v">Instantly</span><p>Funds go straight to the owner's wallet. Unclaimed after 180 days? Senders get it back.</p></div>
+          <div><span class="label">04 · Prove</span><span class="v">DNSSEC</span><p>Cloudflare and Google must both return the signed record and agree on it.</p></div>
+          <div><span class="label">05 · Paid</span><span class="v">Instantly</span><p>Everything in the vault goes to the owner's wallet. Unclaimed after 180 days? Senders get it back.</p></div>
         </div>
         
       </div>
@@ -211,13 +211,14 @@
       <div class="container">
         <div class="section-head">
           <span class="eyebrow" data-reveal>06 — Roadmap</span>
-          <h2 class="h2 split">Shipped and <span class="accent">live.</span></h2>
+          <h2 class="h2 split">Live, and <span class="accent">next.</span></h2>
         </div>
         <ol class="road">
-          <li data-reveal><span><span class="tag good">Live</span></span><div><h3 class="h3">Website coins</h3><p class="body">Launch a coin for any app, web game or website on pons, with its creator fees routed to the domain. The owner claims them with a DNSSEC proof. <a class="ul" href="app.html#launch">Open the launchpad →</a></p></div><span class="label">01</span></li>
-          <li data-reveal><span><span class="tag good">Live</span></span><div><h3 class="h3">Claimable escrow</h3><p class="body">Pay any domain before it publishes. Owners claim instantly with a DNSSEC proof checked on-chain; senders can refund after 180 days. <a class="ul" href="app.html#escrow">Send a website money →</a></p></div><span class="label">02</span></li>
-          <li data-reveal><span><span class="tag good">Live</span></span><div><h3 class="h3">Trustless claims</h3><p class="body">DNSSEC proofs are verified on-chain with ENS's oracle, anchored to the DNS root keys. No attestor, no server, no admin over the rules.</p></div><span class="label">03</span></li>
-          <li data-reveal><span><span class="tag good">Live</span></span><div><h3 class="h3">Resolve, pay, publish, verify</h3><p class="body">Look up any name, pay it from your wallet, generate your record and check x402 payTo addresses against DNS. App, SDK and CLI.</p></div><span class="label">04</span></li>
+          <li data-reveal><span><span class="tag good">Live</span></span><div><h3 class="h3">Website coins</h3><p class="body">Launch a coin for any app, web game or website on pump.fun, with the domain's vault as its creator, so every creator fee goes to the domain. The owner claims them with a DNSSEC-signed record. Also on pons, on Robinhood Chain. <a class="ul" href="app.html#launch">Open the launchpad →</a></p></div><span class="label">01</span></li>
+          <li data-reveal><span><span class="tag good">Live</span></span><div><h3 class="h3">A vault for every domain</h3><p class="body">Pay any domain before it publishes: SOL, USDC or any token to its vault on Solana, or into escrow on Robinhood Chain. Owners claim instantly once their DNSSEC-signed record names a wallet; senders can refund after 180 days. <a class="ul" href="app.html#escrow">Send a website money →</a></p></div><span class="label">02</span></li>
+          <li data-reveal><span><span class="tag good">Live</span></span><div><h3 class="h3">Claims checked by DNSSEC</h3><p class="body">A claim pays only the wallet the domain's signed record names. On Solana, TYPE/262 pays a vault out once Cloudflare and Google agree on that record and both validated its signatures. On Robinhood Chain, ENS's oracle verifies them on-chain from the DNS root keys.</p></div><span class="label">03</span></li>
+          <li data-reveal><span><span class="tag good">Live</span></span><div><h3 class="h3">Resolve, pay, publish, verify</h3><p class="body">Look up any name, pay it USDC or SOL from your wallet, generate your record and check x402 payTo addresses against DNS. App, SDK and CLI.</p></div><span class="label">04</span></li>
+          <li data-reveal><span><span class="tag">Next</span></span><div><h3 class="h3">DNSSEC on-chain on Solana</h3><p class="body">A Solana program that verifies DNSSEC itself, from the root keys, so Solana claims need no server: RSA in the program, P-256 and Ed25519 through Solana's native precompiles. Built and tested in the repository, ready for a later deploy.</p></div><span class="label">05</span></li>
         </ol>
       </div>
     </section>
@@ -228,7 +229,7 @@
         <div class="lockup" data-reveal><img loading="lazy" decoding="async" src="assets/art/logo-lockup.webp" alt="TYPE/262" width="1254" height="1254"></div>
         <div class="section-head center" style="margin-bottom:2.5rem">
           <h2 class="h2 split">Launch a coin for <span class="accent">your app.</span></h2>
-          <p class="body" data-reveal>Or for any app, game or site you love. Its fees wait on Robinhood Chain for the real owner.</p>
+          <p class="body" data-reveal>Or for any app, game or site you love. On pump.fun, with its fees waiting in the domain's vault for the real owner.</p>
         </div>
         <div class="actions" data-reveal><a class="btn primary" href="app.html#launch/new">Launch a coin</a><a class="btn" href="app.html#publish">Make your domain payable</a></div>
       </div>
@@ -248,7 +249,7 @@
         <a href="https://www.iana.org/assignments/dns-parameters/dns-parameters.xhtml#dns-parameters-4" target="_blank" rel="noopener">IANA registry ↗</a>
       </nav>
       <div class="socials"><a class="btn sm" href="https://x.com/type_262" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg><span>@type_262</span></a><a class="btn sm" href="https://github.com/Type262/262" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg><span>Type262/262</span></a></div>
-      <small>Built on IANA RRTYPE 262 (WALLET). Payments settle on Robinhood Chain (4663). Not affiliated with IANA, ICANN or Robinhood.</small>
+      <small>Built on IANA RRTYPE 262 (WALLET). Payments settle on Solana, with Robinhood Chain (4663) also supported. Not affiliated with IANA, ICANN, Solana, pump.fun or Robinhood.</small>
     </div>
   </footer>
 

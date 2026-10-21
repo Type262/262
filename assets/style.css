@@ -626,3 +626,93 @@ a.ln-card:hover { transform: translateY(-3px); }
 .ln-link summary::-webkit-details-marker { display: none; }
 .ln-link summary:hover { color: var(--fg); }
 .ln-link[open] summary { margin-bottom: 0.5rem; }
+
+/* network switch (Solana first) and the Solana wallet menu */
+.net > button { gap: 0.5rem; padding: 0 0.75rem 0 0.5rem; }
+.net .pb-ico, .net .pb-ico img, .net .pb-ico svg { width: 1.25rem; height: 1.25rem; }
+.hud .end { position: relative; }
+.wmenu { position: absolute; top: calc(100% + 0.75rem); right: 0; z-index: 120; display: grid; gap: 0.25rem; min-width: 14rem; padding: 0.5rem; border: 1px solid var(--line-2); background: var(--bg-2); }
+.wmenu .label { padding: 0.375rem 0.5rem 0.5rem; }
+.wmenu button { display: flex; align-items: center; gap: 0.75rem; height: 2.75rem; padding: 0 0.625rem; border: 0; background: none; color: var(--fg); font: 500 0.875rem/1 var(--font); text-align: left; cursor: pointer; }
+.wmenu button:hover { background: rgba(255, 255, 255, .06); }
+.wmenu img, .wmenu i { width: 1.5rem; height: 1.5rem; border-radius: 0.375rem; background: var(--bg-3); }
+.soon { display: grid; justify-items: start; gap: 1rem; padding: 1.75rem; border: 1px solid var(--line-2); background: var(--bg-2); }
+.soon h3 { margin: 0; font: 600 1.375rem/1.2 var(--font); letter-spacing: -.02em; }
+.soon p { margin: 0; max-width: 40rem; font: 400 0.9375rem/1.6 var(--font); color: var(--dim); }
+@media (max-width: 560px) {
+  .net .net-n { display: none; }
+  .net > button { padding: 0 0.5rem; }
+  .hud .end { gap: 0.375rem; }
+  .app-page .hud .wm { display: none; }
+}
+
+/* =========================================================  SOLANA: escrow + pump.fun launch
+   assets/solana-escrow.js and assets/solana-launch.js. Their surfaces reuse .result, .note, .ln-box and .ln-card,
+   so theme.css glazes them like the Robinhood screens; the rules below only lay out what is new. */
+#se-dstat:empty, #se-status:empty, #se-rstat:empty, #sl-status:empty, #sl-done:empty, .sv-cstat:empty { display: none; }
+#se-dstat { margin-top: 0.75rem; }
+.se-amt { font-size: 1.75rem; }
+.se-addr { white-space: nowrap; }
+.se-dep { word-break: normal; overflow-wrap: anywhere; font-family: var(--font); font-size: 0.9375rem; }
+.se-bal { margin-top: 0.625rem; }
+
+/* escrow: the vault card, the owner panel, your deposits, the domain's coins */
+.sv-addr .addr { font-size: 0.875rem; color: var(--fg); }
+.sv-vault .tags:empty { display: none; }
+.r-row.se-wait { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; font-size: 0.875rem; }
+.se-owner { display: grid; gap: 0.75rem; }
+.se-owner p { margin: 0; }
+.se-owner .se-check:empty { display: none; }
+.se-owner .se-check b { color: var(--fg); font-weight: 500; }
+.se-coins { display: grid; gap: 0.625rem; margin-top: 0.75rem; }
+.se-coins .lbl { margin-bottom: 0; }
+.se-coins .ln-feebox + .ln-grid, #sl-panel .ln-feebox + .ln-grid { margin-top: 1rem; }
+.sv-cstat { display: grid; gap: 0.75rem; }
+.se-trust { font-size: 0.8125rem; }
+.se-trust b { color: var(--fg); font-weight: 500; }
+.linkish:hover { text-decoration-color: var(--acid); }
+
+/* transaction steps: each row waits, asks the wallet, waits for Solana, then confirms (or stops) */
+.sx-steps {
+  display: grid; margin: 0; padding: 0; list-style: none; border: 1px solid transparent;
+  background: linear-gradient(var(--glass, var(--bg-2)), var(--glass, var(--bg-2))) padding-box, var(--edge, linear-gradient(var(--line-2), var(--line-2))) border-box;
+  -webkit-backdrop-filter: blur(14px) saturate(1.3); backdrop-filter: blur(14px) saturate(1.3);
+}
+.sx-steps + .sx-steps { margin-top: -1px; }
+.sx-steps + .note, .ln-est + .sx-steps, .sx-steps + .ln-est, .ln-est + .note { margin-top: 0.75rem; }
+.sx-steps li { display: grid; grid-template-columns: 1.5rem minmax(0, 1fr) auto auto; gap: 0.75rem; align-items: center; padding: 0.75rem 1rem; border-top: 1px solid var(--line); font: 400 0.875rem/1.45 var(--font); }
+.sx-steps li:first-child { border-top: 0; }
+.sx-steps i { display: grid; place-items: center; width: 1.5rem; height: 1.5rem; border: 1px solid var(--line-2); font: 500 0.6875rem/1 var(--mono); font-style: normal; color: var(--faint); }
+.sx-steps span { min-width: 0; color: var(--fg); overflow-wrap: anywhere; }
+.sx-steps em { font: 400 0.75rem/1.3 var(--mono); font-style: normal; color: var(--dim); white-space: nowrap; }
+.sx-steps em:empty { display: none; }
+.sx-steps a { font: 500 0.75rem/1 var(--mono); white-space: nowrap; text-decoration: underline; text-decoration-color: var(--acid); text-decoration-thickness: 2px; text-underline-offset: 0.25rem; }
+.sx-steps li[data-s="wait"] span { color: var(--dim); }
+.sx-steps li[data-s="sign"], .sx-steps li[data-s="send"] { background: rgba(200, 255, 30, .04); }
+.sx-steps li[data-s="sign"] i, .sx-steps li[data-s="send"] i { color: transparent; border-color: var(--acid); border-right-color: transparent; border-radius: 50%; animation: spin .8s linear infinite; }
+.sx-steps li[data-s="sign"] em, .sx-steps li[data-s="send"] em { color: var(--acid); }
+.sx-steps li[data-s="done"] i { background: var(--acid); border-color: var(--acid); font-size: 0; }
+.sx-steps li[data-s="done"] i::after { content: '✓'; font-size: 0.75rem; color: var(--on-acid); }
+.sx-steps li[data-s="fail"] i { background: var(--hot); border-color: var(--hot); color: #fff; }
+.sx-steps li[data-s="fail"] em { color: var(--hot); }
+
+/* launch: same two columns as the Robinhood form, the success card above it, the fee address under the domain */
+#sl-new.on { display: grid; grid-template-columns: minmax(0, 1fr) 19.5rem; gap: 2.5rem; align-items: start; }
+.sl-main { display: grid; gap: 1.5rem; min-width: 0; }
+#sl-submit { margin-left: auto; }
+#sl-quote .err { color: var(--hot); }
+.sl-feeto { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 0.75rem; margin-top: -0.375rem; padding: 0.75rem 0.875rem; border: 1px solid var(--line); font: 400 0.8125rem/1.5 var(--font); color: var(--dim); }
+.sl-feeto a { color: var(--acid); }
+.sl-live .ln-id { grid-template-columns: 4.5rem minmax(0, 1fr); }
+.sl-live .ln-logo.big { width: 4.5rem; height: 4.5rem; }
+.sl-live .label { display: block; margin-bottom: 0.375rem; color: var(--acid); }
+.sl-live .ln-id strong { white-space: normal; font-size: 1.5rem; letter-spacing: -.02em; }
+.sl-live strong em { margin-left: 0.375rem; font: 500 0.875rem/1 var(--mono); font-style: normal; color: var(--dim); }
+.sl-live .ln-est b { color: var(--fg); font-weight: 500; }
+.ln-card .ln-actions .btn { flex: 1 1 auto; }
+.ln-facts dd a { color: var(--acid); }
+@media (max-width: 1180px) { #sl-new.on { grid-template-columns: 1fr; } }
+@media (max-width: 560px) {
+  .sx-steps li { grid-template-columns: 1.5rem minmax(0, 1fr); row-gap: 0.25rem; }
+  .sx-steps em, .sx-steps a { grid-column: 2; justify-self: start; }
+}

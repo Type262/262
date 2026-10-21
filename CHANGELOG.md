@@ -7,9 +7,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+The Solana release. Solana is now TYPE/262's main network: pay a domain's published address in SOL or USDC, pay any domain's vault before it publishes a wallet, and launch pump.fun coins whose creator fees go to the domain's vault. The TYPE/262 worker pays a vault out to the wallet the domain's DNSSEC-signed record names. Robinhood Chain stays fully supported, with its contracts and deployment unchanged.
+
 ### Added
 
-- A read-only RPC fallback, `POST /rpc` on the upload service. When a browser can't reach the public Robinhood Chain RPC, for example because of a DNS failure, the app reads through it for a minute. It forwards read methods only, from the site's origin only, with a per-IP limit, and can use a keyed provider URL kept as a server secret.
+#### Domain vaults on Solana
+
+- **A vault for every domain.** Each canonical domain has its own Solana address, derived by the worker from a 32-byte master secret: the seed of the vault's Ed25519 key is `HMAC-SHA256(master secret, "type262:vault:" + domain)`. Names are canonicalized with the SDK's `normalizeDomain` and the escrow's label rules (lowercase `a-z`, `0-9`, `-`, `_`, punycode, at most 253 characters), so one domain never has two vaults. Anyone can send SOL, USDC or any other SPL token to a vault with a plain transfer; a token payment goes to the vault's associated token account, which the sender creates idempotently.
+- **Claims.** `POST /solana/claim` pays everything in a domain's vault, SOL and every SPL token, to the one `SOL` address the domain publishes in `_wallet.<domain>` TXT or a `WALLET` record, minus a 0.5% fee (`FEE_BPS`, 50, rounded down) to the fee wallet. The worker pays only when Cloudflare and Google DNS-over-HTTPS both answer, agree and report the record DNSSEC-authenticated, and only to a regular wallet: a System Program account with no data or one that doesn't exist yet, never a token account, a mint or a program. It collects the domain's pump.fun creator fees first. Each payout carries the SPL Memo `type262:claim:<domain>`, and the worker's gas wallet pays the network fees and the owner's token-account rent.
+- **Refunds.** `POST /solana/refund` returns a deposit to the address that sent it, 180 days after the deposit (`REFUND_DELAY_DAYS`), if the domain hasn't claimed since and the deposit wasn't refunded already, with the memo `type262:refund:<deposit signature>`. The worker keeps no state: it checks the deposit transaction and the vault's history on-chain each time.
+- **Collect.** `POST /solana/collect` moves the creator fees of a domain's pump.fun coins into its vault without paying anything out.
+- **Lookups.** `GET /solana/vault?domain=<d>` returns `{ domain, vault, usdcAccount }`, and `GET /solana/status` the gas wallet, its balance, the fee wallet, the fee and the refund delay. Amounts in answers are decimal strings in base units. Errors are JSON, `{ error, reason }`, with a plain-language reason.
+- **Trust model.** Solana vaults are custodial: the worker holds the master secret. The docs state this next to the Robinhood Chain model, where contracts verify DNSSEC on-chain.
+
+#### pump.fun launchpad on Solana
+
+- Launch a pump.fun coin with pump.fun's own `create_v2` and the domain's vault as its creator, so every creator fee of the coin, on the bonding curve and on PumpSwap after graduation, accrues to the vault. An optional opening buy (`buy_v3`) rides in the same transaction. No TYPE/262 program takes part.
+- pump.fun's sweeps and collects are permissionless with destinations fixed by pump.fun, so they can only pay the domain's vault; every claim runs them first.
+- `solana/scripts/pump-lib.mjs` and `pump-ix.mjs` hand-encode pump.fun's and PumpSwap's instructions, checked against mainnet in simulation and in LiteSVM; `solana/docs/PUMP.md` documents them.
+
+#### App and client
+
+- Solana is the default network. A network switch in the app header picks Solana or Robinhood Chain.
+- **Pay** sends SOL or USDC to a domain's `SOL` address from Phantom, Solflare, Backpack or any Wallet Standard wallet.
+- The app's Solana screens send SOL or USDC to a domain's vault and ask the worker to claim it, collect its launch fees or refund a deposit.
+- **Launch** on pump.fun: a create form that pins the image and the coin's metadata to IPFS, with an optional opening buy in the launch transaction.
+- **Publish** offers a Solana address first.
+- `assets/solana.js`, a dependency-free Solana client: base58, PDAs and associated token accounts, transactions, RPC with a fallback, and Wallet Standard wallets.
+
+#### Worker
+
+- The upload service, `upload/server.mjs` (`type262-upload` on Render), is now also the Solana worker, with the `/solana/` endpoints above under the same origin allowlist and per-IP rate limits. It reads `VAULT_MASTER_SEED`, `SOLANA_FEE_WALLET`, `FEE_BPS` and `REFUND_DELAY_DAYS`, and still has no dependencies.
+- `POST /metadata` pins pump.fun-style coin metadata JSON to IPFS and returns its `https://ipfs.io/ipfs/<cid>` link.
+- `POST /rpc/solana`, a read-only Solana RPC fallback with the same origin and per-IP limits as `/rpc`. It can also relay a transaction the wallet has already signed.
+- A read-only RPC fallback, `POST /rpc`. When a browser can't reach the public Robinhood Chain RPC, for example because of a DNS failure, the app reads through it for a minute. It forwards read methods only, from the site's origin only, with a per-IP limit, and can use a keyed provider URL kept as a server secret.
+
+#### The on-chain Solana program, built and tested, not deployed
+
+- `solana/programs/type262`, an Anchor program that takes the server out of Solana claims: a domain escrow with one pool per domain and asset, a DNSSEC verifier and a pump.fun launcher. It verifies DNSSEC on Solana itself, one signed record set per instruction, from the IANA root anchors KSK-2017 and KSK-2024 compiled into it, and caches each verified set so later proofs reuse the root and the TLD: RSA/SHA-256 with keys of 1024 to 2048 bits in the program (about 1.25M compute units for RSA-2048), P-256 and Ed25519 through Solana's native precompiles. The escrow pays a pool only to the wallet a verified record publishes, with proofs ordered by signing time, and its admin can only pause new deposits.
+- 78 LiteSVM tests on Windows and 86 in WSL with the precompiles, plus 29 unit tests in the program: the escrow's accounting to the lamport, Token-2022 mints, the DNSSEC rules, real chains from the root for six domains, attacks on the cache, the RSA check and the escrow's money paths, and launches, trades, graduation and collects against the mainnet pump.fun programs. `solana/scripts/e2e-local.mjs` runs its client on a local validator, 43 transactions and 84 checks.
+- Its clients, `assets/solana-proof.js` (DNSSEC proofs in the browser, on the pinned dnsprovejs) and `assets/solana-type262.js` (every instruction and account reader), are tested byte for byte in `test/solana-proof.test.mjs` (20 tests) and `test/solana-type262.test.mjs` (24).
+- Specifications in `solana/docs/DNSSEC.md` and `solana/docs/PUMP.md`, with the measurements behind them in `solana/bench`. Deploying it is future work.
+
+#### Documentation
+
+- The docs cover Solana in full: an overview with the settings and the trust model, domain vaults, claims and refunds, the pump.fun launchpad, the worker API, running your own worker, and the on-chain program.
+
+### Changed
+
+- The landing page, the README and the docs lead with Solana and pump.fun. Robinhood Chain's escrow, DNSSEC proofs, launchpad, contract reference and deployment have their own section in the docs.
 
 ### Fixed
 

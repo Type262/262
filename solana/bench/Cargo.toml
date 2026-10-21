@@ -1,0 +1,50 @@
+[package]
+name = "dnssec-bench"
+version = "0.0.0"
+edition = "2021"
+publish = false
+description = "Throwaway benchmark: DNSSEC signature checks on Solana (RSA modexp in BPF, P-256/Ed25519 precompile introspection, SHA-1)"
+
+# Its own workspace, so it never joins a parent Anchor workspace.
+[workspace]
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[features]
+# Read by solana_program_entrypoint::entrypoint!.
+custom-heap = []
+custom-panic = []
+
+[dependencies]
+solana-program-entrypoint = "3.1.1"
+solana-account-info = "3"
+solana-program-error = "3"
+solana-pubkey = "4"
+solana-define-syscall = "4"
+
+[target.'cfg(not(target_os = "solana"))'.dependencies]
+sha2 = "0.10"
+
+[dev-dependencies]
+litesvm = { version = "=0.16.0", features = ["precompiles"] }
+solana-keypair = "3.1"
+solana-signer = "3"
+solana-transaction = { version = "4.1", features = ["wincode"] }
+solana-signature = "3"
+solana-hash = "4"
+wincode = "0.5"
+solana-message = "4.2"
+solana-instruction = "3.4"
+solana-address = "2.6"
+solana-account = "4.3"
+solana-clock = "3.1"
+solana-compute-budget-interface = "3"
+solana-sdk-ids = "3.1"
+serde_json = "1"
+hex = "0.4"
+
+[profile.release]
+overflow-checks = false
+lto = "fat"
+codegen-units = 1

@@ -1,0 +1,30 @@
+[package]
+name = "type262"
+version = "0.1.0"
+description = "TYPE/262 on Solana: DNSSEC-proven domain wallets, a domain escrow and a pump.fun launcher"
+edition = "2021"
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "type262"
+
+[features]
+default = []
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+# Checked by the code #[program] expands to; declared so the compiler knows them.
+anchor-debug = []
+custom-heap = []
+custom-panic = []
+
+[dependencies]
+anchor-lang = { version = "=0.31.2", features = ["init-if-needed"] }
+anchor-spl = { version = "=0.31.2", default-features = false, features = ["token", "token_2022", "associated_token"] }
+
+# The code #[program] expands to checks target_os = "solana", which host builds don't know.
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("solana"))'] }

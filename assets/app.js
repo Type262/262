@@ -7,6 +7,9 @@ import { encodeCall, SEL, words, toBig, toAddr, decodeString, decodeLaunches, de
 import * as config from './config.js'
 import { walletProof } from './dnssec.js'
 import { toast, ambient } from './fx.js'
+import * as sol from './solana.js'
+import * as solEscrow from './solana-escrow.js'
+import * as solLaunch from './solana-launch.js'
 
 ambient(48)
 const { ESCROW_ADDRESS = '', LAUNCHER_ADDRESS = '' } = config
@@ -26,7 +29,61 @@ const CHAIN = {
   // read-only fallback on our server for browsers that can't reach the public RPC (DNS trouble, outages)
   rpcFallback: config.RPC_FALLBACK || 'https://type262-upload.onrender.com/rpc',
 }
-const SOL_USDC = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'
+
+// ---------- network: Solana is the main chain, Robinhood Chain the second ----------
+const NET_KEY = 't262-net'
+let network = (() => { try { return localStorage.getItem(NET_KEY) === 'robinhood' ? 'robinhood' : 'solana' } catch { return 'solana' } })()
+// The Solana escrow and launch screens plug in here as { mount(el, ctx), route(arg, ctx) } modules. Until one is
+// set, the view shows a short card and the Robinhood Chain version stays one click away.
+const SOLANA_VIEWS = { escrow: solEscrow, launch: solLaunch }
+
+function setNetwork(n) {
+  if (n === network) return
+  network = n
+  try { localStorage.setItem(NET_KEY, n) } catch {}
+  syncNetwork()
+  if (payCtx) { payCtx.pick = preferredPick(payCtx.r); renderPay() }
+  lastKey = ''
+  route()
+}
+function syncNetwork() {
+  $$('#net [data-chain]').forEach(b => { const on = b.dataset.chain === network; b.classList.toggle('on', on); b.setAttribute('aria-checked', String(on)) })
+  const solana = network === 'solana'
+  $('#esc-evm').hidden = $('#ln-evm').hidden = solana
+  $('#esc-sol').hidden = $('#ln-sol').hidden = !solana
+  syncConnect()
+}
+$$('#net [data-chain]').forEach(b => b.addEventListener('click', () => setNetwork(b.dataset.chain)))
+document.addEventListener('click', e => { const b = e.target.closest('[data-chain-go]'); if (b) setNetwork(b.dataset.chainGo) })
+
+const SOL_ICON = '<svg viewBox="0 0 20 20" aria-hidden="true"><rect width="20" height="20" rx="10" fill="#0b0b0b"/><path fill="#14f195" d="M6.6 12.6h8.3l-1.5 1.5H5.1zm0-6.7h8.3L13.4 7.4H5.1zm8.3 3.3H6.6l-1.5 1.5h8.3z"/></svg>'
+const SOON = {
+  escrow: ['Escrow on Solana', 'Paying a domain before it publishes a wallet comes to Solana on this screen next. Escrow on Robinhood Chain works today.'],
+  launch: ['Launch on pump.fun', 'Coins on pump.fun whose creator fees go to a domain come to this screen next. The pons launchpad on Robinhood Chain works today.'],
+}
+const solCtx = {
+  sol, toast, setNetwork,
+  connect: () => connectSol(),
+  account: () => solAddress(),
+  lastDomain: () => lastDomain,
+}
+function showSolanaView(v, arg) {
+  const el = $(v === 'escrow' ? '#esc-sol' : '#ln-sol')
+  const mod = SOLANA_VIEWS[v]
+  if (mod) {
+    if (!el.dataset.mounted) { el.dataset.mounted = '1'; mod.mount(el, solCtx) }
+    if (mod.route) mod.route(arg || lastDomain || '', solCtx)
+    return
+  }
+  const [title, text] = SOON[v]
+  el.innerHTML = `
+    <div class="soon">
+      <span class="chain-pill"><span class="pb-ico">${SOL_ICON}</span>Solana<em>mainnet</em></span>
+      <h3>${title}</h3>
+      <p>${text}</p>
+      <div class="pb-actions"><button class="btn primary sm" type="button" data-chain-go="robinhood">Use Robinhood Chain</button><a class="btn sm" href="#pay">Pay a domain on Solana</a></div>
+    </div>`
+}
 
 // ---------- routing ----------
 const VIEWS = ['resolve', 'pay', 'escrow', 'publish', 'verify', 'badge', 'launch']
@@ -42,6 +99,7 @@ function route() {
   $$('.rail a').forEach(a => a.classList.toggle('on', a.dataset.v === v))
   const rail = $('.rail'), on = $('.rail a.on')
   if (on && rail.scrollWidth > rail.clientWidth) rail.scrollLeft = on.offsetLeft - (rail.clientWidth - on.offsetWidth) / 2
+  if ((v === 'escrow' || v === 'launch') && network === 'solana') return showSolanaView(v, arg)
   if (v === 'launch') return showLaunch(arg)
   if (arg) prefill(v, arg, true) // a link to a domain always shows fresh results
   else if (lastDomain) prefill(v, lastDomain, false) // the last domain follows you, re-queried only if it changed
@@ -68,7 +126,7 @@ function setAccount(a, { forget = false } = {}) {
   const next = a || null
   const changed = next !== account
   account = next
-  $('#connect span').textContent = account ? short(account) : 'Connect wallet'
+  syncConnect()
   try { if (account) localStorage.setItem(WALLET_KEY, account); else if (forget) localStorage.removeItem(WALLET_KEY) } catch {}
   if (changed) onAccountChange()
 }
@@ -104,8 +162,50 @@ const restored = remembered() && eth()
   ? eth().request({ method: 'eth_accounts' }).then(([a]) => { if (a) setAccount(a); watch() }).catch(() => setAccount(null, { forget: true }))
   : Promise.resolve()
 
+// Solana wallets: Wallet Standard (Phantom, Solflare, Backpack). A returning wallet reconnects silently.
+const solAddress = () => (sol.state.account ? sol.state.account.address : null)
+function syncConnect() {
+  const a = network === 'solana' ? solAddress() : account
+  $('#connect span').textContent = a ? short(a) : 'Connect wallet'
+}
+sol.subscribe(syncConnect)
+sol.start()
+
+const iconSrc = u => (/^data:image\/(svg\+xml|png|webp|jpeg|gif)[;,]/.test(String(u)) ? String(u) : '')
+let menuAway = null
+function closeMenu() {
+  const m = $('.wmenu')
+  if (m) m.remove()
+  if (menuAway) { document.removeEventListener('click', menuAway); menuAway = null }
+}
+/** One wallet: connect it. Several: let the user pick from a small menu under the header. */
+function pickSolWallet() {
+  const list = sol.wallets()
+  if (list.length < 2) return sol.connect(list[0] && list[0].name)
+  return new Promise((resolve, reject) => {
+    closeMenu()
+    const menu = document.createElement('div')
+    menu.className = 'wmenu'
+    menu.setAttribute('role', 'menu')
+    menu.innerHTML = '<span class="label">Solana wallet</span>' + list.map(w => `<button type="button" role="menuitem" data-w="${esc(w.name)}">${iconSrc(w.icon) ? `<img src="${esc(iconSrc(w.icon))}" alt="">` : '<i></i>'}<span>${esc(w.name)}</span></button>`).join('')
+    $('.hud .end').append(menu)
+    const done = (fn, v) => { closeMenu(); fn(v) }
+    menu.addEventListener('click', e => {
+      const b = e.target.closest('[data-w]')
+      if (b) sol.connect(b.dataset.w).then(a => done(resolve, a), err => done(reject, err))
+    })
+    setTimeout(() => { menuAway = e => { if (!menu.contains(e.target)) done(reject, new Error('Connection cancelled')) }; document.addEventListener('click', menuAway) })
+  })
+}
+const connectSol = () => (solAddress() ? Promise.resolve(solAddress()) : pickSolWallet())
+
 // Click when connected = disconnect (forget this wallet on this device).
 $('#connect').addEventListener('click', () => {
+  if (network === 'solana') {
+    if (solAddress()) { sol.disconnect(); toast('Wallet disconnected'); return }
+    connectSol().catch(e => toast(e.message || 'Connection cancelled'))
+    return
+  }
   if (account) { setAccount(null, { forget: true }); toast('Wallet disconnected'); return }
   connect().catch(e => toast(e.message || 'Connection cancelled'))
 })
@@ -150,10 +250,13 @@ $('[data-form=pay]').addEventListener('submit', async e => {
   try {
     const r = await resolveWalletsUp(d)
     history.replaceState(null, '', `#pay/${r.resolvedAt}`)
-    payCtx = { r, pick: 0 }
+    payCtx = { r, pick: preferredPick(r) }
     renderPay()
   } catch (err) { renderError(box.firstChild, err.message) }
 })
+
+// A domain that publishes both: the selected network's address comes first.
+const preferredPick = r => Math.max(0, r.records.findIndex(x => addressKind(x.address) === (network === 'solana' ? 'solana' : 'evm')))
 
 function renderPay() {
   const box = $('#pay-step')
@@ -176,17 +279,18 @@ function renderPay() {
       <div class="r-code">${esc(x.code)}</div><div class="addr">${esc(x.address)}</div>
       <div class="tags"><span class="tag">${x.source === 'TYPE262' ? 'TYPE262' : '_wallet TXT'}</span></div>
     </label>`).join('')
-  const evm = kind === 'evm'
+  const evm = kind === 'evm', solana = kind === 'solana'
+  const netName = evm ? `${CHAIN.name} · ${CHAIN.id}` : solana ? `${sol.NAME} · mainnet` : ''
   box.innerHTML = `
     <div class="result"><div class="r-head"><span class="label">${esc(r.resolvedAt)} publishes ${r.records.length} wallet(s)</span><span class="tag ${r.dnssec ? 'good' : ''}">${r.dnssec ? 'DNSSEC ✓' : 'Unsigned'}</span></div>${picker}</div>
     ${trust}
     <div class="row-2">
-      ${evm ? `<div><span class="label lbl">Network</span><div class="field sm"><input value="${CHAIN.name} · ${CHAIN.id}" readonly aria-label="Network"></div></div>` : ''}
-      <div><span class="label lbl">Asset</span><div class="field sm"><select id="p-asset">${evm ? `<option value="stable">${CHAIN.stable.symbol}</option><option value="native">${CHAIN.native}</option>` : kind === 'solana' ? '<option value="sol">SOL</option><option value="usdc">USDC</option>' : `<option value="native">${esc(rec.code)}</option>`}</select></div></div>
+      ${netName ? `<div><span class="label lbl">Network</span><div class="field sm"><input value="${netName}" readonly aria-label="Network"></div></div>` : ''}
+      <div><span class="label lbl">Asset</span><div class="field sm"><select id="p-asset">${evm ? `<option value="stable">${CHAIN.stable.symbol}</option><option value="native">${CHAIN.native}</option>` : solana ? `<option value="usdc">${sol.USDC.symbol}</option><option value="sol">SOL</option>` : `<option value="native">${esc(rec.code)}</option>`}</select></div></div>
       <div><span class="label lbl">Amount</span><div class="field sm"><input id="p-amt" inputmode="decimal" placeholder="5.00" value="5"></div></div>
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:0.75rem">
-      ${evm ? `<button class="btn solid" id="p-send" ${r.agree ? '' : 'disabled'}>Send from wallet</button>` : ''}
+      ${evm || solana ? `<button class="btn solid" id="p-send" ${r.agree ? '' : 'disabled'}>Send from wallet</button>` : ''}
       ${PHONE ? '<a class="btn" id="p-link" href="#">Open in wallet app</a>' : ''}
       <button class="btn" id="p-copy-link" type="button">Copy payment link</button>
       <button class="btn" id="p-copy" type="button">Copy address</button>
@@ -203,6 +307,7 @@ function renderPay() {
     else { $('#p-status').innerHTML = ''; copy(link, e.currentTarget) }
   })
   if (evm) $('#p-send').addEventListener('click', () => send(rec))
+  if (solana) $('#p-send').addEventListener('click', () => sendSol(rec))
 }
 
 const PHONE = navigator.userAgentData ? navigator.userAgentData.mobile : /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
@@ -214,7 +319,7 @@ function linkFor(rec, kind) {
       const s = $('#p-asset').value === 'stable' ? CHAIN.stable : null
       return paymentUri(rec.address, { amount, chainId: CHAIN.id, token: s ? s.address : undefined, decimals: s ? s.decimals : 18 })
     }
-    if (kind === 'solana') return paymentUri(rec.address, { amount, splToken: $('#p-asset').value === 'usdc' ? SOL_USDC : undefined })
+    if (kind === 'solana') return paymentUri(rec.address, { amount, splToken: $('#p-asset').value === 'usdc' ? sol.USDC.mint : undefined })
     return paymentUri(rec.address, { amount })
   } catch { return '#' }
 }
@@ -236,6 +341,51 @@ async function send(rec) {
   } catch (err) {
     status.innerHTML = `<div class="note warn">${esc(err.message || 'Transaction cancelled')}</div>`
   } finally { btn.disabled = false }
+}
+
+// SOL or USDC on Solana, from the connected Solana wallet to the domain's published address.
+const SOL_FEE = 10_000n // two signatures' worth of lamports: room for the network fee
+async function sendSol(rec) {
+  const status = $('#p-status')
+  const usdc = $('#p-asset').value === 'usdc'
+  const amount = $('#p-amt').value.trim()
+  const domain = payCtx.r.resolvedAt
+  const btn = $('#p-send')
+  btn.disabled = true
+  txBusy++
+  status.innerHTML = '<div class="note">Waiting for your wallet…</div>'
+  try {
+    const units = parseUnits(amount, usdc ? sol.USDC.decimals : sol.SOL_DECIMALS)
+    if (units <= 0n) throw new Error('Enter an amount above zero.')
+    const from = await connectSol()
+    const to = rec.address
+    status.innerHTML = '<div class="note">Checking balances on Solana…</div>'
+    const lamports = await sol.getBalance(from)
+    let ixs, opens = ''
+    if (usdc) {
+      const t = sol.USDC
+      await sol.verifyMint(t)
+      const [src, dst] = await Promise.all([sol.associatedTokenAddress(from, t.mint), sol.associatedTokenAddress(to, t.mint)])
+      const [have, theirs] = await Promise.all([sol.getTokenAccountBalance(src), sol.getAccountInfo(dst)])
+      if (!have || have.amount < units) throw new Error(`Not enough USDC: this wallet has ${fmtUnits(have ? have.amount : 0n, t.decimals)}.`)
+      const rent = theirs ? 0n : sol.TOKEN_ACCOUNT_RENT
+      if (lamports < SOL_FEE + rent) throw new Error(`You need about ${fmtUnits(SOL_FEE + rent, 9)} SOL for the network fee${rent ? ` and to open ${domain}'s USDC account` : ''}.`)
+      if (rent) opens = ` This also opens ${domain}'s USDC account (${fmtUnits(rent, 9)} SOL, paid once).`
+      ixs = [
+        sol.createAssociatedTokenAccountIdempotent({ payer: from, ata: dst, owner: to, mint: t.mint }),
+        sol.transferChecked({ source: src, mint: t.mint, destination: dst, owner: from, amount: units, decimals: t.decimals }),
+      ]
+    } else {
+      if (lamports < units + SOL_FEE) throw new Error(`Not enough SOL: this wallet has ${fmtUnits(lamports, 9)}.`)
+      if (units < sol.MIN_ACCOUNT_LAMPORTS && (await sol.getBalance(to)) === 0n) throw new Error(`This address is new on Solana, so its first payment must be at least ${fmtUnits(sol.MIN_ACCOUNT_LAMPORTS, 9)} SOL.`)
+      ixs = [sol.systemTransfer(from, to, units)]
+    }
+    status.innerHTML = `<div class="note">Confirm in your wallet, then wait for Solana…${esc(opens)}</div>`
+    const sig = await sol.send(ixs, { onSent: s => { status.innerHTML = `<div class="note">Sent. Waiting for Solana to confirm… <a href="${sol.txUrl(s)}" target="_blank" rel="noopener">Solscan ↗</a></div>` } })
+    status.innerHTML = `<div class="note good">✓ Sent ${esc(amount)} ${usdc ? sol.USDC.symbol : 'SOL'} to ${esc(domain)} on Solana. <a href="${sol.txUrl(sig)}" target="_blank" rel="noopener">View transaction ↗</a></div>`
+  } catch (err) {
+    status.innerHTML = `<div class="note warn">${esc(err.message || 'Transaction cancelled')}</div>`
+  } finally { txBusy--; btn.disabled = false }
 }
 
 // ---------- escrow ----------
@@ -290,7 +440,8 @@ async function sendTx(params) {
 
 function fmtUnits(v, dec) {
   const s = v.toString().padStart(dec + 1, '0')
-  const frac = s.slice(-dec).replace(/0+$/, '').slice(0, 6)
+  // At most 6 decimals: cut first, then drop trailing zeros, so 0.0023700001 shows 0.00237.
+  const frac = s.slice(-dec).slice(0, 6).replace(/0+$/, '')
   return frac ? `${s.slice(0, -dec)}.${frac}` : s.slice(0, -dec)
 }
 
@@ -413,21 +564,22 @@ function renderEscrow(domain, s) {
 // ---------- publish ----------
 // One row per address. The network sets the coin code written to DNS. EVM addresses are written as "ETH":
 // it's the code wallets know, and one of the EVM codes DnssecVerifier accepts for escrow claims.
+// Solana comes first: it's the main network on TYPE/262, and the default for a new address.
 const NETWORKS = {
+  sol: {
+    code: 'SOL', kind: 'solana', label: 'Solana', tag: 'Main', placeholder: 'Solana address',
+    icon: '<svg viewBox="0 0 20 20" aria-hidden="true"><rect width="20" height="20" rx="10" fill="#0b0b0b"/><defs><linearGradient id="solg" x1="0" x2="1"><stop offset="0" stop-color="#9945ff"/><stop offset="1" stop-color="#14f195"/></linearGradient></defs><path fill="url(#solg)" d="M6.6 12.6h8.3l-1.5 1.5H5.1zm0-6.7h8.3L13.4 7.4H5.1zm8.3 3.3H6.6l-1.5 1.5h8.3z"/></svg>',
+    hint: 'The main network on TYPE/262: SOL and USDC payments settle on Solana. Use a wallet address you control, not a token account.',
+  },
   evm: {
     code: 'ETH', kind: 'evm', label: 'Robinhood Chain', tag: 'EVM', placeholder: '0x…',
     icon: '<img src="assets/chains/robinhood.png" alt="" width="20" height="20">',
-    hint: 'Live on TYPE/262: payments, escrow claims and launch fees settle on Robinhood Chain (4663). Use a regular wallet address, not a multisig or smart-contract wallet: other apps read "ETH" and may pay it on Ethereum or other EVM chains.',
+    hint: 'Also supported: payments, escrow claims and launch fees on Robinhood Chain (4663). Use a regular wallet address, not a multisig or smart-contract wallet: other apps read "ETH" and may pay it on Ethereum or other EVM chains.',
   },
   btc: {
     code: 'BTC', kind: 'btc', label: 'Bitcoin', placeholder: 'bc1…',
     icon: '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="10" fill="#f7931a"/><path fill="#fff" d="M13.6 8.7c.2-1.3-.8-2-2.2-2.5l.4-1.8-1.1-.3-.4 1.7-.9-.2.4-1.7-1.1-.3-.4 1.8-.7-.2-1.5-.4-.3 1.2s.8.2.8.2c.5.1.5.4.5.6l-.5 2-.1.1h.1l-.7 2.8c-.1.1-.2.3-.5.2l-.8-.2-.5 1.3 1.4.4.8.2-.5 1.8 1.1.3.4-1.8.9.2-.4 1.8 1.1.3.5-1.8c1.9.4 3.3.2 3.9-1.5.5-1.4 0-2.2-1-2.7.7-.2 1.3-.7 1.4-1.7zm-2.5 3.5c-.3 1.4-2.7.6-3.4.4l.6-2.5c.8.2 3.2.6 2.8 2.1zm.4-3.5c-.3 1.3-2.3.6-2.9.5l.6-2.2c.6.1 2.7.4 2.3 1.7z"/></svg>',
-    hint: 'Published for wallets that read DNS. TYPE/262 itself settles on Robinhood Chain, so add an EVM address too.',
-  },
-  sol: {
-    code: 'SOL', kind: 'solana', label: 'Solana', placeholder: 'Base58 address',
-    icon: '<svg viewBox="0 0 20 20" aria-hidden="true"><rect width="20" height="20" rx="10" fill="#0b0b0b"/><defs><linearGradient id="solg" x1="0" x2="1"><stop offset="0" stop-color="#9945ff"/><stop offset="1" stop-color="#14f195"/></linearGradient></defs><path fill="url(#solg)" d="M6.6 12.6h8.3l-1.5 1.5H5.1zm0-6.7h8.3L13.4 7.4H5.1zm8.3 3.3H6.6l-1.5 1.5h8.3z"/></svg>',
-    hint: 'Published for wallets that read DNS. TYPE/262 itself settles on Robinhood Chain, so add an EVM address too.',
+    hint: 'Published for wallets that read DNS. TYPE/262 itself settles on Solana, so add a Solana address too.',
   },
   other: {
     code: '', kind: 'other', label: 'Other', placeholder: 'Address',
@@ -439,7 +591,7 @@ const KIND_TO_NET = { evm: 'evm', btc: 'btc', solana: 'sol' }
 const KIND_NAME = { evm: 'an EVM (0x…) address', btc: 'a Bitcoin address', solana: 'a Solana address' }
 const entries = $('#pub-entries')
 
-function addEntry(net = 'evm', address = '') {
+function addEntry(net = 'sol', address = '') {
   const row = document.createElement('div')
   row.className = 'pb-row'
   row.innerHTML = `
@@ -471,10 +623,10 @@ function addEntry(net = 'evm', address = '') {
   })
   row.querySelector('.pb-mine').addEventListener('click', async () => {
     try {
-      row.querySelector('.pb-a').value = account || await connect()
+      row.querySelector('.pb-a').value = row.dataset.net === 'sol' ? await connectSol() : account || await connect()
       syncRow(row)
       renderPublish()
-    } catch (err) { toast(eth() ? (err.message || 'Connection cancelled') : 'No browser wallet found. Paste your address instead.') }
+    } catch (err) { toast(row.dataset.net === 'sol' || eth() ? (err.message || 'Connection cancelled') : 'No browser wallet found. Paste your address instead.') }
   })
   row.querySelector('.pb-x').addEventListener('click', () => { row.remove(); syncRemove(); renderPublish() })
   row.dataset.net = net
@@ -506,7 +658,7 @@ function syncRow(row) {
   const other = row.dataset.net === 'other'
   row.querySelector('.pb-coin').hidden = !other
   row.querySelector('.pb-a').placeholder = s.net.placeholder
-  row.querySelector('.pb-mine').hidden = row.dataset.net !== 'evm' || !!s.address
+  row.querySelector('.pb-mine').hidden = !['evm', 'sol'].includes(row.dataset.net) || !!s.address
   row.classList.toggle('bad', !!s.error)
   row.classList.toggle('good', s.ok)
   const hint = row.querySelector('.pb-hint')
@@ -518,7 +670,7 @@ const syncRemove = () => $$('.pb-x', entries).forEach(b => (b.hidden = $$('.pb-r
 addEntry()
 $('#pub-add').addEventListener('click', () => {
   const used = new Set($$('.pb-row', entries).map(r => r.dataset.net))
-  addEntry(['evm', 'btc', 'sol', 'other'].find(k => !used.has(k)) || 'other')
+  addEntry(['sol', 'evm', 'btc', 'other'].find(k => !used.has(k)) || 'other')
   $$('.pb-row .pb-a', entries).at(-1).focus()
   renderPublish()
 })
@@ -539,10 +691,10 @@ function renderPublish() {
     seen.add(k)
     list.push({ code: s.code, address: s.address })
   })
-  const evm = list.some(e => addressKind(e.address) === 'evm')
-  rowEls.forEach(r => { // Bitcoin and Solana rows only nag about an EVM address when there isn't one
-    if (['btc', 'sol'].includes(r.dataset.net) && !r.classList.contains('bad') && !$('.pb-hint', r).classList.contains('err'))
-      $('.pb-hint', r).textContent = evm ? 'Published for wallets that read DNS.' : NETWORKS[r.dataset.net].hint
+  const payable = list.some(e => ['solana', 'evm'].includes(addressKind(e.address)))
+  rowEls.forEach(r => { // Bitcoin rows only nag about a Solana address when there's nothing TYPE/262 can pay
+    if (r.dataset.net === 'btc' && !r.classList.contains('bad') && !$('.pb-hint', r).classList.contains('err'))
+      $('.pb-hint', r).textContent = payable ? 'Published for wallets that read DNS.' : NETWORKS.btc.hint
   })
   let domain = null, domainErr = ''
   try { domain = $('#pub-d').value.trim() ? normalizeDomain($('#pub-d').value) : null } catch (err) { domainErr = err.message }
@@ -581,7 +733,7 @@ function renderPublish() {
       ${rows}
     </div>
     <p class="pb-fine">${list.length > 1 ? `Add ${list.length} TXT records, one per address, all named <code>${esc(name)}</code>. ` : ''}Some hosts want the full name: <code>_wallet.${esc(domain)}</code>.</p>
-    ${evm ? '' : '<div class="note warn">No EVM address yet. Payments and escrow claims on TYPE/262 need one (Robinhood Chain).</div>'}
+    ${payable ? '' : '<div class="note warn">No Solana or EVM address yet. Payments on TYPE/262 need one: Solana, or Robinhood Chain.</div>'}
     <details class="pb-adv">
       <summary>Other formats: WALLET (type 262) and zone files</summary>
       ${block('WALLET record', 'for DNS software that knows type 262', z.named)}
@@ -1174,4 +1326,5 @@ lnForm.addEventListener('submit', async e => {
   }
 })
 
+syncNetwork()
 Promise.race([restored, pause(1500)]).finally(route)

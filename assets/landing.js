@@ -67,7 +67,7 @@ const seg = (x, a, b) => clamp01((x - a) / (b - a))
 const ease = x => 1 - Math.pow(1 - x, 3)
 
 // Scene 1: the WALLET line types itself into the zone file, then gets signed.
-const ZONE = [['@     ', ''], ['IN', 'k'], ['  ', ''], ['WALLET', 'w'], ['  ', ''], ['"ETH" "0x7a1f…c0de"', '']]
+const ZONE = [['@     ', ''], ['IN', 'k'], ['  ', ''], ['WALLET', 'w'], ['  ', ''], ['"SOL" "9xQe…Wb4h"', '']]
 const ZONE_LEN = ZONE.reduce((n, [t]) => n + t.length, 0)
 function zoneScene(sub) {
   let left = Math.round(ZONE_LEN * seg(sub, 0.06, 0.66))
@@ -155,16 +155,16 @@ if (narrow.matches) {
 const CONSOLE = [
   ['p', '$ ', 'agent.fetch("https://api.example.com/v1/data")'],
   ['d', '', '← 402 Payment Required'],
-  ['d', '', '  payTo: "0xBAD0…7e11"  asset: USDG  amount: 0.01'],
-  ['p', '$ ', 'verifyPayTo("api.example.com", "0xBAD0…7e11")'],
+  ['d', '', '  payTo: "BAD1…7e11"  asset: USDC  amount: 0.01'],
+  ['p', '$ ', 'verifyPayTo("api.example.com", "BAD1…7e11")'],
   ['x', '', '✗ Not published by example.com. Refusing to pay.'],
   ['', '', ''],
   ['p', '$ ', 'agent.fetch("https://api.example.com/v1/data")'],
   ['d', '', '← 402 Payment Required'],
-  ['d', '', '  payTo: "0x7a1f…c0de"  asset: USDG  amount: 0.01'],
-  ['p', '$ ', 'verifyPayTo("api.example.com", "0x7a1f…c0de")'],
+  ['d', '', '  payTo: "9xQe…Wb4h"  asset: USDC  amount: 0.01'],
+  ['p', '$ ', 'verifyPayTo("api.example.com", "9xQe…Wb4h")'],
   ['ok', '', '✓ Match. example.com, DNSSEC-signed.'],
-  ['d', '', '→ Paid 0.01 USDG on Robinhood Chain. 200 OK'],
+  ['d', '', '→ Paid 0.01 USDC on Solana. 200 OK'],
 ]
 const con = $('#console')
 async function runConsole() {

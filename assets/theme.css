@@ -38,7 +38,7 @@ body { background: var(--bg); }
 .eyebrow::before { background: var(--acid); box-shadow: 0 0 .75rem var(--acid); }
 
 /* ---------- surfaces: glass with a chrome edge ---------- */
-.cmp, .flow > div, .term, .card, .result, .field, .badge, .node, .note, .rail a.on, .pb-row, .pb-table, .chain-pill, .code {
+.cmp, .flow > div, .term, .card, .result, .field, .badge, .node, .note, .rail a.on, .pb-row, .pb-table, .chain-pill, .code, .soon, .wmenu {
   border: 1px solid transparent !important;
   background: linear-gradient(var(--glass), var(--glass)) padding-box, var(--edge) border-box !important;
   -webkit-backdrop-filter: blur(14px) saturate(1.3); backdrop-filter: blur(14px) saturate(1.3);
@@ -157,3 +157,4 @@ a.ln-card:hover { --edge: linear-gradient(135deg, var(--acid), rgba(200, 255, 30
 
 /* buttons inside a field keep only their left divider */
 .field .btn:not(.primary):not(.solid):not(.invert):not(.dark) { border-width: 0 0 0 1px; }
+.wmenu { --glass: rgba(10, 10, 10, .92); }

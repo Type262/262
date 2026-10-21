@@ -1,0 +1,44 @@
+[package]
+name = "type262-tests"
+version = "0.1.0"
+edition = "2021"
+publish = false
+description = "LiteSVM tests of the type262 program, run against the compiled target/deploy/type262.so"
+
+# Its own workspace, so it never becomes part of the Anchor workspace: LiteSVM is built on the
+# newer generation of the granular Solana crates (Address instead of Pubkey, spl-*-interface),
+# and resolving them in the program's Cargo.lock could move crates the on-chain build depends on.
+# It depends on exactly the crates LiteSVM itself uses, at its versions, so there is one copy of
+# each type; the umbrella solana-sdk would pull in a second.
+[workspace]
+
+[features]
+# Loads the ed25519 and secp256r1 precompiles into LiteSVM, for DNSSEC algorithms 15 and 13.
+precompiles = ["litesvm/precompiles"]
+
+[dependencies]
+litesvm = "=0.16.0"
+solana-address = { version = "~2.6.1", features = ["borsh", "curve25519", "decode"] }
+solana-account = "4.3.0"
+solana-clock = "~3.1.1"
+solana-instruction = "~3.4.0"
+solana-instruction-error = "~2.4.0"
+solana-keypair = "3.1.2"
+solana-message = "4.2.4"
+solana-program-pack = "3.1.0"
+solana-sdk-ids = "3.1.0"
+solana-signer = "3.0.1"
+solana-system-interface = { version = "3.2.0", features = ["bincode"] }
+solana-transaction = { version = "4.1.5", features = ["wincode"] }
+solana-transaction-error = "~3.3.1"
+spl-token-interface = "3.0.0"
+spl-associated-token-account-interface = "2.0.0"
+borsh = { version = "1", features = ["derive"] }
+sha2 = "0.10"
+
+[dev-dependencies]
+# DNSSEC suites: the real proofs in ../bench/fixtures are JSON, and synthetic zones are signed
+# with throwaway RSA keys.
+serde_json = "1"
+num-bigint = "0.4"
+sha1 = "0.10"

@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>TYPE/262 · App</title>
-  <meta name="description" content="Resolve, pay, escrow, publish and verify DNS WALLET (TYPE262) records, and launch tokens whose fees go to a domain, on Robinhood Chain.">
+  <meta name="description" content="Resolve, pay, escrow, publish and verify DNS WALLET (TYPE262) records, and launch tokens whose fees go to a domain. On Solana, with Robinhood Chain also supported.">
   <meta name="theme-color" content="#0b0b0b">
   <link rel="icon" type="image/webp" href="assets/art/emblem.webp">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -21,6 +21,10 @@
         <a class="btn sm hide-sm" href="./">Home</a>
         <a class="btn sm hide-sm" href="docs.html">Docs</a>
         <a class="btn sm icon hide-sm" href="https://x.com/type_262" target="_blank" rel="noopener" aria-label="TYPE/262 on X" title="@type_262 on X"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a><a class="btn sm icon hide-sm" href="https://github.com/Type262/262" target="_blank" rel="noopener" aria-label="TYPE/262 on GitHub" title="Type262/262 on GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></a>
+        <div class="seg sm net" id="net" role="radiogroup" aria-label="Network">
+          <button type="button" role="radio" data-chain="solana" title="Solana"><span class="pb-ico"><svg viewBox="0 0 20 20" aria-hidden="true"><rect width="20" height="20" rx="10" fill="#0b0b0b"/><path fill="#14f195" d="M6.6 12.6h8.3l-1.5 1.5H5.1zm0-6.7h8.3L13.4 7.4H5.1zm8.3 3.3H6.6l-1.5 1.5h8.3z"/></svg></span><span class="net-n">Solana</span></button>
+          <button type="button" role="radio" data-chain="robinhood" title="Robinhood Chain"><span class="pb-ico"><img src="assets/chains/robinhood.png" alt="" width="20" height="20"></span><span class="net-n">Robinhood</span></button>
+        </div>
         <button id="connect" class="btn primary sm" type="button"><span>Connect wallet</span></button>
       </div>
     </div>
@@ -30,7 +34,7 @@
   <div class="app">
     <nav class="rail" aria-label="Tools">
       <a href="#resolve" data-v="resolve"><small>01</small><strong>Resolve</strong><em>Look up a domain's wallets</em></a>
-      <a href="#pay" data-v="pay"><small>02</small><strong>Pay</strong><em>Send USDG to a name</em></a>
+      <a href="#pay" data-v="pay"><small>02</small><strong>Pay</strong><em>Send USDC or SOL to a name</em></a>
       <a href="#escrow" data-v="escrow"><small>03</small><strong>Escrow</strong><em>Pay before they publish</em></a>
       <a href="#publish" data-v="publish"><small>04</small><strong>Publish</strong><em>Make your domain payable</em></a>
       <a href="#verify" data-v="verify"><small>05</small><strong>Verify</strong><em>Check an x402 payTo</em></a>
@@ -61,7 +65,7 @@
         <div class="view-head">
           <span class="eyebrow">02 — Pay</span>
           <h2 class="h2">Pay a <span class="accent">name.</span></h2>
-          <p class="body">Send to a domain instead of an address. We resolve its WALLET record and check DNSSEC, then your wallet sends USDG or ETH on Robinhood Chain.</p>
+          <p class="body">Send to a domain instead of an address. We resolve its WALLET record and check DNSSEC, then your wallet sends USDC or SOL on Solana, or USDG or ETH on Robinhood Chain.</p>
         </div>
         <form class="field" data-form="pay" autocomplete="off">
           <span class="pre">pay</span>
@@ -76,15 +80,19 @@
         <div class="view-head">
           <span class="eyebrow">03 — Escrow</span>
           <h2 class="h2">Pay them <span class="accent">first.</span></h2>
-          <p class="body">Pay a domain that hasn't published a wallet yet. The money waits on Robinhood Chain until the owner claims it with one DNS record. <b>Unclaimed after 180 days? You get it back.</b></p>
+          <p class="body">Pay a domain that hasn't published a wallet yet. The money waits on-chain until the owner claims it with one DNS record. <b>Unclaimed after 180 days? You get it back.</b></p>
         </div>
-        <div id="esc-cfg"></div>
-        <form class="field" data-form="escrow" autocomplete="off">
-          <span class="pre">to</span>
-          <input name="d" placeholder="yoursite.com" aria-label="Domain" spellcheck="false">
-          <button class="btn primary" type="submit">Look up</button>
-        </form>
-        <div id="esc-out" class="stack" style="margin-top:1rem"></div>
+        <div id="esc-evm">
+          <div id="esc-cfg"></div>
+          <form class="field" data-form="escrow" autocomplete="off">
+            <span class="pre">to</span>
+            <input name="d" placeholder="yoursite.com" aria-label="Domain" spellcheck="false">
+            <button class="btn primary" type="submit">Look up</button>
+          </form>
+          <div id="esc-out" class="stack" style="margin-top:1rem"></div>
+        </div>
+        <!-- Solana (assets/solana-escrow.js). After the Robinhood form, which app.js finds by its first input. -->
+        <div id="esc-sol" hidden></div>
       </section>
 
       <!-- publish -->
@@ -92,8 +100,8 @@
         <div class="view-head">
           <span class="eyebrow">04 — Publish</span>
           <h2 class="h2">Make it <span class="accent">payable.</span></h2>
-          <p class="body">Tell the internet where your domain gets paid. Pick a network, paste an address, and copy one record into your DNS.</p>
-          <span class="chain-pill"><img src="assets/chains/robinhood.png" alt="" width="20" height="20">Settles on Robinhood Chain<em>4663</em></span>
+          <p class="body">Tell the internet where your domain gets paid. Pick a network, paste an address, and copy one record into your DNS. Solana is the main network; Robinhood Chain is also supported.</p>
+          <span class="chain-pill"><span class="pb-ico"><svg viewBox="0 0 20 20" aria-hidden="true"><rect width="20" height="20" rx="10" fill="#0b0b0b"/><path fill="#14f195" d="M6.6 12.6h8.3l-1.5 1.5H5.1zm0-6.7h8.3L13.4 7.4H5.1zm8.3 3.3H6.6l-1.5 1.5h8.3z"/></svg></span>Settles on Solana<em>+ Robinhood Chain</em></span>
         </div>
 
         <div class="pb-step">
@@ -146,8 +154,9 @@
         <div class="view-head">
           <span class="eyebrow">07 — Launch</span>
           <h2 class="h2">Launch for a <span class="accent">domain.</span></h2>
-          <p class="body">Launch a token on <a class="ul" href="https://ponsfamily.com/launchpad" target="_blank" rel="noopener">pons</a>. Its creator fees go to a domain instead of a wallet, and the domain's owner claims them with one DNS record.</p>
+          <p class="body">Launch a token whose creator fees go to a domain instead of a wallet. The domain's owner claims them with one DNS record. On Solana it's pump.fun; on Robinhood Chain, <a class="ul" href="https://ponsfamily.com/launchpad" target="_blank" rel="noopener">pons</a>.</p>
         </div>
+        <div id="ln-evm">
         <div id="ln-cfg"></div>
         <div class="seg ln-switch">
           <a href="#launch" data-lv="board">Board</a>
@@ -239,6 +248,9 @@
         </div>
 
         <div class="ln-pane" id="ln-token"></div>
+        </div>
+        <!-- Solana (assets/solana-launch.js), after the Robinhood launcher for the same reason as escrow. -->
+        <div id="ln-sol" hidden></div>
       </section>
     </div></main>
   </div>

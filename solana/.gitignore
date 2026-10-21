@@ -1,0 +1,12 @@
+# Build output: the program, its IDL, LiteSVM test builds (Windows and WSL), benchmarks.
+target/
+.anchor/
+# Ledgers from solana-test-validator.
+test-ledger/
+# Keypairs. The local program keypair lives in target/deploy; no keypair is ever committed.
+*-keypair.json
+keypairs/
+# Mainnet program dumps and accounts for the tests, fetched by scripts/fetch-fixtures.mjs.
+tests/fixtures/pump/
+tests/fixtures/**/*.so
+node_modules/

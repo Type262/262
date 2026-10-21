@@ -1,7 +1,10 @@
 # Render blueprint for TYPE/262.
-# type262: the static landing page, app and docs. Claims are checked on-chain with DNSSEC, so the app has no backend.
-# type262-upload: pins Launch-form images to IPFS through Pinata, and serves the read-only /rpc fallback,
-# so the Pinata key and any RPC key never reach the browser.
+# type262: the static landing page, app and docs. On Robinhood Chain, claims are checked on-chain with DNSSEC.
+# type262-upload: pins Launch-form images and token metadata to IPFS through Pinata, and serves the read-only
+# /rpc fallback and the Solana /rpc/solana relay, so the Pinata key and any RPC key never reach the browser.
+# It is also the Solana vault worker (/solana/*): every domain's vault key is derived from VAULT_MASTER_SEED, so
+# this service holds the keys of the Solana vaults and pays a vault out to the SOL wallet the domain publishes in
+# DNSSEC-signed DNS (on Robinhood Chain the contracts check DNSSEC themselves). Its gas wallet pays the fees.
 services:
   - type: web
     name: type262
@@ -27,3 +30,15 @@ services:
         value: https://type262.onrender.com
       - key: ROBINHOOD_RPC_URL # optional keyed Robinhood Chain RPC for /rpc, tried before the public one; never commit it
         sync: false
+      - key: SOLANA_RPC_URL # keyed Solana RPC for /rpc/solana and the vault worker, tried before the public nodes; it must allow getProgramAccounts (pump.fun coins); never commit it
+        sync: false
+      - key: VAULT_MASTER_SEED # 64 hex characters: the master secret of every Solana vault and the gas wallet. Set it once in the dashboard, back it up offline; never commit it
+        sync: false
+      - key: SOLANA_GAS_KEYPAIR # optional: a Solana CLI keypair JSON for the gas wallet when it is funded directly instead of derived; never commit it
+        sync: false
+      - key: SOLANA_FEE_WALLET # Solana address that receives the claim fee
+        sync: false
+      - key: FEE_BPS # claim fee in basis points, taken from every asset a claim pays out (50 = 0.5%)
+        value: "50"
+      - key: REFUND_DELAY_DAYS # how long a deposit waits before its sender can take it back, if the domain has not claimed it
+        value: "180"

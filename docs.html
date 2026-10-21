@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>TYPE/262 · Docs</title>
-  <meta name="description" content="Documentation for TYPE/262: the DNS WALLET record (RRTYPE 262), the SDK and CLI, x402 verification for agents, the DNSSEC escrow and the pons launchpad on Robinhood Chain. Open source, MIT.">
+  <meta name="description" content="Documentation for TYPE/262: the DNS WALLET record (RRTYPE 262), the SDK and CLI, x402 verification for agents, domain vaults, DNSSEC-checked claims and the pump.fun launchpad on Solana, and the on-chain escrow and launchpad on Robinhood Chain. Open source, MIT.">
   <meta name="theme-color" content="#0b0b0b">
   <link rel="icon" type="image/webp" href="assets/art/emblem.webp">
   <meta property="og:image" content="https://type262.onrender.com/assets/art/logo-lockup.webp">
@@ -45,41 +45,58 @@
       <header class="dx-hero">
         <span class="eyebrow">Documentation</span>
         <h1 class="dx-title">Build on <span class="accent">TYPE/262.</span></h1>
-        <p class="body">Make any domain payable with one DNS record, resolve and verify it from code, hold money for domains that haven't published yet, and launch tokens whose fees go to a domain. Everything here is open source.</p>
-        <div class="dx-meta"><span class="tag">RRTYPE 262 · WALLET</span><span class="tag">Robinhood Chain · 4663</span><span class="tag">MIT</span></div>
+        <p class="body">Make any domain payable with one DNS record, resolve and verify it from code, hold money for domains that haven't published yet, and launch tokens whose fees go to a domain. Solana is the main network; Robinhood Chain is also supported. Everything here is open source.</p>
+        <div class="dx-meta"><span class="tag">RRTYPE 262 · WALLET</span><span class="tag">Solana · mainnet</span><span class="tag">Robinhood Chain · 4663</span><span class="tag">MIT</span></div>
         <div class="dx-cards">
           <a class="dx-card" href="#quickstart"><small>Start</small><b>Quickstart</b><span>Publish a wallet record, then resolve and pay a domain from code.</span></a>
           <a class="dx-card" href="#sdk"><small>Build</small><b>SDK reference</b><span>Every function in the zero-dependency JavaScript SDK.</span></a>
-          <a class="dx-card" href="#escrow"><small>Contracts</small><b>Escrow and DNSSEC</b><span>Pay a domain first; its owner claims with an on-chain DNSSEC proof.</span></a>
-          <a class="dx-card" href="#launchpad"><small>Launch</small><b>Launchpad</b><span>pons v2 tokens whose creator fees go to a domain.</span></a>
+          <a class="dx-card" href="#solana-vaults"><small>Solana</small><b>Domain vaults</b><span>Pay any domain's vault; its owner claims once a DNSSEC-signed record names a wallet.</span></a>
+          <a class="dx-card" href="#solana-launch"><small>Launch</small><b>Launchpad</b><span>Coins whose creator fees go to a domain: pump.fun on Solana, pons v2 on Robinhood Chain.</span></a>
         </div>
       </header>
 
 <!-- DOCS:CONTENT -->
 
       <section class="dx-section" id="introduction" data-group="Get started">
-        <div class="dx-section-head"><span class="dx-kicker">Get started</span><h2>Introduction</h2><p class="dx-lead">TYPE/262 switches on the DNS WALLET record so any domain can be resolved, verified and paid on Robinhood Chain.</p></div>
-<p>TYPE/262 makes every domain a wallet. You publish one DNS record that names your address. Any person or AI agent can then resolve your domain to that wallet, check that a payment address really belongs to you, and pay your name in USDG or ETH on Robinhood Chain.</p>
-<p>The record is already part of DNS. <code>WALLET</code> is resource record type 262, allocated by IANA on 2024-06-21, but almost no software reads it yet. TYPE/262 makes it usable today: an SDK and CLI that resolve it, a <code>_wallet</code> TXT fallback that any DNS dashboard can publish, and contracts that let a domain receive money before its owner has published anything.</p>
+        <div class="dx-section-head"><span class="dx-kicker">Get started</span><h2>Introduction</h2><p class="dx-lead">TYPE/262 switches on the DNS WALLET record so any domain can be resolved, verified and paid, on Solana first and on Robinhood Chain.</p></div>
+<p>TYPE/262 makes every domain a wallet. You publish one DNS record that names your address. Any person or AI agent can then resolve your domain to that wallet, check that a payment address really belongs to you, and pay your name in USDC or SOL on Solana, or in USDG or ETH on Robinhood Chain.</p>
+<p>The record is already part of DNS. <code>WALLET</code> is resource record type 262, allocated by IANA on 2024-06-21, but almost no software reads it yet. TYPE/262 makes it usable today: an SDK and CLI that resolve it, a <code>_wallet</code> TXT fallback that any DNS dashboard can publish, and, so that a domain can receive money before its owner has published anything, a vault for every domain on Solana and an escrow contract on Robinhood Chain.</p>
 <h3 id="intro-what-you-can-do">What you can do</h3>
 <ul>
 <li><strong>Make your domain payable.</strong> Publish one record, turn on DNSSEC, and your domain resolves to your address. Start with the <a href="#quickstart">Quickstart</a>.</li>
-<li><strong>Pay a name instead of an address.</strong> Resolve a domain, confirm that the resolvers agree and the answer is DNSSEC-signed, then send USDG or ETH. See <a href="#payments">Payments</a>.</li>
+<li><strong>Pay a name instead of an address.</strong> Resolve a domain, confirm that the resolvers agree and the answer is DNSSEC-signed, then send USDC or SOL on Solana, or USDG or ETH on Robinhood Chain. See <a href="#payments">Payments</a>.</li>
 <li><strong>Check an x402 <code>payTo</code>.</strong> Before an agent pays an HTTP 402 requirement, <code>verifyPayTo</code> confirms that the address is published by the domain it is talking to. See <a href="#agents">Agents and x402</a>.</li>
-<li><strong>Pay a domain that has not published yet.</strong> The money waits in <code>DomainEscrow</code> until the owner claims it with a DNSSEC proof that the contract checks on-chain. If nobody claims it, the sender can take it back 180 days after their last deposit. See <a href="#escrow">Escrow</a>.</li>
-<li><strong>Launch a token that pays a domain.</strong> Launch on pons v2 with creator fees routed to a domain instead of a wallet. See <a href="#launchpad">Launchpad</a>.</li>
+<li><strong>Pay a domain that has not published yet.</strong> On Solana, send to the domain's vault, an address of its own; the TYPE/262 worker pays it out to the owner once the domain's DNSSEC-signed record names a wallet. On Robinhood Chain, send to <code>DomainEscrow</code>, which pays the owner against a DNSSEC proof checked on-chain. If nobody claims, senders can take their money back after 180 days. See <a href="#solana-vaults">Domain vaults</a> and, on Robinhood Chain, <a href="#escrow">Escrow</a>.</li>
+<li><strong>Launch a coin that pays a domain.</strong> Launch with creator fees routed to a domain instead of a wallet: on pump.fun on Solana (see <a href="#solana-launch">pump.fun launchpad</a>), or on pons v2 on Robinhood Chain (see <a href="#launchpad">Launchpad</a>).</li>
 </ul>
 <h3 id="intro-three-pieces">The three pieces</h3>
 <div class="dx-scroll"><table class="dx-table"><thead><tr><th>Piece</th><th>Source</th><th>What it does</th></tr></thead><tbody>
 <tr><td>Records and resolver</td><td><code>lib/wallet262.js</code>, <code>bin/type262.mjs</code></td><td>Encodes WALLET records and resolves them over DNS-over-HTTPS from Cloudflare and Google in parallel, flagging any disagreement and reporting DNSSEC status. Zero dependencies; runs in browsers and Node 18+.</td></tr>
-<tr><td>Escrow</td><td><code>DomainEscrow.sol</code>, <code>DnssecVerifier.sol</code></td><td>Holds ETH and ERC-20 deposits keyed by domain name. A claim pays the wallet that a DNSSEC proof shows, minus a 0.5% fee, after the proof is verified on-chain from the DNS root keys down to the domain's record through ENS's DNSSEC oracle. There is no attestor and no server.</td></tr>
-<tr><td>Launchpad</td><td><code>DomainLauncher.sol</code>, <code>DomainFeeForwarder.sol</code></td><td>Launches tokens on pons v2 with creator fees sent to a per-domain forwarder. Anyone can call <code>collect</code> to move those fees into <code>DomainEscrow</code>, where the owner claims them with the same proof.</td></tr>
+<tr><td>Solana vaults and the worker</td><td><code>upload/server.mjs</code></td><td>Gives every domain its own Solana address, its vault, which anyone can pay in SOL, USDC or any SPL token, and which pump.fun coins launched for the domain name as their creator. The worker holds the vault keys and pays a vault out to the wallet the domain's DNSSEC-signed record names, minus 0.5%, once Cloudflare and Google agree on that record and both validated it. It also refunds deposits after 180 days.</td></tr>
+<tr><td>Robinhood Chain contracts</td><td><code>DomainEscrow.sol</code>, <code>DnssecVerifier.sol</code>, <code>DomainLauncher.sol</code>, <code>DomainFeeForwarder.sol</code></td><td>The same escrow rules, with proofs checked by ENS's DNSSEC oracle, and pons v2 launches whose creator fees a per-domain forwarder moves into <code>DomainEscrow</code>.</td></tr>
 </tbody></table></div>
-<pre class="dx-code" data-lang="txt"><code>resolve  yoursite.com ──DoH──▶ WALLET record or _wallet TXT ──▶ 0x… (DNSSEC + resolver agreement)
-escrow   send ──▶ DomainEscrow ──claim(domain, wallet, proof)──▶ DnssecVerifier ──▶ ENS DNSSEC oracle
-launch   trades ──▶ pons fee escrow ──collect──▶ DomainFeeForwarder ──▶ DomainEscrow ──claim──▶ owner</code></pre>
+<pre class="dx-code" data-lang="txt"><code>resolve   yoursite.com ──DoH──▶ WALLET record or _wallet TXT ──▶ address (DNSSEC + resolver agreement)
+
+Solana
+vault     send ──▶ the domain's vault ──claim: worker checks DNSSEC via 2 resolvers──▶ the wallet the domain publishes
+launch    pump.fun trades ──▶ creator = the domain's vault ──claim──▶ owner
+
+Robinhood Chain
+escrow    send ──▶ DomainEscrow ──claim(domain, wallet, proof)──▶ DnssecVerifier ──▶ ENS DNSSEC oracle
+launch    trades ──▶ pons fee escrow ──collect──▶ DomainFeeForwarder ──▶ DomainEscrow ──claim──▶ owner</code></pre>
+<h3 id="intro-solana">Settlement on Solana</h3>
+<p>Solana mainnet is the main network. A domain that publishes a Solana address under the coin code <code>SOL</code> can be paid in SOL or USDC from any Solana wallet (Phantom, Solflare, Backpack and other Wallet Standard wallets). Every domain also has a vault on Solana, which anyone can pay before the domain publishes and which collects the creator fees of its pump.fun coins. See <a href="#solana">On Solana</a>.</p>
+<div class="dx-scroll"><table class="dx-table"><thead><tr><th>Property</th><th>Value</th></tr></thead><tbody>
+<tr><td>Cluster</td><td>mainnet-beta (<code>solana:mainnet</code> in Wallet Standard)</td></tr>
+<tr><td>RPC</td><td><code>https://solana-rpc.publicnode.com</code>, then <code>https://api.mainnet-beta.solana.com</code></td></tr>
+<tr><td>Explorer</td><td><a href="https://solscan.io">solscan.io</a></td></tr>
+<tr><td>Native asset</td><td>SOL (9 decimals)</td></tr>
+<tr><td>USDC</td><td><code>EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v</code> (6 decimals, SPL Token program)</td></tr>
+<tr><td>TYPE/262 worker</td><td><code>https://type262-upload.onrender.com</code>: vault addresses, claims, collects and refunds (see <a href="#solana-worker">Worker API</a>)</td></tr>
+<tr><td>Claim fee, refund delay</td><td>0.5%, 180 days (see <a href="#solana-settings">Settings</a>)</td></tr>
+</tbody></table></div>
 <h3 id="intro-robinhood-chain">Settlement on Robinhood Chain</h3>
-<p>Payments, escrow claims and launch fees all settle on Robinhood Chain mainnet. One EVM address, which the app publishes under the coin code <code>ETH</code>, receives all three.</p>
+<p>Robinhood Chain mainnet stays fully supported: payments, escrow claims and launch fees settle there too, through the contracts documented under Robinhood Chain in the sidebar. One EVM address, which the app publishes under the coin code <code>ETH</code>, receives all three. The network switch in the app header picks the chain.</p>
 <div class="dx-scroll"><table class="dx-table"><thead><tr><th>Property</th><th>Value</th></tr></thead><tbody>
 <tr><td>Chain ID</td><td><code>4663</code> (<code>0x1237</code>)</td></tr>
 <tr><td>RPC</td><td><code>https://rpc.mainnet.chain.robinhood.com</code></td></tr>
@@ -91,25 +108,31 @@ launch   trades ──▶ pons fee escrow ──collect──▶ DomainFeeForwar
 <h3 id="intro-trust-model">Trust model</h3>
 <ul>
 <li><strong>Resolving and paying</strong> trust the DNSSEC validation of the DNS-over-HTTPS resolvers (Cloudflare and Google), cross-checked against each other. See <a href="#resolution">Resolution</a>.</li>
-<li><strong>Escrow claims</strong> trust no resolver. The contract verifies the DNSSEC chain on-chain, anchored to the IANA root keys, and pays only the wallet the proof shows. See <a href="#dnssec-proofs">DNSSEC proofs</a>.</li>
-<li><strong>The escrow admin</strong> can pause new deposits and hand the admin role to another address. It cannot move funds, change who gets paid, or block claims and refunds, which keep working while deposits are paused.</li>
+<li><strong>Vault claims on Solana</strong> trust the TYPE/262 worker, which holds the vault keys. It pays a vault out only to the wallet the domain's record names, and only when Cloudflare and Google both answer, agree and report the record DNSSEC-authenticated. Every payout is on-chain, marked with the domain. See <a href="#solana-trust">Trust model</a> on Solana.</li>
+<li><strong>Escrow claims on Robinhood Chain</strong> trust no resolver and no server. The DNSSEC chain is verified on-chain through ENS's oracle, anchored to the IANA root keys, and only the wallet the proof shows is paid. See <a href="#dnssec-proofs">DNSSEC proofs</a>.</li>
+<li><strong>Launch fees</strong> on Solana go to the domain's vault, the coin's creator on pump.fun. pump.fun's sweeps and collects can only pay that vault, and a claim pays it only to the domain's proven owner. See <a href="#solana-launch-creator">The vault as creator</a>.</li>
+<li><strong>The escrow admin</strong> on Robinhood Chain can pause new deposits and hand the admin role to another address. It cannot move funds, change who gets paid, or block claims and refunds, which keep working while deposits are paused.</li>
 </ul>
 <h3 id="intro-open-source">Open source</h3>
-<p>TYPE/262 is open source under the MIT license, at <a href="https://github.com/Type262/262" target="_blank" rel="noopener">github.com/Type262/262</a>. The repository holds the landing page, app and docs, the SDK and CLI, the Solidity contracts with their Foundry tests and deploy scripts, and the record of the live deployment.</p>
+<p>TYPE/262 is open source under the MIT license, at <a href="https://github.com/Type262/262" target="_blank" rel="noopener">github.com/Type262/262</a>. The repository holds the landing page, app and docs, the SDK and CLI, the Solana program with its tests, the Solidity contracts with their Foundry tests and deploy scripts, and the records of the live deployments.</p>
 <div class="dx-scroll"><table class="dx-table"><thead><tr><th>Path</th><th>Contents</th></tr></thead><tbody>
 <tr><td><code>index.html</code></td><td>Landing page with a live resolver and a live adoption scan of well-known domains</td></tr>
 <tr><td><code>app.html</code></td><td>The app: Resolve, Pay, Escrow, Publish, Verify, Badge and Launch</td></tr>
 <tr><td><code>docs.html</code></td><td>This documentation</td></tr>
 <tr><td><code>lib/wallet262.js</code></td><td>Zero-dependency SDK for browsers and Node 18+</td></tr>
 <tr><td><code>bin/type262.mjs</code></td><td>CLI</td></tr>
-<tr><td><code>upload/server.mjs</code></td><td>Image upload for the Launch form, pinned to IPFS through Pinata, and a read-only RPC fallback. Its keys stay on the server</td></tr>
-<tr><td><code>test/</code></td><td>Offline SDK tests, ABI-parity tests against viem, and upload-server tests against a mock Pinata</td></tr>
-<tr><td><code>contracts/</code></td><td>Foundry project: escrow, verifier, launcher and forwarder contracts, tests and deploy scripts</td></tr>
-<tr><td><code>assets/dnssec.js</code></td><td>Builds DNSSEC proofs in the browser for claims</td></tr>
-<tr><td><code>assets/config.js</code></td><td>Escrow and launcher addresses the app uses</td></tr>
-<tr><td><code>deployments/robinhood-4663.json</code></td><td>Addresses, transactions and settings of the mainnet deployment</td></tr>
+<tr><td><code>upload/server.mjs</code></td><td>The worker: Solana vault addresses, claims, collects and refunds; image and coin-metadata uploads for the Launch form, pinned to IPFS through Pinata; and read-only RPC fallbacks for Solana and Robinhood Chain. Its keys stay on the server</td></tr>
+<tr><td><code>test/</code></td><td>Offline SDK tests, ABI-parity tests against viem, upload-server tests against a mock Pinata, and tests of the Solana client and proof builder</td></tr>
+<tr><td><code>solana/</code></td><td>Anchor workspace: the <code>type262</code> program, built and tested, not deployed (see <a href="#solana-program">On-chain program</a>), its LiteSVM tests, the DNSSEC benchmarks, and the pump.fun research and encoders</td></tr>
+<tr><td><code>contracts/</code></td><td>Foundry project for Robinhood Chain: escrow, verifier, launcher and forwarder contracts, tests and deploy scripts</td></tr>
+<tr><td><code>assets/solana.js</code></td><td>The app's Solana client: base58, token accounts, transactions, RPC and Wallet Standard wallets</td></tr>
+<tr><td><code>assets/solana-vault.js</code></td><td>The vault client: the worker's API, reads of a vault and its history, and pump.fun launches and collects sent from the user's wallet</td></tr>
+<tr><td><code>assets/solana-proof.js</code>, <code>assets/solana-type262.js</code></td><td>Clients for the on-chain program: DNSSEC proofs for it, and its instructions and account readers</td></tr>
+<tr><td><code>assets/dnssec.js</code></td><td>Builds DNSSEC proofs in the browser for Robinhood Chain claims</td></tr>
+<tr><td><code>assets/config.js</code></td><td>The addresses and endpoints the app uses</td></tr>
+<tr><td><code>deployments/robinhood-4663.json</code></td><td>Addresses, transactions and settings of the Robinhood Chain deployment</td></tr>
 </tbody></table></div>
-<p><code>render.yaml</code> defines two Render services: <code>type262</code>, a static site with the landing page, app and docs, built by <code>scripts/build.sh</code>; and <code>type262-upload</code>, a small Node service that pins Launch-form images to IPFS through Pinata so the Pinata key never reaches the browser. Claims need no server, because they are DNSSEC proofs checked on-chain. See <a href="#self-hosting">Self-hosting</a>.</p>
+<p><code>render.yaml</code> defines two Render services: <code>type262</code>, a static site with the landing page, app and docs, built by <code>scripts/build.sh</code>; and <code>type262-upload</code>, the worker: a small Node service that runs Solana vault claims, collects and refunds, and pins Launch-form images and coin metadata to IPFS through Pinata, so its keys never reach the browser. Claims on Robinhood Chain need no server, because they are DNSSEC proofs checked on-chain. See <a href="#self-hosting">Self-hosting</a>.</p>
 <ul>
 <li><strong>App:</strong> <a href="https://type262.onrender.com/app.html">type262.onrender.com/app.html</a></li>
 </ul>
@@ -120,23 +143,23 @@ launch   trades ──▶ pons fee escrow ──collect──▶ DomainFeeForwar
         <div class="dx-section-head"><span class="dx-kicker">Get started</span><h2>Quickstart</h2><p class="dx-lead">Make your domain payable from the app in a few minutes, then resolve and pay any domain from code.</p></div>
 <p>There are two ways in. If you own a domain, make it payable from the app. If you are building, resolve and pay any domain from code with the SDK.</p>
 <h3 id="qs-publish">Make your domain payable</h3>
-<p>You need a domain whose DNS you control and an EVM wallet address. Use a regular wallet address, not a multisig or smart-contract wallet: other software reads the <code>ETH</code> code and may pay that address on Ethereum or another EVM chain.</p>
+<p>You need a domain whose DNS you control and a Solana wallet address. To be paid on Robinhood Chain too, add an EVM address: use a regular wallet address there, not a multisig or smart-contract wallet, because other software reads the <code>ETH</code> code and may pay that address on Ethereum or another EVM chain.</p>
 <ol class="dx-steps">
 <li><strong>Open Publish.</strong> Go to <a href="https://type262.onrender.com/app.html#publish">app.html#publish</a> and enter your domain. A URL or an email address also works; the app reduces it to the host name. Keep the default TTL of 1 hour, or pick 5 minutes or 1 day.</li>
-<li><strong>Pick a network and paste your address.</strong> Leave the network on <strong>Robinhood Chain</strong> and paste your <code>0x</code> address, or click <strong>Use my wallet</strong> to fill it from a connected browser wallet. Paste a Bitcoin or Solana address and the network switches for you; <strong>Other</strong> takes any coin code of 2 to 16 characters. Click <strong>+ Add another address</strong> to publish more than one.</li>
-<li><strong>Add the TXT record at your DNS host.</strong> Copy the record the app shows: type <code>TXT</code>, name <code>_wallet</code>, content <code>ETH 0x…</code>, and your TTL. For a subdomain such as <code>shop.yoursite.com</code>, the name is <code>_wallet.shop</code>. Some hosts want the full name, <code>_wallet.yoursite.com</code>.</li>
+<li><strong>Pick a network and paste your address.</strong> Leave the network on <strong>Solana</strong>, the default, and paste your Solana address, or click <strong>Use my wallet</strong> to fill it from a connected wallet. Paste a <code>0x</code> or Bitcoin address and the network switches for you; <strong>Other</strong> takes any coin code of 2 to 16 characters. Click <strong>+ Add another address</strong> to publish more than one, for example a Solana and a Robinhood Chain address.</li>
+<li><strong>Add the TXT record at your DNS host.</strong> Copy the record the app shows: type <code>TXT</code>, name <code>_wallet</code>, content <code>SOL &lt;your address&gt;</code> (or <code>ETH 0x…</code> for Robinhood Chain), and your TTL. For a subdomain such as <code>shop.yoursite.com</code>, the name is <code>_wallet.shop</code>. Some hosts want the full name, <code>_wallet.yoursite.com</code>.</li>
 <li><strong>Turn on DNSSEC.</strong> Enable DNSSEC at your DNS host. On Cloudflare: DNS, Settings, Enable DNSSEC. If your registrar is a different company, add the DS record Cloudflare shows you at the registrar.</li>
 <li><strong>Check that it is live.</strong> Click <strong>Check it's live</strong>, which opens <code>app.html#resolve/yoursite.com</code>. You should see your address tagged <code>_wallet TXT</code> and <code>Signed</code>, a <code>DNSSEC ✓</code> tag, and <code>2/2 resolvers agree</code>.</li>
 </ol>
 <p>The record you add is equivalent to this zone-file line:</p>
-<pre class="dx-code" data-lang="dns"><code>_wallet.yoursite.com. 3600 IN TXT "ETH 0x7a1fe1c2b0d3a4f5e6d7c8b9a0f1e2d3c4b5c0de"</code></pre>
+<pre class="dx-code" data-lang="dns"><code>_wallet.yoursite.com. 3600 IN TXT "SOL 9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM"</code></pre>
 <p>Under <em>Other formats</em>, the app also shows the native WALLET record and its RFC 3597 generic form for DNS software that supports them. <a href="#wallet-record">The WALLET record</a> explains all three.</p>
-<div class="dx-note tip">Publish the TXT form even if your DNS host supports type 262. The app's escrow claim proves the <code>_wallet</code> TXT record, so a domain with a signed TXT record can claim escrow payments and launch fees right away. See <a href="#escrow">Escrow</a>.</div>
+<div class="dx-note tip">Publish the TXT form even if your DNS host supports type 262. Claims on both chains read the <code>_wallet</code> TXT record, so a domain with a signed TXT record can claim its vault, its escrow payments and its launch fees right away. Vault claims on Solana also accept a signed WALLET record. See <a href="#solana-claims">Claims and refunds</a>.</div>
 <p>You can run the same check from a clone of the repository:</p>
 <pre class="dx-code" data-lang="bash"><code>node bin/type262.mjs resolve yoursite.com</code></pre>
 <pre class="dx-code" data-lang="txt"><code>yoursite.com  DNSSEC ✓  resolvers agree
-  ETH    0x7a1fe1c2b0d3a4f5e6d7c8b9a0f1e2d3c4b5c0de  (TXT, signed)</code></pre>
-<div class="dx-note">If Resolve shows <code>Unsigned zone</code>, DNSSEC is not active yet: your address still resolves, but payers see a warning and escrow claims stay disabled. If it shows <code>No wallet here. Yet.</code>, your DNS host has not published the record yet, or the name is wrong.</div>
+  SOL    9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM  (TXT, signed)</code></pre>
+<div class="dx-note">If Resolve shows <code>Unsigned zone</code>, DNSSEC is not active yet: your address still resolves, but payers see a warning and vault and escrow claims are refused. If it shows <code>No wallet here. Yet.</code>, your DNS host has not published the record yet, or the name is wrong.</div>
 <h3 id="qs-code">Resolve and pay from code</h3>
 <p>The SDK is one zero-dependency ES module, <code>wallet262.js</code>, for browsers and Node 18 or later.</p>
 <h4>1. Get the SDK</h4>
@@ -151,7 +174,7 @@ console.log(r.verified, r.records)
 // true [ { code: 'ETH', address: '0x7a1f…c0de', source: 'TXT', dnssec: true } ]</code></pre>
 <p><code>verified</code> is <code>true</code> only when the domain publishes at least one record, every resolver that answered returned the same records, and every record is DNSSEC-authenticated. <a href="#resolution">Resolution</a> covers every field of the result.</p>
 <h4>3. Pay it</h4>
-<p>In a browser with an injected wallet, find the domain's EVM address, switch the wallet to Robinhood Chain, and send USDG. <code>transferTx</code> builds the EIP-1193 transaction parameters for a native or ERC-20 transfer.</p>
+<p>On Solana, pay a domain's <code>SOL</code> address in SOL or USDC with <code>assets/solana.js</code>; see <a href="#payments-solana">Send on Solana</a>. On Robinhood Chain, in a browser with an injected wallet, find the domain's EVM address, switch the wallet to Robinhood Chain, and send USDG. <code>transferTx</code> builds the EIP-1193 transaction parameters for a native or ERC-20 transfer.</p>
 <pre class="dx-code" data-lang="js"><code>import { resolveWallets, addressKind, transferTx } from './wallet262.js'
 
 const USDG = '0x5fc5360d0400a0fd4f2af552add042d716f1d168' // 6 decimals
@@ -243,15 +266,16 @@ _wallet.example.com. 3600 IN TXT "ETH 0x7a1fe1c2b0d3a4f5e6d7c8b9a0f1e2d3c4b5c0de
 </tbody></table></div>
 <p>In the one-string layouts, the coin code comes first, then one or more spaces or colons, then the address. Nothing may follow the address. For these layouts the SDK accepts codes of 2 to 16 characters drawn from letters, digits, <code>.</code>, <code>_</code> and <code>-</code>. A TXT record the SDK cannot read in any layout throws <code>Unrecognized _wallet TXT format</code> and ends up in <code>invalid</code>.</p>
 <div class="dx-note">The TXT record must sit at <code>_wallet.&lt;domain&gt;</code>. A TXT record at the domain itself is ignored by both the SDK and the verifier. Keep the <code>_wallet</code> name for wallet entries only, because the SDK reads every TXT record there as a coin code and address pair.</div>
-<p>The verifier also accepts a DNSSEC-signed native WALLET record at the domain itself. The app's claim flow builds its proof for the <code>_wallet</code> TXT record, so publish the TXT form if you want to claim from the app. See <a href="#dnssec-proofs">DNSSEC proofs</a>.</p>
+<p>Claims on both chains also accept a DNSSEC-signed native WALLET record at the domain itself. On Solana the worker reads both forms; on Robinhood Chain the app proves the TXT record only, so publish the TXT form if you want to claim there from the app. See <a href="#solana-claims-checks">What a claim checks</a> on Solana and <a href="#dnssec-proofs">DNSSEC proofs</a> on Robinhood Chain.</p>
 <h3 id="wr-coin-codes">Coin codes</h3>
-<p>A coin code names the chain or asset an address belongs to. Codes are case-insensitive, and the SDK uppercases them. Any code is valid in DNS, but only EVM codes take part in Robinhood Chain payments and escrow claims.</p>
+<p>A coin code names the chain or asset an address belongs to. Codes are case-insensitive, and the SDK uppercases them. Any code is valid in DNS. <code>SOL</code> addresses take part in Solana payments, vault claims and launch fees; EVM codes take part in Robinhood Chain payments, escrow claims and launch fees.</p>
+<p>For a vault claim on Solana, the worker reads only <code>SOL</code> lines, and the address must be a regular wallet: an account owned by the System Program, or one that doesn't exist yet, never a token account, a mint or a program. See <a href="#solana-claims-checks">What a claim checks</a>.</p>
 <p>Ten codes count as EVM. The list is identical in <code>EVM_CODES</code> in <code>lib/wallet262.js</code> and in <code>DnssecVerifier.isEvmCoin</code>: <code>ETH</code>, <code>EVM</code>, <code>HOOD</code>, <code>USDG</code>, <code>ARB</code>, <code>OP</code>, <code>POL</code>, <code>USDC</code>, <code>USDT</code> and <code>DAI</code>.</p>
-<p>For an escrow claim, the verifier also requires the address to be exactly <code>0x</code> followed by 40 hex digits. Anything else in the signed record set, such as a BTC or SOL line, a note, or a longer hex string, is ignored and can never be claimed to.</p>
+<p>For an escrow claim on Robinhood Chain, the verifier also requires the address to be exactly <code>0x</code> followed by 40 hex digits. Anything else in the signed record set, such as a BTC or SOL line, a note, or a longer hex string, is ignored and can never be claimed to.</p>
 <div class="dx-scroll"><table class="dx-table"><thead><tr><th>Network in Publish</th><th>Code written</th><th>Address accepted</th></tr></thead><tbody>
+<tr><td>Solana (the default)</td><td><code>SOL</code></td><td>Base58 that decodes to a 32-byte public key</td></tr>
 <tr><td>Robinhood Chain</td><td><code>ETH</code></td><td><code>0x</code> followed by 40 hex digits</td></tr>
 <tr><td>Bitcoin</td><td><code>BTC</code></td><td>Bech32 (<code>bc1…</code>, <code>tb1…</code>) or legacy base58 starting with <code>1</code> or <code>3</code></td></tr>
-<tr><td>Solana</td><td><code>SOL</code></td><td>Base58 that decodes to a 32-byte public key</td></tr>
 <tr><td>Other</td><td>Your code, 2 to 16 characters</td><td>Any address without spaces, quotes or backslashes; a <code>0x</code>, Bitcoin or Solana address must use a matching code</td></tr>
 </tbody></table></div>
 <p><code>codeMatchesAddress(code, address)</code> checks the pairing: a <code>0x</code> address needs an EVM code, a Bitcoin address needs <code>BTC</code>, a Solana address needs <code>SOL</code>, and any other address is accepted with any code. The Publish tab uses it to reject mismatches. <code>resolveWallets</code> returns records as published, without this check.</p>
@@ -263,7 +287,7 @@ _wallet.shop.example.com. 3600 IN TXT "ETH 0x7a1fe1c2b0d3a4f5e6d7c8b9a0f1e2d3c4b
 <p>In the dashboard for the <code>example.com</code> zone, the TXT record's name is <code>_wallet.shop</code>. The Publish tab works this out for you.</p>
 <ul>
 <li><strong>Resolving.</strong> <code>resolveWalletsUp</code>, which the app's Pay tool and <code>verifyPayTo</code> use, falls back one level to the parent when a host publishes nothing, so <code>api.example.com</code> can be paid through the record of <code>example.com</code>. See <a href="#resolution">Resolution</a>.</li>
-<li><strong>Claiming.</strong> Escrow never falls back. Deposits are keyed by the exact name, and <code>DnssecVerifier</code> only accepts a record owned by that exact name or by <code>_wallet.</code> followed by that name. A parent's record cannot claim a subdomain's deposits.</li>
+<li><strong>Claiming.</strong> Claims never fall back. Each name has its own vault on Solana and its own escrow pools on Robinhood Chain, and a claim reads only the record owned by that exact name or by <code>_wallet.</code> followed by that name. A parent's record cannot claim a subdomain's money.</li>
 </ul>
 <h3 id="wr-multiple-addresses">Multiple addresses</h3>
 <p>Each record holds one coin code and one address. To publish several, add one record per address at the same name. <code>zoneLines</code> takes a list:</p>
@@ -277,20 +301,20 @@ console.log(txt.join('\n'))</code></pre>
 <pre class="dx-code" data-lang="dns"><code>_wallet.example.com. 300 IN TXT "ETH 0x7a1fe1c2b0d3a4f5e6d7c8b9a0f1e2d3c4b5c0de"
 _wallet.example.com. 300 IN TXT "BTC bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh"</code></pre>
 <p><code>resolveWallets</code> returns every record in <code>records</code>. A pair published both as a WALLET record and as a <code>_wallet</code> TXT record appears twice, once per <code>source</code>. The app's Pay tool lets the payer choose a record, and the CLI's <code>link</code> command uses the first EVM one.</p>
-<div class="dx-note">Every EVM address that your signed record set publishes under an EVM coin code is a valid escrow claim recipient: the verifier accepts a claim to any record in the set whose address matches. Publish only addresses you control.</div>
+<div class="dx-note">On Robinhood Chain, every EVM address your signed record set publishes under an EVM coin code is a valid escrow claim recipient: a claim succeeds for any record in the set whose address matches. On Solana, a vault claim pays the <code>SOL</code> address the record publishes. Publish only addresses you control.</div>
 <h3 id="wr-ttl">TTL</h3>
 <p>The TTL tells resolvers how long they may cache your record. <code>zoneLines</code> and the CLI's <code>encode</code> command default to 3600 seconds; the Publish tab offers 5 minutes, 1 hour (the default) and 1 day. Lower the TTL before you change an address, so payers stop seeing the old one sooner.</p>
-<div class="dx-note tip">After you rotate to a new wallet, claim with the new record in the app's Escrow tab; when nothing is waiting, the button reads <strong>Register</strong>. The escrow remembers the signing time of the newest proof it has accepted for each domain and rejects any proof signed earlier with <code>StaleProof</code>, so an old signed record for your previous wallet can no longer claim later payments.</div>
+<div class="dx-note tip">After you rotate to a new wallet on Robinhood Chain, claim with the new record in the app's Escrow tab; when nothing is waiting, the button reads <strong>Register</strong>. The escrow remembers the signing time of the newest proof it has accepted for each domain and rejects any proof signed earlier with <code>StaleProof</code>, so an old signed record for your previous wallet can no longer claim later payments. On Solana, vault claims read the live record, so the next claim pays the new wallet once both resolvers serve it.</div>
 <h3 id="wr-dnssec">DNSSEC</h3>
 <p>DNSSEC signs your zone, so a resolver or a contract can prove that the record came from you. Without it, an attacker on the network path between a payer and the DNS could substitute their own address.</p>
 <div class="dx-scroll"><table class="dx-table"><thead><tr><th>Behavior</th><th>Unsigned zone</th><th>Signed zone</th></tr></thead><tbody>
 <tr><td><code>resolveWallets</code></td><td><code>verified</code> is always <code>false</code></td><td><code>verified</code> is <code>true</code> when the resolvers agree</td></tr>
 <tr><td>App Pay tool</td><td>Sends, with a warning to double-check</td><td>Marks the address as signed and confirmed by every resolver</td></tr>
 <tr><td><code>verifyPayTo</code></td><td><code>ok</code> on a match when the resolvers agree; <code>strong</code> is <code>false</code></td><td><code>ok</code> and <code>strong</code> on a match when the resolvers agree</td></tr>
-<tr><td>Escrow claims</td><td>Not possible</td><td>Instant</td></tr>
+<tr><td>Vault and escrow claims</td><td>Not possible</td><td>Instant</td></tr>
 </tbody></table></div>
-<p>Resolving and paying trust the DNSSEC validation of the DNS-over-HTTPS resolvers, reported as the AD bit. Escrow claims trust no resolver: the contract checks the signatures itself, from the IANA root keys (KSK-2017 and KSK-2024) down to your record.</p>
-<div class="dx-note">On-chain verification supports DNSSEC algorithms 5, 7, 8 and 13, which covers the root, <code>.com</code> and Cloudflare-signed zones. Zones signed with other algorithms, such as Ed25519 (15), aren't supported for claims.</div>
+<p>Resolving, paying and Solana vault claims trust the DNSSEC validation of the DNS-over-HTTPS resolvers, reported as the AD bit; a vault claim needs Cloudflare and Google both to report it and to agree. Escrow claims on Robinhood Chain trust no resolver: the contracts check the signatures themselves, from the IANA root keys (KSK-2017 and KSK-2024) down to your record.</p>
+<div class="dx-note">Vault claims on Solana accept any signature algorithm both resolvers validate. Claims on Robinhood Chain support algorithms 5, 7, 8 and 13. Both cover the root, <code>.com</code> and Cloudflare-signed zones.</div>
 <p>To turn DNSSEC on, enable it at your DNS host, then add the DS record it gives you at your registrar if the registrar is a different company.</p>
       </section>
 
@@ -417,7 +441,7 @@ const independent = r.verified &amp;&amp; r.resolvers.every(x =&gt; x.ok)</code>
 <tr><td>Every resolver fails</td><td>Throws one error that joins each resolver's message, for example <code>cloudflare: HTTP 503; google: HTTP 503</code></td><td>Retry, or pass <code>opts.resolvers</code> or <code>opts.fetch</code>.</td></tr>
 <tr><td>One resolver fails</td><td>A result from the resolvers that answered; the failed entry in <code>resolvers</code> has <code>ok: false</code> and an <code>error</code></td><td>Decide whether one answer is enough for your use.</td></tr>
 <tr><td>Name does not exist</td><td><code>records</code> is empty and <code>nxdomain</code> is <code>true</code></td><td>Check the spelling.</td></tr>
-<tr><td>No record published</td><td><code>records</code> is empty and <code>nxdomain</code> is <code>false</code></td><td>Pay through <a href="#escrow">Escrow</a> instead.</td></tr>
+<tr><td>No record published</td><td><code>records</code> is empty and <code>nxdomain</code> is <code>false</code></td><td>Pay the domain's <a href="#solana-vaults">vault</a> on Solana, or <a href="#escrow">Escrow</a> on Robinhood Chain, instead.</td></tr>
 <tr><td>Malformed record</td><td>Left out of <code>records</code> and listed in <code>invalid</code> with its <code>source</code>, raw <code>data</code> and <code>error</code></td><td>Fix the record. See <a href="#wallet-record">The WALLET record</a>.</td></tr>
 <tr><td>Resolvers disagree</td><td><code>agree</code> and <code>verified</code> are <code>false</code></td><td>Do not pay. Disagreement can mean DNS tampering. It can also appear briefly after a record change, while one resolver still serves a cached answer.</td></tr>
 <tr><td>Zone is unsigned</td><td><code>dnssec</code>, every <code>records[].dnssec</code> and <code>verified</code> are <code>false</code></td><td>Turn on DNSSEC for the zone.</td></tr>
@@ -1029,7 +1053,7 @@ if (res.status === 402) {
 <p><code>verifyPayTo</code> returns every field of the resolution plus <code>ok</code>, <code>strong</code>, <code>reason</code> and <code>match</code>. The address is compared case-insensitively for EVM addresses and exactly for everything else; the coin code is not compared. The first rule that applies sets <code>reason</code>:</p>
 <div class="dx-scroll"><table class="dx-table"><thead><tr><th><code>reason</code></th><th><code>ok</code></th><th><code>strong</code></th><th>What to do</th></tr></thead><tbody>
 <tr><td><code>Domain does not exist</code></td><td>false</td><td>false</td><td>Don't pay. The name has no DNS at all (NXDOMAIN).</td></tr>
-<tr><td><code>Domain publishes no WALLET record</code></td><td>false</td><td>false</td><td>Don't pay to this address. If you must pay the domain, use <a href="#escrow">escrow</a>.</td></tr>
+<tr><td><code>Domain publishes no WALLET record</code></td><td>false</td><td>false</td><td>Don't pay to this address. If you must pay the domain, use its <a href="#solana-vaults">vault</a> on Solana or <a href="#escrow">escrow</a> on Robinhood Chain.</td></tr>
 <tr><td><code>Address is not published by this domain</code></td><td>false</td><td>false</td><td>Don't pay. The address was swapped or belongs to someone else.</td></tr>
 <tr><td><code>Resolvers disagree. Possible tampering</code></td><td>false</td><td>false</td><td>Don't pay. Cloudflare and Google returned different records.</td></tr>
 <tr><td><code>Match, but the zone is not DNSSEC-signed</code></td><td>true</td><td>false</td><td>The address matches, but an attacker on the network path could have forged the answer. Pay small amounts or ask a human.</td></tr>
@@ -1053,8 +1077,8 @@ if (res.status === 402) {
       </section>
 
       <section class="dx-section" id="payments" data-group="Build">
-        <div class="dx-section-head"><span class="dx-kicker">Build</span><h2>Payments</h2><p class="dx-lead">Pay a domain by name: resolve its wallet, check the answer, then send USDG or ETH on Robinhood Chain.</p></div>
-<p>Paying a name is three steps: resolve the domain to the wallets it publishes, decide whether you trust the answer, and send. The SDK gives you each step; the app's <a href="app.html#pay">Pay</a> tab does all three with a browser wallet.</p>
+        <div class="dx-section-head"><span class="dx-kicker">Build</span><h2>Payments</h2><p class="dx-lead">Pay a domain by name: resolve its wallet, check the answer, then send USDC or SOL on Solana, or USDG or ETH on Robinhood Chain.</p></div>
+<p>Paying a name is three steps: resolve the domain to the wallets it publishes, decide whether you trust the answer, and send. The SDK gives you each step; the app's <a href="app.html#pay">Pay</a> tab does all three with a browser wallet. It pays a <code>SOL</code> record on Solana and an EVM record on Robinhood Chain; when a domain publishes both, the network picked in the app header comes first.</p>
 
 <h3 id="payments-resolve">Resolve and check</h3>
 <pre class="dx-code" data-lang="js"><code>import { resolveWalletsUp } from './wallet262.js'
@@ -1062,9 +1086,31 @@ if (res.status === 402) {
 const r = await resolveWalletsUp('yoursite.com')
 if (!r.records.length) throw new Error('yoursite.com publishes no wallet')
 if (!r.agree) throw new Error('Resolvers disagree: possible tampering')
-const record = r.records.find(x => x.code === 'ETH') ?? r.records[0]
+const record = r.records.find(x => x.code === 'SOL') ?? r.records[0]
 console.log(record.address, r.verified ? 'DNSSEC-verified' : 'unsigned zone')</code></pre>
 <p><code>r.verified</code> is true when there is at least one record, the resolvers agree and every record is DNSSEC-authenticated. The app disables sending when the resolvers disagree and warns when the zone is unsigned.</p>
+
+<h3 id="payments-solana">Send on Solana</h3>
+<p>The app's Solana client, <code>assets/solana.js</code>, has no dependencies: it builds legacy transactions itself, derives associated token accounts, and signs through any Wallet Standard wallet. SOL is a System Program transfer. USDC is an SPL Token <code>transferChecked</code> to the recipient's associated token account, preceded by <code>createAssociatedTokenAccountIdempotent</code>, which opens that account if it doesn't exist yet (the sender pays its rent once, about 0.0015 SOL at today's mainnet rent).</p>
+<div class="dx-scroll"><table class="dx-table"><thead><tr><th>Asset</th><th>Mint</th><th>Decimals</th></tr></thead><tbody>
+<tr><td>USDC</td><td><code>EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v</code></td><td>6</td></tr>
+<tr><td>SOL</td><td>native (lamports)</td><td>9</td></tr>
+</tbody></table></div>
+<pre class="dx-code" data-lang="js"><code>import { parseUnits } from './wallet262.js'
+import * as sol from './solana.js'
+
+sol.start()                                   // listen for Wallet Standard wallets
+const from = await sol.connect('Phantom')     // or 'Solflare', 'Backpack'; omit for the first one found
+const to = record.address
+const units = parseUnits('25', sol.USDC.decimals)
+const [src, dst] = await Promise.all([sol.associatedTokenAddress(from, sol.USDC.mint), sol.associatedTokenAddress(to, sol.USDC.mint)])
+const signature = await sol.send([
+  sol.createAssociatedTokenAccountIdempotent({ payer: from, ata: dst, owner: to, mint: sol.USDC.mint }),
+  sol.transferChecked({ source: src, mint: sol.USDC.mint, destination: dst, owner: from, amount: units, decimals: 6 }),
+])
+console.log(sol.txUrl(signature))             // https://solscan.io/tx/…</code></pre>
+<p><code>send</code> fetches a recent blockhash, has the wallet sign and send (<code>solana:signAndSendTransaction</code>, or <code>solana:signTransaction</code> and then <code>sendTransaction</code>), and polls <code>getSignatureStatuses</code> until the transaction is confirmed. The app checks the USDC mint on-chain with <code>getAccountInfo</code> and the sender's balances before it asks the wallet to sign.</p>
+<div class="dx-note">A Solana address that holds nothing yet must receive at least its rent-exempt minimum in its first SOL payment. The Pay tab asks for at least 0.00089088 SOL in that case and tells you before sending.</div>
 
 <h3 id="payments-send">Send on Robinhood Chain</h3>
 <p><code>transferTx</code> builds the EIP-1193 transaction parameters for a native or ERC-20 transfer. Amounts are decimal strings, converted exactly with <code>parseUnits</code>.</p>
@@ -1101,11 +1147,354 @@ paymentUri(record.address, { amount: '25', chainId: 4663, token: USDG, decimals:
 <pre class="dx-code" data-lang="html"><code>&lt;a href="https://type262.onrender.com/app.html#pay/yoursite.com"&gt;Pay yoursite.com via DNS&lt;/a&gt;</code></pre>
 
 <h3 id="payments-unpublished">Paying a domain that hasn't published</h3>
-<p>If the domain publishes no wallet yet, send to <a href="#escrow">escrow</a> instead. The money waits under the domain's name until its owner claims it with a DNSSEC proof, and you can take it back if nobody does.</p>
+<p>If the domain publishes no wallet yet, send to its vault on Solana (see <a href="#solana-vaults">Domain vaults</a>) or to <a href="#escrow">escrow</a> on Robinhood Chain instead. The money waits for the domain until its owner claims it with a DNSSEC-signed record, and you can take it back after 180 days if nobody does.</p>
       </section>
 
-      <section class="dx-section" id="escrow" data-group="Contracts">
-        <div class="dx-section-head"><span class="dx-kicker">Contracts</span><h2>Escrow</h2><p class="dx-lead">Pay a domain before it publishes a wallet: its owner claims with an on-chain DNSSEC proof, and unclaimed deposits come back after the refund delay.</p></div>
+      <section class="dx-section" id="solana" data-group="Solana">
+        <div class="dx-section-head"><span class="dx-kicker">Solana</span><h2>On Solana</h2><p class="dx-lead">Pay a domain's published address directly, or pay its vault, an address of its own that waits for the owner. Launch pump.fun coins whose creator fees collect in that vault.</p></div>
+<p>Solana mainnet is TYPE/262's main network. There are three ways to pay a domain on it:</p>
+<ul>
+<li><strong>Pay the published address.</strong> When a domain publishes a <code>SOL</code> address in a DNSSEC-signed record, the payer's wallet sends SOL or USDC straight to it, and nothing sits in between. See <a href="#payments-solana">Send on Solana</a>.</li>
+<li><strong>Pay the domain's vault.</strong> Every domain has a vault: a Solana address that belongs to that domain alone. Anyone can send it SOL, USDC or any other SPL token with a plain transfer, whether or not the domain has published anything yet. See <a href="#solana-vaults">Domain vaults</a>.</li>
+<li><strong>Launch a coin for the domain.</strong> A pump.fun coin created with the domain's vault as its creator pays every creator fee to that vault. See <a href="#solana-launch">pump.fun launchpad</a>.</li>
+</ul>
+<p>What waits in a vault goes to the domain's owner. The TYPE/262 worker, a small Node service, pays a vault out whenever anyone asks: it reads the domain's wallet record through Cloudflare and Google, requires both to return the same record with its DNSSEC signatures validated, and sends everything in the vault to the <code>SOL</code> address the record names, minus a 0.5% fee. A sender can take a deposit back after 180 days if the domain hasn't claimed since.</p>
+
+<h3 id="solana-flow">How it fits together</h3>
+<pre class="dx-code" data-lang="txt"><code>pay      payer's wallet ──transfer──▶ the SOL address yoursite.com publishes
+vault    anyone ──transfer SOL, USDC or any SPL token──▶ vault(yoursite.com)
+launch   your wallet ──pump.fun create_v2, creator = vault(yoursite.com)──▶ a new coin
+fees     trades ──▶ creator fees ──pump.fun sweep and collect──▶ vault(yoursite.com)
+claim    anyone ──POST /solana/claim──▶ worker checks DNSSEC ──▶ vault ──▶ the published wallet, minus 0.5%
+refund   anyone ──POST /solana/refund──▶ worker checks the deposit ──▶ vault ──▶ the original sender</code></pre>
+<p>No TYPE/262 program runs on Solana: vaults are ordinary addresses, launches use pump.fun's own instructions, and every payout is an ordinary transfer signed by the vault's key. The chain is the record. The worker keeps no database: it reads balances, deposits and its own earlier payouts from the chain each time, and marks every payout with an SPL Memo so anyone can follow it.</p>
+
+<h3 id="solana-settings">Settings</h3>
+<div class="dx-scroll"><table class="dx-table"><thead><tr><th>Setting</th><th>Value</th></tr></thead><tbody>
+<tr><td>Network</td><td>Solana mainnet (<code>mainnet-beta</code>)</td></tr>
+<tr><td>Worker</td><td><code>https://type262-upload.onrender.com</code>. See <a href="#solana-worker">Worker API</a>.</td></tr>
+<tr><td>Vault</td><td>One address per domain, from <code>GET /solana/vault?domain=&lt;domain&gt;</code>. See <a href="#solana-vaults-address">The vault address</a>.</td></tr>
+<tr><td>Claim fee</td><td>0.5% of each asset a claim pays out (<code>FEE_BPS</code> = 50), sent to the fee wallet with the payout</td></tr>
+<tr><td>Fee wallet</td><td><a href="https://solscan.io/account/3sde4YJpX2oYMSWaozHareWrXn6MASLxhQgfuCKJNPoK"><code>3sde4YJpX2oYMSWaozHareWrXn6MASLxhQgfuCKJNPoK</code></a></td></tr>
+<tr><td>Gas wallet</td><td><a href="https://solscan.io/account/7ko5ykhPaGE4Tb6XoCqTj5hQNGwBRRRvqnHPnxeTSJGB"><code>7ko5ykhPaGE4Tb6XoCqTj5hQNGwBRRRvqnHPnxeTSJGB</code></a>: pays the network fees of claims, collects and refunds, and the rent of the token accounts the owner and the fee wallet need</td></tr>
+<tr><td>Refund delay</td><td>180 days after the deposit (<code>REFUND_DELAY_DAYS</code>)</td></tr>
+<tr><td>Memos</td><td><code>type262:claim:&lt;domain&gt;</code> on every claim payout, <code>type262:refund:&lt;deposit signature&gt;</code> on every refund</td></tr>
+<tr><td>USDC</td><td><code>EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v</code> (6 decimals, SPL Token program)</td></tr>
+</tbody></table></div>
+<p><code>GET /solana/status</code> returns the live values: the gas wallet and its balance, the fee wallet, the fee and the refund delay.</p>
+
+<h3 id="solana-trust">Trust model</h3>
+<p>Vaults on Solana are custodial. The worker derives every vault's key from one master secret that only the worker holds, and it pays a vault out in two ways: a claim pays the wallet the domain's DNSSEC-signed record names, with 0.5% to the fee wallet, and a refund returns a deposit to the wallet that sent it. Before a claim it checks the record through two independent resolvers, Cloudflare and Google, and pays only when both answer, agree and report the record DNSSEC-authenticated.</p>
+<ul>
+<li><strong>You rely on the worker</strong> to hold the master secret safely and to follow these rules. Everything it does is public: vault addresses, balances, deposits, payouts and refunds are all on-chain, and each payout carries a memo naming the domain or the deposit it settles.</li>
+<li><strong>You rely on Cloudflare and Google</strong> for DNSSEC validation, the same way Resolve and Pay do. A claim needs both to agree, so one resolver alone can't redirect a payout.</li>
+<li><strong>You rely on your DNS host and registrar</strong> for control of the domain: whoever controls a DNSSEC-signed zone can claim its vault.</li>
+</ul>
+<p>On Robinhood Chain the contracts verify DNSSEC on-chain, from the IANA root keys, and no server takes part in a claim. TYPE/262 has also built a Solana program that does the same on Solana. It is tested and not deployed yet; see <a href="#solana-program">On-chain program</a>.</p>
+
+<h3 id="solana-chains">Solana and Robinhood Chain</h3>
+<p>Robinhood Chain stays fully supported: its contracts, its app screens and their documentation (<a href="#escrow">Escrow</a>, <a href="#dnssec-proofs">DNSSEC proofs</a>, <a href="#launchpad">Launchpad</a>, <a href="#contract-reference">Contract reference</a>, <a href="#deployments">Deployments</a>) are unchanged. The network switch in the app header picks the chain, and Solana is the default.</p>
+<div class="dx-scroll"><table class="dx-table"><thead><tr><th></th><th>Solana</th><th>Robinhood Chain</th></tr></thead><tbody>
+<tr><td>Where money waits</td><td>The domain's vault, an address of its own</td><td><code>DomainEscrow</code>, one pool per domain and token</td></tr>
+<tr><td>Who holds it</td><td>The TYPE/262 worker holds the vault keys</td><td>The contract; no key can move pooled funds</td></tr>
+<tr><td>DNSSEC check</td><td>By the worker: Cloudflare and Google must both answer, agree and validate DNSSEC</td><td>On-chain: ENS's <code>DNSSECImpl</code> oracle, from the IANA root keys</td></tr>
+<tr><td>Signature algorithms</td><td>Any the two resolvers validate</td><td>5, 7, 8, 13</td></tr>
+<tr><td>Wallet record</td><td>A <code>SOL</code> line naming a regular wallet</td><td>An EVM line (<code>ETH</code> and nine other codes): <code>0x</code> + 40 hex</td></tr>
+<tr><td>Claim</td><td>One request pays SOL and every token in the vault</td><td>One call for every listed token</td></tr>
+<tr><td>Changing the wallet</td><td>The record a claim reads wins</td><td>Proofs ordered by signing time; register the new record</td></tr>
+<tr><td>Launchpad</td><td>pump.fun, with the vault as the coin's creator</td><td>pons v2, fees forwarded by <code>DomainFeeForwarder</code></td></tr>
+<tr><td>Fee</td><td>0.5%, sent with each payout</td><td>0.5% (capped at 1%), withdrawn with <code>withdrawFees</code></td></tr>
+<tr><td>Refunds</td><td>Each deposit, 180 days after it, if the domain hasn't claimed since</td><td>180 days after the sender's last deposit to that pool, if no claim paid it out since</td></tr>
+<tr><td>Code updates</td><td>The worker is redeployed like any web service</td><td>None: the contracts are not upgradeable</td></tr>
+</tbody></table></div>
+<p>One <code>_wallet</code> record set can carry both lines, for example <code>"SOL 9WzD…AWWM"</code> and <code>"ETH 0x7a1f…c0de"</code>. Each chain reads only its own line and ignores the other.</p>
+      </section>
+
+      <section class="dx-section" id="solana-vaults" data-group="Solana">
+        <div class="dx-section-head"><span class="dx-kicker">Solana</span><h2>Domain vaults</h2><p class="dx-lead">Every domain has its own Solana address. Send it SOL, USDC or any SPL token, before or after the domain publishes a wallet.</p></div>
+<p>A vault is an ordinary Solana address. It belongs to one domain, never changes, and is public: anyone can look it up, send to it and see what it holds on any explorer. What is sent to it waits there until the domain's owner claims it or, after 180 days, the sender takes it back.</p>
+
+<h3 id="solana-vaults-address">The vault address</h3>
+<p>The worker derives each vault's keypair from a 32-byte master secret and the domain's canonical name:</p>
+<pre class="dx-code" data-lang="txt"><code>seed   = HMAC-SHA256(key = master secret, message = "type262:vault:" + canonical domain)
+vault  = the Ed25519 public key for that 32-byte seed
+gas    = the same, with message "type262:gas"</code></pre>
+<p>The same domain always gives the same vault, and two domains never share one. The derivation needs the master secret, which only the worker holds, so vault addresses come from the worker. Ask once; the answer never changes and can be cached.</p>
+<pre class="dx-code" data-lang="bash"><code>curl 'https://type262-upload.onrender.com/solana/vault?domain=yoursite.com'</code></pre>
+<pre class="dx-code" data-lang="json"><code>{
+  "domain": "yoursite.com",
+  "vault": "&lt;the vault's address&gt;",
+  "usdcAccount": "&lt;the vault's USDC token account&gt;"
+}</code></pre>
+<p><code>usdcAccount</code> is the vault's associated token account for USDC, which a USDC payment goes to. The gas wallet, derived the same way, is the address in <a href="#solana-settings">Settings</a>.</p>
+
+<h3 id="solana-vaults-names">Canonical names</h3>
+<p>A vault is keyed by the canonical form of the domain, so <code>https://YourSite.com/pay</code>, <code>bob@yoursite.com</code> and <code>yoursite.com.</code> all reach the vault of <code>yoursite.com</code>. The worker runs the SDK's <code>normalizeDomain</code>, which keeps the host name, lowercases it, takes the domain of an email address, converts internationalized names to punycode and drops a trailing dot, then applies the same rules as the escrow on Robinhood Chain: 1 to 253 characters, labels of 1 to 63 characters from <code>a-z</code>, <code>0-9</code>, <code>-</code> and <code>_</code>. Anything else is refused with HTTP 400.</p>
+<p>Subdomains are separate domains. <code>shop.yoursite.com</code> has its own vault, claimed with the record at that exact name; a parent's record never claims a subdomain's vault.</p>
+
+<h3 id="solana-vaults-deposit">Send to a vault</h3>
+<div class="dx-scroll"><table class="dx-table"><thead><tr><th>Asset</th><th>How</th></tr></thead><tbody>
+<tr><td>SOL</td><td>A System Program transfer to <code>vault</code>. The first transfer to an empty vault must be at least the rent-exempt minimum of an empty account.</td></tr>
+<tr><td>USDC</td><td><code>createAssociatedTokenAccountIdempotent</code> for <code>usdcAccount</code>, owned by <code>vault</code>, then <code>transferChecked</code> into it. The first sender pays that account's rent once, about 0.002 SOL.</td></tr>
+<tr><td>Any other SPL token, Token-2022 included</td><td>The same, into the vault's associated token account for that mint, with the mint's token program.</td></tr>
+</tbody></table></div>
+<pre class="dx-code" data-lang="js"><code>// in the browser, with the app's Solana client
+import * as sol from './solana.js'
+
+const WORKER = 'https://type262-upload.onrender.com'
+const { vault, usdcAccount } = await fetch(`${WORKER}/solana/vault?domain=yoursite.com`).then(r =&gt; r.json())
+
+sol.start()
+const from = await sol.connect()
+const source = await sol.associatedTokenAddress(from, sol.USDC.mint)
+const signature = await sol.send([
+  sol.createAssociatedTokenAccountIdempotent({ payer: from, ata: usdcAccount, owner: vault, mint: sol.USDC.mint }),
+  sol.transferChecked({ source, mint: sol.USDC.mint, destination: usdcAccount, owner: from, amount: 25_000_000n, decimals: 6 }),
+])
+// for SOL: sol.send([sol.systemTransfer(from, vault, lamports)])</code></pre>
+<p>Keep the transaction signature: a refund asks for it. Refunds go back to the address that sent the deposit, so send from a wallet you control rather than straight from an exchange.</p>
+<div class="dx-note">A vault holds what is sent to it as is. It never converts, stakes or lends anything, and the worker only ever moves it in a claim or a refund.</div>
+
+<h3 id="solana-vaults-read">Read a vault</h3>
+<p>A vault's balance is public. Read SOL with <code>getBalance(vault)</code> and tokens with <code>getTokenAccountsByOwner(vault)</code>, once for the SPL Token program and once for Token-2022. Its transaction history shows every deposit, every collect of launch fees, and every payout, each payout with its <code>type262:claim:</code> or <code>type262:refund:</code> memo.</p>
+<p>Creator fees of a domain's pump.fun coins wait at pump.fun until they are collected, so they show up in the vault only after a collect or a claim. See <a href="#solana-launch-collect">Collect fees into the vault</a>.</p>
+      </section>
+
+      <section class="dx-section" id="solana-claims" data-group="Solana">
+        <div class="dx-section-head"><span class="dx-kicker">Solana</span><h2>Claims and refunds</h2><p class="dx-lead">The owner publishes a DNSSEC-signed record naming a Solana wallet, and anyone can ask the worker to pay the vault out to it. Senders can take a deposit back after 180 days if the domain hasn't claimed.</p></div>
+<p>A claim pays everything in a domain's vault to the wallet the domain publishes. Anyone can request one, the owner, a payer or a bot, and the money still goes only to the published wallet. The app's claim button calls <code>POST /solana/claim</code> for you (see <a href="#solana-worker">Worker API</a>).</p>
+
+<h3 id="solana-claims-checks">What a claim checks</h3>
+<ol>
+<li><strong>The name.</strong> The domain must be canonical; see <a href="#solana-vaults-names">Canonical names</a>.</li>
+<li><strong>The record.</strong> The domain publishes exactly one <code>SOL</code> address, in <code>_wallet.&lt;domain&gt;</code> TXT, such as <code>"SOL 9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM"</code>, or in a <code>WALLET</code> (type 262) record at the domain itself. Two different <code>SOL</code> addresses are refused until one is removed.</li>
+<li><strong>Both resolvers.</strong> Cloudflare and Google DNS-over-HTTPS must both answer, publish the same <code>SOL</code> address, and both mark it DNSSEC-authenticated (the AD bit). If one doesn't answer, they disagree, or the zone isn't signed, the claim is refused and nothing moves.</li>
+<li><strong>A regular wallet.</strong> The address must be a System Program account with no data, or one that doesn't exist yet. A token account, a mint, a program, a nonce account, any other program-owned account and the domain's own vault are refused: tokens paid there could never be moved again.</li>
+</ol>
+
+<h3 id="solana-claims-pays">What a claim pays</h3>
+<ol>
+<li><strong>Collect first.</strong> The worker moves the creator fees of the domain's pump.fun coins into the vault, from the bonding curve and from PumpSwap. See <a href="#solana-launch-collect">Collect fees into the vault</a>.</li>
+<li><strong>Pay everything.</strong> Every SPL token the vault holds, then its SOL, go to the wallet, minus 0.5% of each asset, rounded down, which goes to the fee wallet. With 2 SOL and 100 USDC waiting, the wallet receives 1.99 SOL and 99.5 USDC. Wrapped SOL in the vault is unwrapped into the SOL payout.</li>
+<li><strong>Mark it.</strong> Every payout transaction carries an SPL Memo, <code>type262:claim:&lt;domain&gt;</code>.</li>
+<li><strong>Gas on the worker.</strong> The gas wallet pays the network fees, and the rent of the wallet's and the fee wallet's token accounts when they don't exist yet. The owner needs no SOL to claim. The vault's emptied token accounts are closed, and their rent goes back to the gas wallet.</li>
+</ol>
+<p>One claim pays up to 20 tokens (<code>MAX_TOKENS_PER_CLAIM</code>); claim again for the rest. A token its issuer has frozen in the vault can't move and is skipped. The response lists anything skipped, with the reason.</p>
+<p>The response lists what was collected, what was paid and the transaction signatures. See <a href="#solana-worker-claim">POST /solana/claim</a>.</p>
+<div class="dx-note tip">Claims are instant. Whoever controls a domain's DNS, with DNSSEC on, can claim everything waiting in its vault. Protect your registrar and DNS host accounts the way you protect a wallet key.</div>
+
+<h3 id="solana-claims-rotate">Changing the wallet</h3>
+<p>The worker reads the record when a claim is requested, so a claim always pays the wallet the record names at that moment. To move to a new wallet, lower the record's TTL ahead of time, publish the new address, and claim once both resolvers serve it. While they still disagree, claims are refused rather than paid to either address. Remove a wallet you no longer control from the record right away.</p>
+
+<h3 id="solana-refunds">Refunds</h3>
+<p><code>POST /solana/refund</code> with the domain and a deposit's transaction signature returns that deposit to the address that sent it. The refund transaction carries the memo <code>type262:refund:&lt;deposit signature&gt;</code>. The worker keeps no records: it checks the chain every time.</p>
+<ul>
+<li><strong>A deposit to this vault.</strong> The signature is a confirmed transaction, not signed by the vault, that moved SOL or a token into this domain's vault or one of its token accounts, from one sender in one asset. The refund goes to the address that sent it and returns what the vault received: for a token with a transfer fee, the amount after the fee.</li>
+<li><strong>180 days.</strong> At least <code>REFUND_DELAY_DAYS</code> (180) have passed since the deposit's block time.</li>
+<li><strong>No claim since.</strong> The vault's history has no <code>type262:claim:&lt;domain&gt;</code> payout after the deposit. A claim pays out every deposit made before it.</li>
+<li><strong>Once.</strong> No refund with the memo <code>type262:refund:&lt;deposit signature&gt;</code> exists yet.</li>
+</ul>
+<p>Only transactions the vault signed count as claims and refunds. Anyone can write a memo, but only the worker holds the vault's key, so a memo in someone else's transaction changes nothing. Anyone can request a refund; the money only ever goes back to the sender. Creator fees collected from pump.fun have no sender, so they are never refunded: they wait for the domain.</p>
+      </section>
+
+      <section class="dx-section" id="solana-launch" data-group="Solana">
+        <div class="dx-section-head"><span class="dx-kicker">Solana</span><h2>pump.fun launchpad</h2><p class="dx-lead">Launch a pump.fun coin for any app, game or website with the domain's vault as its creator. Every creator fee can only flow to that vault, and from there to the domain's proven owner.</p></div>
+<p>Launch a coin on pump.fun with its creator fees routed to a domain instead of a wallet. Fees build up for the domain from the first trade, even before it publishes a wallet, and its owner claims them with the rest of the vault. The coin is an ordinary pump.fun coin, created with pump.fun's own <code>create_v2</code>: it trades on pump.fun's bonding curve and graduates to PumpSwap like any other.</p>
+
+<h3 id="solana-launch-how">How fees reach a domain</h3>
+<pre class="dx-code" data-lang="txt"><code>launch   your wallet ──create_v2──▶ pump.fun          creator = vault(yoursite.com)
+trades   buys and sells ──▶ creator fee, on the curve and later on PumpSwap
+sweep    anyone ──sweep_creator_fee──▶ the creator's vaults at pump.fun and PumpSwap
+collect  anyone ──collect_creator_fee_v2, collect_coin_creator_fee──▶ vault(yoursite.com)
+claim    anyone ──POST /solana/claim──▶ the wallet yoursite.com publishes, minus 0.5%</code></pre>
+<ol class="dx-steps">
+<li><strong>Launch.</strong> Your wallet sends pump.fun's <code>create_v2</code> with the domain's vault as the creator.</li>
+<li><strong>Trade.</strong> Every buy and sell pays pump.fun's creator fee, which pump.fun keeps for the creator.</li>
+<li><strong>Collect.</strong> pump.fun's permissionless sweeps and collects move the fees into the vault. The worker sends them with every claim, and on request.</li>
+<li><strong>Claim.</strong> The domain's owner claims the vault. See <a href="#solana-claims">Claims and refunds</a>.</li>
+</ol>
+
+<h3 id="solana-launch-creator">The vault as creator</h3>
+<p>pump.fun takes a coin's creator as plain instruction data: the creator never signs the launch, and pump.fun pays the creator's fees out without the creator's signature. Every coin launched for a domain gets the same creator, its vault.</p>
+<ul>
+<li><strong>Fees can only flow to the vault.</strong> pump.fun's sweep and collect instructions are permissionless, and pump.fun fixes their destinations: the creator's vaults at pump.fun and PumpSwap, then the creator itself. Whoever sends them, the fees land in the domain's vault, and from there a claim pays them only to the domain's proven owner.</li>
+<li><strong>One creator per domain.</strong> pump.fun keeps creator fees per creator, so one creator vault at pump.fun and one at PumpSwap hold the fees of all of a domain's coins, and one collect pays them all into the vault.</li>
+<li><strong>Coins made elsewhere count too.</strong> Any coin created on pump.fun with the domain's vault as its creator pays the same vault, launched from the app or not.</li>
+<li><strong>The domain can't be spoofed.</strong> A lookalike domain has a different vault, and only the owner of the real one can publish the record a claim pays.</li>
+</ul>
+
+<h3 id="solana-launch-launch">Launch a coin</h3>
+<p>A launch is one transaction from the launcher's wallet: pump.fun's <code>create_v2</code> with a fresh mint keypair, the domain's vault as <code>creator</code> and mayhem mode off, and optionally pump.fun's <code>buy_v3</code> right after it, so the launcher buys before anyone else can trade. The launcher pays the rent of every account the launch creates and pump.fun's fees; the vault pays nothing. No TYPE/262 program takes part.</p>
+<pre class="dx-code" data-lang="js"><code>// Node, with the repository's pump.fun encoders, checked against mainnet in solana/docs/PUMP.md
+import { createV2 } from './solana/scripts/pump-ix.mjs'
+
+const { vault } = await fetch('https://type262-upload.onrender.com/solana/vault?domain=yoursite.com').then(r =&gt; r.json())
+const ix = createV2({
+  mint,                          // a fresh keypair's address; it signs the transaction too
+  user: payer,                   // the launcher's wallet: pays the rent, gets any opening buy
+  creator: vault,                // every creator fee of the coin goes to the domain's vault
+  name: 'Your Site', symbol: 'SITE',
+  uri: 'https://ipfs.io/ipfs/…', // the metadata JSON
+})</code></pre>
+<p><code>solana/docs/PUMP.md</code> lists the 16 accounts of <code>create_v2</code>, the opening buy and every fee instruction, each simulated against mainnet. In the browser, <code>launchTxs</code> in <code>assets/solana-vault.js</code>, a port of these encoders, builds the launch, with the opening buy when it fits.</p>
+
+<h3 id="solana-launch-metadata">Metadata</h3>
+<p>pump.fun reads a coin's name, image and links from the JSON at its <code>uri</code>. The app's upload service pins it to IPFS: <code>POST /image</code> pins the image, and <code>POST /metadata</code> pins the JSON in the shape pump.fun's own uploader writes and returns <code>https://ipfs.io/ipfs/&lt;cid&gt;</code>. The service caps the name at 32 bytes, the ticker at 10 bytes and the description at 1,000 characters, and takes only <code>https</code> links. Any other https host works as well. The URI cannot change once the coin exists, so host it somewhere that stays up. See <a href="#self-hosting-upload">The worker and uploads</a>.</p>
+<pre class="dx-code" data-lang="json"><code>{
+  "name": "Your Site",
+  "symbol": "SITE",
+  "description": "Creator fees go to yoursite.com",
+  "showName": true,
+  "image": "https://ipfs.io/ipfs/bafy…",
+  "createdOn": "https://type262.onrender.com",
+  "website": "https://yoursite.com"
+}</code></pre>
+
+<h3 id="solana-launch-collect">Collect fees into the vault</h3>
+<p>pump.fun holds a coin's creator fees until someone moves them. Two permissionless steps, both pump.fun's own instructions, bring them to the vault:</p>
+<ol>
+<li><strong>Sweep.</strong> pump.fun's <code>sweep_creator_fee</code> moves each coin's fees from its bonding curve into the creator's vault at pump.fun. After graduation, PumpSwap's <code>sweep_creator_fee</code> moves a pool's fees into the creator's vault at PumpSwap.</li>
+<li><strong>Collect.</strong> pump.fun's <code>collect_creator_fee_v2</code> pays its creator vault to the domain's vault in SOL. PumpSwap's <code>collect_coin_creator_fee</code> pays its creator vault's wrapped SOL into a token account the vault owns for the length of the transaction, which is closed into the vault at once, so these fees arrive as SOL too.</li>
+</ol>
+<p>pump.fun pays a creator only while the creator's account stays rent-exempt. Fees too small to bring an empty vault up to the rent minimum wait at pump.fun until they are enough, and the worker reports them as <code>pending</code>.</p>
+<p><code>POST /solana/collect</code> runs both for every coin of the domain, paid by the gas wallet, and returns what it moved. In the browser, <code>assets/solana-vault.js</code> builds the same instructions for a wallet that wants to pay for them itself. A claim runs the same collect first. Anyone else can send these instructions as well: their destinations are fixed by pump.fun, so they can only ever pay the domain's vault. See <a href="#solana-worker-collect">POST /solana/collect</a>.</p>
+
+<h3 id="solana-launch-fees">pump.fun's fees</h3>
+<p>pump.fun sets its fees in its own fee configuration and can change them. Read from mainnet on 2026-10-21:</p>
+<div class="dx-scroll"><table class="dx-table"><thead><tr><th>Where the coin trades</th><th>Creator fee (to the domain's vault)</th></tr></thead><tbody>
+<tr><td>Bonding curve</td><td>0.30% of each trade</td></tr>
+<tr><td>PumpSwap pool, market cap under 420 SOL</td><td>0.30%</td></tr>
+<tr><td>PumpSwap pool, 420 SOL to 98,240 SOL</td><td>0.95%, stepping down through 24 tiers</td></tr>
+<tr><td>PumpSwap pool, 98,240 SOL and above</td><td>0.05%</td></tr>
+</tbody></table></div>
+<p>A coin graduates to PumpSwap at about 411 SOL of market cap. A claim takes the 0.5% claim fee from collected creator fees like from any other SOL in the vault.</p>
+
+<h3 id="solana-launch-trust">Who can move the fees</h3>
+<p>Fees follow the coin's creator, recorded by pump.fun in the bonding curve and, after graduation, in the PumpSwap pool.</p>
+<div class="dx-scroll"><table class="dx-table"><thead><tr><th>Who</th><th>What they can do with a domain's coin</th></tr></thead><tbody>
+<tr><td>Anyone</td><td>Run pump.fun's sweeps and collects. Their destinations are fixed: the creator's vaults at pump.fun and PumpSwap, then the domain's vault.</td></tr>
+<tr><td>The TYPE/262 worker</td><td>Holds the vault's key. It pays the vault out in claims, to the wallet the domain's DNSSEC-signed record names, and in refunds of deposits; creator fees have no sender and are never refunded.</td></tr>
+<tr><td>Other pump.fun users</td><td>Nothing: <code>set_creator</code>, <code>set_metaplex_creator</code> and <code>set_coin_creator</code> cannot change a Token-2022 <code>create_v2</code> coin, and only the creator, here the vault, or pump.fun's admin can open a fee-sharing config.</td></tr>
+<tr><td>pump.fun</td><td>The same keys that govern every pump.fun coin: its program upgrade authority, and an admin key that can reassign the creator of a coin that isn't in mayhem mode.</td></tr>
+</tbody></table></div>
+<p><code>solana/docs/PUMP.md</code> has every instruction, simulated against mainnet, and the full pump.fun account tables.</p>
+      </section>
+
+      <section class="dx-section" id="solana-worker" data-group="Solana">
+        <div class="dx-section-head"><span class="dx-kicker">Solana</span><h2>Worker API</h2><p class="dx-lead">The worker's HTTP endpoints: look up a domain's vault, claim it, collect its launch fees, refund a deposit, and read the worker's settings.</p></div>
+<p>The worker is the <code>type262-upload</code> service, the same one that pins launch images, at <code>https://type262-upload.onrender.com</code>. Requests and responses are JSON. Amounts are decimal strings in the asset's base units, lamports for SOL and the mint's smallest unit for a token, because token amounts can pass what a JavaScript number holds exactly. Where an answer names an asset, <code>mint</code> is the token's mint address, or <code>"SOL"</code> for SOL.</p>
+<div class="dx-scroll"><table class="dx-table"><thead><tr><th>Endpoint</th><th>Body</th><th>Returns</th></tr></thead><tbody>
+<tr><td><code>GET /solana/vault?domain=&lt;domain&gt;</code></td><td></td><td><code>{ domain, vault, usdcAccount }</code></td></tr>
+<tr><td><code>POST /solana/claim</code></td><td><code>{ domain }</code></td><td><code>{ domain, wallet, vault, collected, payouts, signatures, skipped }</code></td></tr>
+<tr><td><code>POST /solana/collect</code></td><td><code>{ domain }</code></td><td><code>{ domain, vault, collected, signatures }</code>, and <code>pending</code> when fees wait</td></tr>
+<tr><td><code>POST /solana/refund</code></td><td><code>{ domain, signature }</code></td><td><code>{ domain, refunded: { mint, amount, decimals, to }, signature }</code></td></tr>
+<tr><td><code>GET /solana/status</code></td><td></td><td><code>{ ready, gasWallet, gasLamports, feeWallet, feeBps, refundDelayDays }</code></td></tr>
+</tbody></table></div>
+
+<h3 id="solana-worker-vault">GET /solana/vault</h3>
+<div class="dx-api"><div class="dx-sig"><code>GET /solana/vault?domain=&lt;domain&gt;</code></div>
+<p>The domain's vault. Cheap and cacheable: the answer for a domain never changes. Answers 400 for a name that isn't a valid domain.</p>
+<div class="dx-scroll"><table class="dx-table"><thead><tr><th>Field</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>domain</code></td><td>The canonical name the vault belongs to</td></tr>
+<tr><td><code>vault</code></td><td>The vault's address. Send SOL here, and use it as a pump.fun coin's <code>creator</code>.</td></tr>
+<tr><td><code>usdcAccount</code></td><td>The vault's associated token account for USDC. Send USDC here.</td></tr>
+</tbody></table></div></div>
+
+<h3 id="solana-worker-claim">POST /solana/claim</h3>
+<div class="dx-api"><div class="dx-sig"><code>POST /solana/claim  { "domain": "yoursite.com" }</code></div>
+<p>Checks the domain's wallet record (see <a href="#solana-claims-checks">What a claim checks</a>), collects its pump.fun creator fees into the vault, then pays everything in the vault to the published wallet, minus 0.5% of each asset.</p>
+<div class="dx-scroll"><table class="dx-table"><thead><tr><th>Field</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>domain</code></td><td>The canonical name</td></tr>
+<tr><td><code>wallet</code></td><td>The <code>SOL</code> address the record publishes, which was paid</td></tr>
+<tr><td><code>vault</code></td><td>The domain's vault</td></tr>
+<tr><td><code>collected</code></td><td><code>[{ mint, lamports, source }]</code>: the creator fees collected into the vault first. <code>source</code> is <code>curve</code> or <code>pool</code> for a coin's swept fees (with the coin's <code>mint</code>), or <code>creator-vault</code> or <code>pool-creator-vault</code> for fees that were already waiting for the creator (with <code>mint</code> null).</td></tr>
+<tr><td><code>payouts</code></td><td><code>[{ mint, amount, fee, decimals, program, signature }]</code>: one entry per asset paid out, with the amount sent to the wallet, the fee sent to the fee wallet, the token program and the transaction that paid it</td></tr>
+<tr><td><code>signatures</code></td><td>Every transaction the claim sent, in order</td></tr>
+<tr><td><code>skipped</code></td><td><code>[{ mint, reason }]</code>: anything left in the vault, such as a frozen token, tokens past the 20 one claim pays, or creator fees still below the rent minimum</td></tr>
+</tbody></table></div></div>
+<pre class="dx-code" data-lang="js"><code>const WORKER = 'https://type262-upload.onrender.com'
+
+const res = await fetch(`${WORKER}/solana/claim`, {
+  method: 'POST',
+  headers: { 'content-type': 'application/json' },
+  body: JSON.stringify({ domain: 'yoursite.com' }),
+})
+const out = await res.json()
+if (out.error) throw new Error(out.reason)   // a plain-language reason, ready to show
+for (const p of out.payouts) console.log(p.mint, p.amount, p.fee, p.signature)</code></pre>
+
+<h3 id="solana-worker-collect">POST /solana/collect</h3>
+<div class="dx-api"><div class="dx-sig"><code>POST /solana/collect  { "domain": "yoursite.com" }</code></div>
+<p>Moves the creator fees of the domain's pump.fun coins into its vault, and nothing else: no DNS check, no payout. Returns <code>{ domain, vault, collected, signatures }</code>, with <code>collected</code> as in a claim, and <code>pending</code>, in lamports, when fees wait at pump.fun until they reach the rent minimum. Use it to show a domain's launch income in its vault before anyone claims.</p></div>
+
+<h3 id="solana-worker-refund">POST /solana/refund</h3>
+<div class="dx-api"><div class="dx-sig"><code>POST /solana/refund  { "domain": "yoursite.com", "signature": "&lt;deposit transaction signature&gt;" }</code></div>
+<p>Returns one deposit to the address that sent it, under the rules in <a href="#solana-refunds">Refunds</a>.</p>
+<div class="dx-scroll"><table class="dx-table"><thead><tr><th>Field</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>refunded.mint</code></td><td>The asset returned: <code>"SOL"</code> or the token's mint</td></tr>
+<tr><td><code>refunded.amount</code>, <code>refunded.decimals</code></td><td>The amount returned, in base units, and the asset's decimals</td></tr>
+<tr><td><code>refunded.to</code></td><td>The address that made the deposit, which received it</td></tr>
+<tr><td><code>signature</code></td><td>The refund transaction, which carries the memo <code>type262:refund:&lt;deposit signature&gt;</code></td></tr>
+</tbody></table></div></div>
+
+<h3 id="solana-worker-status">GET /solana/status</h3>
+<div class="dx-api"><div class="dx-sig"><code>GET /solana/status</code></div>
+<p>The worker's live settings: <code>ready</code> (false until the worker is configured), <code>gasWallet</code> and its balance <code>gasLamports</code>, <code>feeWallet</code>, <code>feeBps</code> (50 for 0.5%) and <code>refundDelayDays</code> (180).</p></div>
+
+<h3 id="solana-worker-errors">Errors and limits</h3>
+<p>A request that can't go ahead gets an HTTP error status and a JSON body, <code>{ "error": "Too early", "reason": "…" }</code>: <code>error</code> is a short title and <code>reason</code> says in plain language what happened and what to do, ready to show to a user. Nothing moves on-chain when a check fails.</p>
+<div class="dx-scroll"><table class="dx-table"><thead><tr><th>Status</th><th>When</th></tr></thead><tbody>
+<tr><td><code>400</code></td><td>Not a domain name the vaults accept, not a transaction signature, or a body that isn't the expected JSON</td></tr>
+<tr><td><code>403</code></td><td>A <code>POST</code> from an origin that isn't on the allowlist</td></tr>
+<tr><td><code>404</code></td><td>Refund: no confirmed transaction with that signature</td></tr>
+<tr><td><code>409</code></td><td>Another request for the same domain is running, or there is nothing in the vault to claim</td></tr>
+<tr><td><code>422</code></td><td>A check refused it. Claim: no <code>SOL</code> address in DNS, more than one, a resolver that didn't answer or validate it, resolvers that disagree, or an address that isn't a regular wallet. Refund: not a single deposit to this vault, too early, claimed since, already refunded, or no longer in the vault</td></tr>
+<tr><td><code>413</code></td><td>A request body over 2 KiB</td></tr>
+<tr><td><code>429</code></td><td>Too many requests from one IP address</td></tr>
+<tr><td><code>502</code></td><td>The DNS resolvers or the Solana RPC couldn't be reached, or a transaction didn't go through</td></tr>
+<tr><td><code>503</code></td><td>The worker isn't set up, is busy with other claims, its gas wallet needs SOL, or the vault's history is too long to check a refund automatically</td></tr>
+</tbody></table></div>
+<p>The <code>POST</code> endpoints accept requests from the site's origins only, the same allowlist (<code>ALLOW_ORIGINS</code>) as the upload endpoints, and each IP address gets <code>VAULT_RATE_MAX</code> claims, collects and refunds together per 10 minutes (default 10). The <code>GET</code> endpoints only read; <code>GET /solana/vault</code> answers are cacheable for a day. Requests for the same domain run one at a time. To run claims from your own site or scripts, run your own worker; see <a href="#self-hosting-worker">Run your own worker</a>.</p>
+      </section>
+
+      <section class="dx-section" id="solana-program" data-group="Solana">
+        <div class="dx-section-head"><span class="dx-kicker">Solana · next</span><h2>On-chain program</h2><p class="dx-lead">type262, an Anchor program that verifies DNSSEC on Solana itself and holds domain funds in program accounts, so claims need no server. Built and tested in solana/, not deployed.</p></div>
+<p>The live Solana flow uses vaults and the worker. The repository also holds <code>type262</code>, a Solana program that takes the worker out of claims, as the contracts already do on Robinhood Chain: it verifies the DNSSEC chain itself, from the IANA root keys compiled into it, and pays a domain's escrow pool only to the wallet a verified record names. It is built and tested end to end; deploying it is future work.</p>
+<div class="dx-scroll"><table class="dx-table"><thead><tr><th>Part</th><th>Instructions</th><th>What it does</th></tr></thead><tbody>
+<tr><td>Escrow</td><td><code>deposit_sol</code>, <code>deposit_token</code>, <code>claim</code>, <code>register</code>, <code>refund</code>, <code>withdraw_fees</code></td><td>Holds SOL and SPL tokens in one pool per domain and asset, and pays a pool only to the wallet a verified record publishes, minus 0.5%. The same rules as <code>DomainEscrow</code>, with proofs ordered by signing time.</td></tr>
+<tr><td>DNSSEC</td><td><code>verify_rrset</code>, <code>verify_rrset_precompiled</code>, <code>write_buffer</code>, <code>verify_rrset_buffered</code>, <code>close_buffer</code>, <code>close_rrset</code></td><td>Verifies the chain one signed record set per instruction and caches each verified set in an account, so later proofs reuse the root and the TLD.</td></tr>
+<tr><td>Launcher</td><td><code>launch</code>, <code>collect</code></td><td>Launches pump.fun coins whose creator is an address of the program derived from the domain, and moves their creator fees into the domain's pool.</td></tr>
+<tr><td>Admin</td><td><code>initialize</code>, <code>set_deposits_paused</code>, <code>transfer_admin</code>, <code>accept_admin</code></td><td>Stores the fee, fee recipient and refund delay once; the admin can only pause new deposits.</td></tr>
+</tbody></table></div>
+
+<h3 id="solana-program-dnssec">DNSSEC on-chain</h3>
+<p>A whole proof, from the root to <code>_wallet.&lt;domain&gt;</code>, doesn't fit in one Solana transaction, so the program verifies it in steps and caches every result:</p>
+<pre class="dx-code" data-lang="txt"><code>IANA root DS 20326, 38696                      compiled into the program
+└─ .  DNSKEY            RSA-2048 in the program        → cached
+   └─ com.  DS          RSA-2048 in the program        → cached, shared by every .com domain
+      └─ com.  DNSKEY   P-256 through the secp256r1 precompile
+         └─ yoursite.com. DS, DNSKEY …
+            └─ _wallet.yoursite.com. TXT "SOL …"        → read by claim</code></pre>
+<ul>
+<li><strong>RSA</strong> (algorithm 8, keys of 1024 to 2048 bits) runs in the program, about 1.25M compute units for a 2048-bit key. <strong>P-256</strong> (13) and <strong>Ed25519</strong> (15) go through Solana's native precompiles, a few thousand compute units a step.</li>
+<li><strong>The cache</strong> is ordered by signing time, so nobody can roll an entry back, and a DS set is only accepted from its parent zone.</li>
+<li><strong>The browser builds the proof</strong> with a pinned dnsprovejs, reads what is already cached, and sends only the missing steps: five to eight transactions when nothing is cached, one to three once the root and the TLD are.</li>
+</ul>
+
+<h3 id="solana-program-tests">How it's tested</h3>
+<p>78 LiteSVM tests on Windows and 86 in WSL with the precompiles, plus 29 unit tests in the program: the escrow's accounting to the lamport, Token-2022 mints, every DNSSEC rule, real chains from the root for six domains with tampered proofs rejected, attacks on the cache, the RSA check and the escrow's money paths, and launches, trades, graduation and collects against the mainnet pump.fun programs. <code>solana/scripts/e2e-local.mjs</code> runs its client on a local validator, 43 transactions and 84 checks. See <a href="#testing-solana">On-chain program tests</a>.</p>
+
+<h3 id="solana-program-docs">Its documentation</h3>
+<ul>
+<li><a href="https://github.com/Type262/262/blob/main/solana/README.md" target="_blank" rel="noopener"><code>solana/README.md</code></a>: layout, toolchain, building, testing in LiteSVM and WSL, and the local validator.</li>
+<li><a href="https://github.com/Type262/262/blob/main/solana/docs/DNSSEC.md" target="_blank" rel="noopener"><code>solana/docs/DNSSEC.md</code></a>: the DNSSEC rules the program enforces, its account layouts and the measurements on real proofs.</li>
+<li><a href="https://github.com/Type262/262/blob/main/solana/docs/PUMP.md" target="_blank" rel="noopener"><code>solana/docs/PUMP.md</code></a>: pump.fun and PumpSwap as the launcher and the vaults use them, checked against mainnet.</li>
+<li><code>solana/programs/type262/src</code> and the IDL that <code>anchor build</code> writes to <code>solana/target/idl/type262.json</code>: every instruction, account, event and error.</li>
+</ul>
+      </section>
+
+      <section class="dx-section" id="escrow" data-group="Robinhood Chain">
+        <div class="dx-section-head"><span class="dx-kicker">Robinhood Chain</span><h2>Escrow</h2><p class="dx-lead">Pay a domain before it publishes a wallet: its owner claims with an on-chain DNSSEC proof, and unclaimed deposits come back after the refund delay.</p></div>
 <p>Pay any domain before it publishes a wallet. <code>DomainEscrow</code> holds the money on Robinhood Chain in a pool keyed by the domain name. The domain's owner claims it whenever they are ready by proving, with DNSSEC, which wallet the domain publishes. If nobody claims, each depositor takes their own deposit back after the refund delay.</p><p>No server, attestor or admin decides who gets paid. The proof is checked on-chain by <code>DnssecVerifier</code> and the DNSSEC oracle it calls (see <a href="#dnssec-proofs">DNSSEC proofs</a>), and the escrow only ever pays the wallet that proof shows. If the domain already publishes a wallet, pay it directly instead (see <a href="#payments">Payments</a>).</p><div class="dx-scroll"><table class="dx-table"><thead><tr><th>Setting</th><th>Live value</th><th>Notes</th></tr></thead><tbody><tr><td>Contract</td><td><code>0x9fd2f1Dc0B42e8a2E86e3Cf231a293654691E8d5</code></td><td>Robinhood Chain, chain id 4663</td></tr><tr><td><code>feeBps</code></td><td><code>50</code> (0.5%)</td><td>Taken from each claim. Immutable.</td></tr><tr><td><code>MAX_FEE_BPS</code></td><td><code>100</code> (1%)</td><td>Hard cap in code</td></tr><tr><td><code>refundDelay</code></td><td><code>15552000</code> s (180 days)</td><td>Immutable</td></tr><tr><td><code>feeRecipient</code></td><td><code>0x37c6099d58Bb65D85c9CcF6D97de418BD26dD7f0</code></td><td>Immutable</td></tr><tr><td><code>admin</code></td><td><code>0x37c6099d58Bb65D85c9CcF6D97de418BD26dD7f0</code></td><td>Can pause new deposits and hand over the role. Nothing else.</td></tr></tbody></table></div><h3 id="escrow-how-it-works">How it works</h3><pre class="dx-code" data-lang="txt"><code>depositor ──deposit / depositToken────────────────▶ DomainEscrow   one pool per (domainHash, token)
 anyone    ──claim(domain, wallet, proof, tokens)──▶ DomainEscrow ──verify──▶ DnssecVerifier ──▶ ENS DNSSEC oracle
                                                     │
@@ -1153,8 +1542,8 @@ const domain = normalizeDomain('https://YourSite.com/pay') // 'yoursite.com'
 const domainHash = keccak256(toBytes(domain))           // the pool key DomainEscrow uses</code></pre><h3 id="escrow-app-depositors">Pay a domain with the app</h3><ol class="dx-steps"><li><strong>Open Escrow.</strong> Go to <a href="https://type262.onrender.com/app.html#escrow/yoursite.com"><code>app.html#escrow/yoursite.com</code></a>, or open the Escrow tab and enter the domain. The app normalizes what you type and shows the USDG and ETH waiting for it.</li><li><strong>Choose the asset and amount.</strong> Under <strong>Send to escrow</strong>, pick USDG or ETH and enter an amount.</li><li><strong>Send.</strong> Click <strong>Send</strong> and confirm in your wallet. The app switches your wallet to Robinhood Chain (4663) if needed. For USDG it first asks you to approve the exact amount when your allowance is lower, then calls <code>depositToken</code>.</li><li><strong>Track your deposit.</strong> With your wallet connected, the view lists your deposit per asset and the date it becomes refundable.</li><li><strong>Refund if nobody claims.</strong> After the delay a <strong>Refund</strong> button appears next to your deposit. If the domain claimed first, your deposit was paid to its wallet and is no longer listed.</li></ol><h3 id="escrow-app-owners">Claim as a domain owner with the app</h3><ol class="dx-steps"><li><strong>Publish a <code>_wallet</code> TXT record.</strong> The Publish tab generates it for you: <code>_wallet.yoursite.com TXT "ETH 0xYourWallet"</code>. At most DNS hosts the Name field is just <code>_wallet</code>. Use a regular wallet address, not a multisig or smart-contract wallet.</li><li><strong>Turn on DNSSEC.</strong> On Cloudflare: DNS, Settings, Enable DNSSEC, then add the DS record Cloudflare shows you at your registrar if it is somewhere else. Your zone must use a <a href="#dnssec-supported-zones">supported algorithm</a>.</li><li><strong>Look up your domain in Escrow.</strong> The app reports the address it found in your <code>_wallet</code> record and whether the record is DNSSEC-signed. The claim button stays disabled until it finds a signed record with an EVM address.</li><li><strong>Claim.</strong> Click <strong>Claim to 0x…</strong>, or <strong>Register 0x…</strong> when nothing is waiting. Your browser builds the DNSSEC proof, then your wallet asks you to confirm. The connected wallet only pays gas.</li><li><strong>Receive the funds.</strong> The wallet in your record receives each pool, minus the 0.5% fee, in the same transaction.</li></ol>
       </section>
 
-      <section class="dx-section" id="dnssec-proofs" data-group="Contracts">
-        <div class="dx-section-head"><span class="dx-kicker">Contracts</span><h2>DNSSEC proofs</h2><p class="dx-lead">How DnssecVerifier proves on-chain, from the IANA root keys down, which wallet a domain publishes, and how to build a proof it accepts.</p></div>
+      <section class="dx-section" id="dnssec-proofs" data-group="Robinhood Chain">
+        <div class="dx-section-head"><span class="dx-kicker">Robinhood Chain</span><h2>DNSSEC proofs</h2><p class="dx-lead">How DnssecVerifier proves on-chain, from the IANA root keys down, which wallet a domain publishes, and how to build a proof it accepts.</p></div>
 <p>Every escrow claim carries a DNSSEC proof: the chain of signed DNS record sets from the root zone down to the domain's wallet record. <code>DnssecVerifier</code> hands the chain to ENS's DNSSEC oracle, which verifies every signature on-chain, starting from the IANA root trust anchors, then reads the wallet out of the final record set. Nothing built off-chain is trusted, and nobody, including the deployer, can change how proofs are checked.</p><p>This is stricter than resolution. Resolve and Pay trust the DNSSEC check of the DNS-over-HTTPS resolvers (see <a href="#resolution">Resolution</a>); escrow claims verify the signatures themselves.</p><h3 id="dnssec-chain-of-trust">Chain of trust</h3><pre class="dx-code" data-lang="txt"><code>IANA root DS 20326, 38696                  trust anchors stored in the oracle
 └─ .  DNSKEY                               verified against the anchors
    └─ com.  DS                             signed by the root zone
@@ -1191,8 +1580,8 @@ node contracts/script/make-proof.mjs TXT _wallet.yoursite.com &gt; proof.hex
 }</code></pre><p>The result is never later than the current block. A signature older than the Unix epoch counts as <code>0</code>.</p>
       </section>
 
-      <section class="dx-section" id="launchpad" data-group="Contracts">
-        <div class="dx-section-head"><span class="dx-kicker">Contracts</span><h2>Launchpad</h2><p class="dx-lead">Launch a pons v2 token whose creator fees go to a domain, then collect and claim those fees through escrow.</p></div>
+      <section class="dx-section" id="launchpad" data-group="Robinhood Chain">
+        <div class="dx-section-head"><span class="dx-kicker">Robinhood Chain</span><h2>Launchpad</h2><p class="dx-lead">Launch a pons v2 token whose creator fees go to a domain, then collect and claim those fees through escrow.</p></div>
 <p>Launch a token on <a href="https://ponsfamily.com/launchpad">pons</a> v2, Robinhood Chain's launchpad, with its creator fees routed to a domain instead of a wallet. Fees build up for the domain from the first trade, even before the domain publishes a wallet. The domain's owner claims them from <code>DomainEscrow</code> with the same DNSSEC proof as any <a href="#escrow">escrow</a> payment.</p>
 
 <h3 id="launchpad-how-it-works">How fees reach a domain</h3>
@@ -1422,8 +1811,8 @@ cast send $LAUNCHER "collect(string,address[],address[])" yoursite.com "[0xCurve
 </ul>
       </section>
 
-      <section class="dx-section" id="contract-reference" data-group="Contracts">
-        <div class="dx-section-head"><span class="dx-kicker">Contracts</span><h2>Contract reference</h2><p class="dx-lead">Every external and public function, event and custom error in DomainEscrow, DnssecVerifier, DomainLauncher and DomainFeeForwarder.</p></div>
+      <section class="dx-section" id="contract-reference" data-group="Robinhood Chain">
+        <div class="dx-section-head"><span class="dx-kicker">Robinhood Chain</span><h2>Contract reference</h2><p class="dx-lead">Every external and public function, event and custom error in DomainEscrow, DnssecVerifier, DomainLauncher and DomainFeeForwarder.</p></div>
 <p>Every external and public function, event and custom error in the four TYPE/262 contracts, with signatures copied from <code>contracts/src</code>. Live addresses are listed in <a href="#deployments">Deployments</a>, where all nine contracts of the deployment are verified on Sourcify.</p><div class="dx-scroll"><table class="dx-table"><thead><tr><th>Contract</th><th>Source</th><th>Address on Robinhood Chain</th></tr></thead><tbody><tr><td><a href="#ref-domain-escrow"><code>DomainEscrow</code></a></td><td><code>contracts/src/DomainEscrow.sol</code></td><td><code>0x9fd2f1Dc0B42e8a2E86e3Cf231a293654691E8d5</code></td></tr><tr><td><a href="#ref-dnssec-verifier"><code>DnssecVerifier</code></a></td><td><code>contracts/src/DnssecVerifier.sol</code></td><td><code>0x2dfB277A25ea096b182F86665D130B9b53B15758</code></td></tr><tr><td><a href="#ref-domain-launcher"><code>DomainLauncher</code></a></td><td><code>contracts/src/DomainLauncher.sol</code></td><td><code>0x022657aC8bdD969Fa5149E7A86FBBda2AfAf716F</code></td></tr><tr><td><a href="#ref-domain-fee-forwarder"><code>DomainFeeForwarder</code></a></td><td><code>contracts/src/DomainFeeForwarder.sol</code></td><td>One per domain, at <code>DomainLauncher.forwarderOf(domain)</code></td></tr></tbody></table></div><p>The sources use <code>pragma solidity ^0.8.24</code> and are built with solc 0.8.28, optimizer on at 10,000 runs, EVM version shanghai (<code>contracts/foundry.toml</code>). Every function that takes a domain expects the canonical form described in <a href="#escrow-domain-names">Canonical domain names</a>.</p><h3 id="ref-domain-escrow">DomainEscrow</h3><p>Holds payments to domains, pays the wallet a DNSSEC proof shows, and refunds unclaimed deposits. Its admin can only pause new deposits and hand over the role. See <a href="#escrow">Escrow</a> for the rules in practice.</p><div class="dx-api"><div class="dx-sig"><code>constructor(IDomainVerifier verifier_, uint64 refundDelay_, uint16 feeBps_, address feeRecipient_, address admin_)</code></div><p>Sets the immutable configuration and the first admin. Emits <code>AdminTransferred(address(0), admin_)</code>. Reverts with <code>BadConfig</code> if <code>verifier_</code> or <code>admin_</code> is zero, <code>refundDelay_</code> is zero, <code>feeBps_</code> exceeds <code>MAX_FEE_BPS</code>, or <code>feeBps_</code> is non-zero while <code>feeRecipient_</code> is zero.</p><div class="dx-scroll"><table class="dx-table"><thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>verifier_</code></td><td><code>IDomainVerifier</code></td><td>Proof checker. The deployment uses <code>DnssecVerifier</code>.</td></tr><tr><td><code>refundDelay_</code></td><td><code>uint64</code></td><td>Seconds after a depositor's latest deposit before they can refund. Deploy default 15552000 (180 days).</td></tr><tr><td><code>feeBps_</code></td><td><code>uint16</code></td><td>Claim fee in basis points, at most 100. Deploy default 50.</td></tr><tr><td><code>feeRecipient_</code></td><td><code>address</code></td><td>Receives fees through <code>withdrawFees</code>.</td></tr><tr><td><code>admin_</code></td><td><code>address</code></td><td>Can pause new deposits.</td></tr></tbody></table></div></div><div class="dx-api"><div class="dx-sig"><code>function domainHash(string calldata domain) public pure returns (bytes32)</code></div><p>Returns <code>keccak256(bytes(domain))</code>, the key for every pool, deposit and proof record. Reverts with <code>BadDomain</code> unless the name is 1 to 253 bytes of lowercase <code>a-z</code>, <code>0-9</code>, <code>-</code> and <code>_</code> in dot-separated labels of 1 to 63 bytes, with no leading or trailing dot. Callable by anyone.</p><pre class="dx-code" data-lang="bash"><code>cast call 0x9fd2f1Dc0B42e8a2E86e3Cf231a293654691E8d5 "domainHash(string)(bytes32)" yoursite.com \
   --rpc-url https://rpc.mainnet.chain.robinhood.com
 # 0x6c864506eb02986fe0ad7ecb98b946fd3f5c8cf99a673f74b6e90036a12d3305</code></pre></div><div class="dx-api"><div class="dx-sig"><code>function deposit(string calldata domain) external payable</code></div><p>Adds <code>msg.value</code> ETH to the domain's ETH pool and to the caller's deposit, and sets the caller's refund clock to now. If the caller's previous deposit was from an earlier epoch, it is reset first. Callable by anyone.</p><p><strong>Emits</strong> <code>Deposited</code>. <strong>Reverts</strong> <code>Paused</code>, <code>ZeroAmount</code>, <code>BadDomain</code>, <code>Reentrancy</code>.</p><div class="dx-scroll"><table class="dx-table"><thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>domain</code></td><td><code>string</code></td><td>Canonical domain name</td></tr></tbody></table></div></div><div class="dx-api"><div class="dx-sig"><code>function depositToken(string calldata domain, address token, uint256 amount) external</code></div><p>Pulls <code>amount</code> of an ERC-20 from the caller with <code>transferFrom</code> and credits the balance increase the escrow actually observed. The caller must approve the escrow first. Callable by anyone.</p><p><strong>Emits</strong> <code>Deposited</code>. <strong>Reverts</strong> <code>Paused</code>; <code>ZeroAmount</code> when <code>token</code> is <code>address(0)</code>, <code>amount</code> is zero or nothing arrived; <code>TransferFailed</code> when <code>transferFrom</code> reverts or returns <code>false</code>; <code>BadDomain</code>; <code>Reentrancy</code>. A <code>token</code> with no contract code reverts without error data, because the balance read before the transfer fails.</p><div class="dx-scroll"><table class="dx-table"><thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>domain</code></td><td><code>string</code></td><td>Canonical domain name</td></tr><tr><td><code>token</code></td><td><code>address</code></td><td>ERC-20 contract. Use <code>deposit</code> for ETH.</td></tr><tr><td><code>amount</code></td><td><code>uint256</code></td><td>Amount to transfer, in the token's smallest unit</td></tr></tbody></table></div></div><div class="dx-api"><div class="dx-sig"><code>function claim(string calldata domain, address recipient, bytes calldata proof, address[] calldata tokens) external</code></div><p>Verifies that <code>domain</code> publishes <code>recipient</code>, then pays each listed token's whole pool to <code>recipient</code> minus the fee. Rejects proofs signed before <code>lastProof</code> for the domain and stores the new signing time, even when every pool is empty. Each paid pool's epoch advances, which voids refunds of the deposits it contained. Callable by anyone; funds only ever go to <code>recipient</code>.</p><p><strong>Emits</strong> <code>Claimed</code> for each non-empty pool. <strong>Reverts</strong> <code>BadDomain</code>, <code>BadRecipient</code>, <code>StaleProof</code>, <code>TransferFailed</code>, <code>Reentrancy</code>, and any revert from the verifier, such as <code>NotPublished</code> or an oracle error.</p><div class="dx-scroll"><table class="dx-table"><thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>domain</code></td><td><code>string</code></td><td>Canonical domain name</td></tr><tr><td><code>recipient</code></td><td><code>address</code></td><td>The wallet the domain publishes. Must be non-zero.</td></tr><tr><td><code>proof</code></td><td><code>bytes</code></td><td><code>abi.encode(DNSSEC.RRSetWithSignature[])</code>, see <a href="#dnssec-proof-format">Proof format</a></td></tr><tr><td><code>tokens</code></td><td><code>address[]</code></td><td>Pools to pay out. <code>address(0)</code> is ETH. Empty pools are skipped; an empty array only records the proof.</td></tr></tbody></table></div><pre class="dx-code" data-lang="bash"><code>cast send 0x9fd2f1Dc0B42e8a2E86e3Cf231a293654691E8d5 "claim(string,address,bytes,address[])" \
@@ -1469,8 +1858,8 @@ struct TokenParams {
 event ForwarderDeployed(bytes32 indexed domainHash, string domain, address forwarder);</code></pre><h4>Errors</h4><div class="dx-scroll"><table class="dx-table"><thead><tr><th>Error</th><th>Selector</th><th>Raised when</th></tr></thead><tbody><tr><td><code>WrongValue()</code></td><td><code>0x98d4901c</code></td><td><code>msg.value</code> is not the launch fee plus <code>openingBuy</code></td></tr><tr><td><code>OpeningBuyNeedsEth()</code></td><td><code>0x9e330270</code></td><td>An opening buy on a non-ETH pair</td></tr><tr><td><code>NoDirectPayments()</code></td><td><code>0x4d1f3cb0</code></td><td>ETH sent outside an opening buy</td></tr><tr><td><code>RefundFailed()</code></td><td><code>0xf0c49d44</code></td><td>Leftover opening-buy ETH could not be returned to the caller</td></tr></tbody></table></div><h3 id="ref-domain-fee-forwarder">DomainFeeForwarder</h3><p>The pons creator-fee recipient for every token launched for one domain. It has no owner and never calls pons's <code>transferCreatorFeeRecipient</code> or <code>setBuybackEnabled</code>. Anything it collects goes to <code>DomainEscrow</code> under its domain, where the owner claims it with a DNSSEC proof. Every function is callable by anyone.</p><div class="dx-api"><div class="dx-sig"><code>constructor(string memory domain_, DomainEscrow escrow_, IPonsFeeEscrow ponsEscrow_)</code></div><p>Deployed by <code>DomainLauncher.deployForwarder</code> with CREATE2. Reverts with <code>BadDomain</code> (from <code>escrow_.domainHash</code>) unless <code>domain_</code> is canonical.</p></div><div class="dx-api"><div class="dx-sig"><code>function collect(IPonsCurve[] calldata curves, address[] calldata tokens) external</code></div><p>Calls <code>sweepFees(0)</code> on each curve to move accrued fees into pons's fee escrow, skipping any that revert, then runs <code>flush(tokens)</code>.</p></div><div class="dx-api"><div class="dx-sig"><code>function collectPools(IPonsHook hook, bytes32[] calldata poolIds, address[] calldata tokens) external</code></div><p>For graduated launches: calls <code>sweepPoolFees(poolId, 0, 0)</code> on pons's Uniswap v4 hook for each pool as the fee recipient, skipping any that revert, then runs <code>flush(tokens)</code>.</p></div><div class="dx-api"><div class="dx-sig"><code>function flush(address[] calldata tokens) public</code></div><p>Moves everything owed to the domain into <code>DomainEscrow</code>. It claims the forwarder's ETH from pons's fee escrow and deposits its whole ETH balance with <code>escrow.deposit</code>. Then, for each listed token, it claims that token from pons's fee escrow, approves the escrow and deposits its whole balance with <code>escrow.depositToken</code>. Zero balances are skipped.</p><p><strong>Emits</strong> <code>Flushed</code> per asset delivered, with <code>address(0)</code> for ETH. <strong>Reverts</strong> <code>TransferFailed</code> when a token's <code>balanceOf</code> or <code>approve</code> fails, and with the escrow's <code>Paused</code> while deposits are paused and there is something to deliver.</p><div class="dx-scroll"><table class="dx-table"><thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead><tbody><tr><td><code>tokens</code></td><td><code>address[]</code></td><td>ERC-20s to deliver besides ETH, such as USDG</td></tr></tbody></table></div></div><div class="dx-api"><div class="dx-sig"><code>receive() external payable</code></div><p>Accepts ETH from anyone. The next <code>flush</code> deposits it to the domain's escrow pool.</p></div><h4>Public state, events and errors</h4><div class="dx-scroll"><table class="dx-table"><thead><tr><th>Item</th><th>Signature</th><th>Notes</th></tr></thead><tbody><tr><td>Getter</td><td><code>escrow() returns (DomainEscrow)</code></td><td>Immutable</td></tr><tr><td>Getter</td><td><code>ponsEscrow() returns (IPonsFeeEscrow)</code></td><td>Immutable</td></tr><tr><td>Getter</td><td><code>domain() returns (string)</code></td><td>The domain this forwarder pays</td></tr><tr><td>Event</td><td><code>Flushed(address indexed token, uint256 amount)</code></td><td>One asset delivered to escrow</td></tr><tr><td>Error</td><td><code>TransferFailed()</code>, selector <code>0x90b8ec18</code></td><td>A token's <code>balanceOf</code> or <code>approve</code> call failed</td></tr></tbody></table></div><div class="dx-note">pons's own owner can still propose a new fee recipient for any pons token, behind a public 3-day timelock. The forwarder can't prevent that. The app's token page warns when a token's live recipient is not its domain's forwarder, or when pons has proposed a new one.</div>
       </section>
 
-      <section class="dx-section" id="deployments" data-group="Contracts">
-        <div class="dx-section-head"><span class="dx-kicker">Contracts</span><h2>Deployments</h2><p class="dx-lead">Every live TYPE/262 contract on Robinhood Chain mainnet, its configuration, and how to verify it yourself.</p></div>
+      <section class="dx-section" id="deployments" data-group="Robinhood Chain">
+        <div class="dx-section-head"><span class="dx-kicker">Robinhood Chain</span><h2>Deployments</h2><p class="dx-lead">Every live TYPE/262 contract on Robinhood Chain mainnet, its configuration, and how to verify it yourself.</p></div>
 <p>TYPE/262 is live on Robinhood Chain mainnet (chain id 4663). Every TYPE/262 contract address and escrow setting on this page comes from <code>deployments/robinhood-4663.json</code>, the record the deploy script writes, and all nine contracts are verified on Sourcify.</p>
 
 <h3 id="deployments-contracts">Contracts</h3>
@@ -1537,8 +1926,8 @@ export const LAUNCHER_ADDRESS = '0x022657ac8bdd969fa5149e7a86fbbda2afaf716f'</co
       </section>
 
       <section class="dx-section" id="self-hosting" data-group="Operate">
-        <div class="dx-section-head"><span class="dx-kicker">Operate</span><h2>Self-hosting</h2><p class="dx-lead">Run the site locally, deploy it to any static host, configure the app, and deploy your own contracts.</p></div>
-<p>The site is plain static files: no build step and no backend. Claims are DNSSEC proofs checked on-chain, so a copy of the site needs only a static host, plus the optional upload service if you want image uploads in the Launch form. You can run your own copy against the live contracts without changing anything, or deploy your own contracts and point the app at them.</p>
+        <div class="dx-section-head"><span class="dx-kicker">Operate</span><h2>Self-hosting</h2><p class="dx-lead">Run the site locally, deploy it to any static host, configure the app, run your own worker, and deploy your own contracts.</p></div>
+<p>The site is plain static files: no build step and no backend of its own. It talks to one small service, the worker, for Solana vault claims, collects and refunds and for launch-image uploads; Robinhood Chain claims are DNSSEC proofs checked on-chain and need no service at all. You can run your own copy of the site against the live worker and contracts without changing anything, or run your own and point the app at them.</p>
 
 <h3 id="self-hosting-local">Run the site locally</h3>
 <pre class="dx-code" data-lang="bash"><code># from the project folder
@@ -1546,7 +1935,7 @@ npm run dev</code></pre>
 <p><code>npm run dev</code> runs <code>python -m http.server 5262 --bind 127.0.0.1</code>, so it needs Python 3. Open <code>http://127.0.0.1:5262</code> for the landing page, <code>/app.html</code> for the app and <code>/docs.html</code> for these docs. The pages load ES modules, so they must be served over HTTP: opening the files directly won't work.</p>
 
 <h3 id="self-hosting-static">Deploy the static site</h3>
-<p><code>render.yaml</code> is a Render Blueprint with two services: the static site, <code>type262</code>, and the image upload service, <code>type262-upload</code>, described below. The site service:</p>
+<p><code>render.yaml</code> is a Render Blueprint with two services: the static site, <code>type262</code>, and the worker, <code>type262-upload</code>, described below. The site service:</p>
 <pre class="dx-code" data-lang="txt"><code>services:
   - type: web
     name: type262
@@ -1568,26 +1957,53 @@ cd dist &amp;&amp; python -m http.server 5262 --bind 127.0.0.1</code></pre>
 <tr><td><code>ESCROW_ADDRESS</code></td><td>none</td><td>The <code>DomainEscrow</code> address. Without it, the Escrow tab reports that the escrow isn't deployed.</td></tr>
 <tr><td><code>LAUNCHER_ADDRESS</code></td><td>none</td><td>The <code>DomainLauncher</code> address. Without it, the Launch tab reports that the launcher isn't deployed and disables launching.</td></tr>
 <tr><td><code>RPC_URL</code></td><td><code>https://rpc.mainnet.chain.robinhood.com</code></td><td>The JSON-RPC endpoint the app reads from, and the RPC it gives your wallet when it adds Robinhood Chain.</td></tr>
-<tr><td><code>UPLOAD_URL</code></td><td><code>https://type262-upload.onrender.com</code></td><td>The image upload service for the Launch form.</td></tr>
+<tr><td><code>UPLOAD_URL</code></td><td><code>https://type262-upload.onrender.com</code></td><td>The worker: image and metadata uploads for the Launch form, and the Solana vault endpoints under <code>/solana/</code>.</td></tr>
+<tr><td><code>WORKER_URL</code></td><td><code>UPLOAD_URL</code></td><td>The worker for the Solana vault endpoints, when it runs apart from the upload service.</td></tr>
 <tr><td><code>RPC_FALLBACK</code></td><td><code>https://type262-upload.onrender.com/rpc</code></td><td>Read-only RPC the app uses when a browser can't reach <code>RPC_URL</code>, for example because of a DNS failure. After a failure it serves reads for a minute, then the app tries <code>RPC_URL</code> again.</td></tr>
+<tr><td><code>SOLANA_PROGRAM_ID</code>, <code>SOLANA_LOOKUP_TABLE</code></td><td>empty</td><td>Only for the on-chain program and its launch lookup table, which are not deployed. See <a href="#solana-program">On-chain program</a>.</td></tr>
+<tr><td><code>SOLANA_RPC_URL</code></td><td><code>https://solana-rpc.publicnode.com</code>, then <code>https://api.mainnet-beta.solana.com</code></td><td>The Solana RPC the app reads from and sends transactions through. Set it to use one endpoint, such as a keyed provider or a local validator.</td></tr>
+<tr><td><code>SOLANA_RPC_FALLBACK</code></td><td><code>https://type262-upload.onrender.com/rpc/solana</code></td><td>Read-only Solana RPC the app uses when it can't reach the public ones. After a failure it serves reads for a minute. Transactions are always sent through <code>SOLANA_RPC_URL</code> or the public RPCs.</td></tr>
 </tbody></table></div>
-<div class="dx-note"><code>scripts/post-deploy.mjs</code> rewrites the whole file with only <code>ESCROW_ADDRESS</code> and <code>LAUNCHER_ADDRESS</code>. If you set <code>RPC_URL</code> or <code>UPLOAD_URL</code>, add them back after running it.</div>
+<div class="dx-note"><code>scripts/post-deploy.mjs</code> rewrites the whole file with only <code>ESCROW_ADDRESS</code> and <code>LAUNCHER_ADDRESS</code>. If you set any other export, such as <code>RPC_URL</code>, <code>UPLOAD_URL</code> or the <code>SOLANA_</code> settings, add it back after running it.</div>
 
-<h3 id="self-hosting-upload">Image uploads</h3>
-<p>The Launch form's <strong>Choose image</strong> button posts the file to a small upload service, <code>upload/server.mjs</code>, which pins it to IPFS through Pinata and returns <code>ipfs://&lt;cid&gt;</code>. The Pinata key stays on the server. The service has no dependencies and runs on Node 18 or later. On Render, <code>render.yaml</code> deploys it as <code>type262-upload</code>, with <code>PINATA_JWT</code> set in the dashboard. It is optional: without it, creators paste an image link instead.</p>
+<h3 id="self-hosting-upload">The worker and uploads</h3>
+<p><code>upload/server.mjs</code> is the worker: one Node service with no dependencies, deployed on Render as <code>type262-upload</code>. It answers the Solana vault endpoints (see <a href="#solana-worker">Worker API</a>), pins launch images and coin metadata to IPFS, and serves the read-only RPC fallbacks. Its keys, the vault master secret and the Pinata key, stay on the server, set in the host's dashboard and never committed.</p>
+<p>The Launch form's <strong>Choose image</strong> button posts the file to <code>POST /image</code>, which pins it to IPFS through Pinata and returns <code>ipfs://&lt;cid&gt;</code>. For a pump.fun launch on Solana, the form then posts the coin's metadata JSON to <code>POST /metadata</code>, which pins it the same way and returns its <code>https://ipfs.io/ipfs/&lt;cid&gt;</code> link for the coin's <code>uri</code>. Image uploads are optional: without them, creators paste an image link instead.</p>
 <div class="dx-scroll"><table class="dx-table"><thead><tr><th>Variable</th><th>Default</th><th>Meaning</th></tr></thead><tbody>
 <tr><td><code>PINATA_JWT</code></td><td>required</td><td>A Pinata API key (JWT) that can upload files. Without it, uploads answer 503 and the form asks for a link.</td></tr>
 <tr><td><code>ALLOW_ORIGINS</code></td><td><code>https://type262.onrender.com</code></td><td>Comma-separated origins allowed to upload. Uploads from any other origin, or with no <code>Origin</code> header, are refused.</td></tr>
-<tr><td><code>RATE_MAX</code></td><td><code>12</code></td><td>Uploads allowed per IP address per 10 minutes.</td></tr>
+<tr><td><code>RATE_MAX</code></td><td><code>12</code></td><td>Uploads allowed per IP address per 10 minutes, for <code>/image</code> and <code>/metadata</code> each.</td></tr>
+<tr><td><code>IPFS_GATEWAY</code></td><td><code>https://ipfs.io</code></td><td>The gateway in the links <code>/metadata</code> returns, as pump.fun uses.</td></tr>
 <tr><td><code>PORT</code></td><td><code>8787</code></td><td>The port to listen on.</td></tr>
 <tr><td><code>PINATA_URL</code></td><td><code>https://uploads.pinata.cloud/v3/files</code></td><td>The upload endpoint. The tests point it at a mock.</td></tr>
+<tr><td><code>ROBINHOOD_RPC_URL</code>, <code>PUBLIC_RPC_URL</code></td><td>none, <code>https://rpc.mainnet.chain.robinhood.com</code></td><td>The upstreams of <code>/rpc</code>: a keyed provider kept as a secret, tried first, then the public RPC.</td></tr>
+<tr><td><code>SOLANA_RPC_URL</code>, <code>SOLANA_PUBLIC_RPC_URLS</code></td><td>none, <code>https://solana-rpc.publicnode.com,https://api.mainnet-beta.solana.com</code></td><td>The upstreams of <code>/rpc/solana</code>, in the same order.</td></tr>
+<tr><td><code>RPC_RATE_MAX</code>, <code>SOL_SEND_RATE_MAX</code></td><td><code>240</code>, <code>10</code></td><td>Requests per IP per minute for <code>/rpc</code> and <code>/rpc/solana</code> each, and relayed Solana transactions per IP per minute.</td></tr>
+<tr><td><code>VAULT_MASTER_SEED</code></td><td>required for <code>/solana/</code></td><td>The 32-byte master secret, as 64 hex characters, that every vault key and the gas wallet derive from. Whoever holds it controls every vault. Keep it in the host's secret store only.</td></tr>
+<tr><td><code>SOLANA_FEE_WALLET</code></td><td>required for <code>/solana/</code></td><td>The wallet that receives the claim fee. The live worker uses <code>3sde4YJpX2oYMSWaozHareWrXn6MASLxhQgfuCKJNPoK</code>.</td></tr>
+<tr><td><code>FEE_BPS</code></td><td><code>50</code></td><td>The claim fee in basis points: 50 is 0.5%. At most 1000.</td></tr>
+<tr><td><code>REFUND_DELAY_DAYS</code></td><td><code>180</code></td><td>Days after a deposit before its sender can get it back.</td></tr>
+<tr><td><code>VAULT_RATE_MAX</code></td><td><code>10</code></td><td>Claims, collects and refunds allowed per IP address per 10 minutes, together.</td></tr>
+<tr><td><code>MAX_TOKENS_PER_CLAIM</code></td><td><code>20</code></td><td>How many different tokens one claim pays out; a claim again pays the rest.</td></tr>
+<tr><td><code>PRIORITY_FEE_MIN</code>, <code>PRIORITY_FEE_MAX</code></td><td><code>20000</code>, <code>2000000</code></td><td>The range of the priority fee, in micro-lamports per compute unit, that the worker's transactions pay.</td></tr>
 </tbody></table></div>
 <pre class="dx-code" data-lang="bash"><code>PINATA_JWT=your-pinata-jwt ALLOW_ORIGINS=http://127.0.0.1:5262 npm run upload:dev</code></pre>
-<p>Then add <code>export const UPLOAD_URL = 'http://127.0.0.1:8787'</code> to <code>assets/config.js</code>. The service accepts <code>POST /image</code> with the file in a multipart field named <code>image</code>. It checks the bytes, not the declared type: only PNG, JPEG and WebP up to 5 MB are pinned, and SVG is refused. <code>GET /health</code> reports whether a Pinata key is configured.</p>
+<p>Then add <code>export const UPLOAD_URL = 'http://127.0.0.1:8787'</code> to <code>assets/config.js</code>. The service accepts <code>POST /image</code> with the file in a multipart field named <code>image</code>. It checks the bytes, not the declared type: only PNG, JPEG and WebP up to 5 MB are pinned, and SVG is refused. <code>POST /metadata</code> takes a JSON object of at most 8 KiB with <code>name</code> (up to 32 bytes), <code>symbol</code> (up to 10 bytes), <code>image</code> (an <code>ipfs://</code> link from <code>/image</code> or an https link), and optionally <code>description</code>, <code>twitter</code>, <code>telegram</code>, <code>website</code> and <code>showName</code>; links must be https. <code>GET /health</code> reports whether a Pinata key is configured.</p>
 <p>The same service answers <code>POST /rpc</code>, a read-only Robinhood Chain RPC the app falls back to when a browser can't reach the public one. It forwards only read methods such as <code>eth_call</code>, <code>eth_getLogs</code> and <code>eth_getTransactionReceipt</code>, never anything that signs or sends, accepts requests only from <code>ALLOW_ORIGINS</code>, and limits each IP to <code>RPC_RATE_MAX</code> requests a minute (default 240). It tries <code>ROBINHOOD_RPC_URL</code> first when you set one, such as a keyed provider URL kept as a secret on the host, and the public RPC after it; log queries go to the public RPC first, because keyed providers usually cap their block range. It moves to the next RPC only when one is unavailable, so a revert is returned as is.</p>
+<p><code>POST /rpc/solana</code> does the same for Solana. It forwards a fixed list of read methods, such as <code>getAccountInfo</code>, <code>getMultipleAccounts</code>, <code>getLatestBlockhash</code>, <code>getSignatureStatuses</code> and <code>simulateTransaction</code>; <code>getProgramAccounts</code> only with a <code>memcmp</code> filter. It also relays <code>sendTransaction</code> for a transaction the wallet has already signed, limited to <code>SOL_SEND_RATE_MAX</code> a minute per IP. The relay only passes on what the wallet signed; the vault keys are used by the <code>/solana/</code> endpoints alone.</p>
+
+<h3 id="self-hosting-worker">Run your own worker</h3>
+<p>A worker of your own has its own vaults: every vault address derives from its master secret, so a different secret gives every domain a different vault. Run one for a fork of the project, or to send claims from your own origin.</p>
+<ol class="dx-steps">
+<li><strong>Make a master secret.</strong> 32 random bytes as 64 hex characters, generated on the machine that will keep it, for example with <code>openssl rand -hex 32</code>. Store it only in the host's secret store as <code>VAULT_MASTER_SEED</code>. Never paste it into a chat, a file in the repository or a commit, and never reuse the secret of another deployment.</li>
+<li><strong>Set the rest.</strong> <code>SOLANA_FEE_WALLET</code> for your fee wallet, <code>ALLOW_ORIGINS</code> for your site, and <code>SOLANA_RPC_URL</code> for a keyed RPC if you have one. <code>FEE_BPS</code> and <code>REFUND_DELAY_DAYS</code> keep their defaults unless you change them.</li>
+<li><strong>Fund the gas wallet.</strong> Start the service and read <code>GET /solana/status</code>: <code>gasWallet</code> is the address derived from your secret. Send it a little SOL; it pays the network fees of claims, collects and refunds, and owners' token-account rent.</li>
+<li><strong>Point the app at it.</strong> Set <code>UPLOAD_URL</code> (or <code>WORKER_URL</code>) in <code>assets/config.js</code> to your worker's URL.</li>
+</ol>
+<p>Try everything on a local validator with a throwaway secret first, and keep test secrets away from mainnet.</p>
 
 <h3 id="self-hosting-contracts">Deploy your own contracts</h3>
-<p>You need this only for a separate deployment, for example on a fork of the project. One script checks the network, your balance and the tests, dry-runs the deploy with its real cost, and asks for confirmation before it sends anything. Run every command from the repository root in a Bash shell (Git Bash on Windows).</p>
+<p>This deploys the Robinhood Chain contracts. You need it only for a separate deployment, for example on a fork of the project. One script checks the network, your balance and the tests, dry-runs the deploy with its real cost, and asks for confirmation before it sends anything. Run every command from the repository root in a Bash shell (Git Bash on Windows).</p>
 <p>You need Foundry (<code>forge</code> and <code>cast</code> in <code>~/.foundry/bin</code>), Node 18 or later, and about 0.001 ETH for the deployer on Robinhood Chain, not on Ethereum. DEPLOY.md puts the cost at about 0.0003 ETH, for around 10.8M gas.</p>
 <ol class="dx-steps">
 <li><strong>Fetch the contract libraries.</strong> <code>contracts/lib</code> holds pinned git submodules:
@@ -1644,7 +2060,8 @@ Paste the key into your own terminal only, never into a chat, a file in the repo
 <div class="dx-note"><code>post-deploy.mjs</code> targets Robinhood Chain mainnet and the pons v2 factory at <code>0x7eD598BcEf8bd9Edd8C97A195C6d13f40801EC7e</code>. It fails if you deployed with a different <code>PONS_FACTORY</code>.</div>
 
 <h3 id="self-hosting-operate">Operate a deployment</h3>
-<p>The admin has one switch: pausing new deposits. Claims and refunds keep working while deposits are paused. Pausing also stops launch fees from being collected into escrow; they wait at pons until deposits resume.</p>
+<p>On Solana, operating means keeping the worker running and its gas wallet funded. <code>GET /solana/status</code> reports the gas wallet's balance; claims, collects and refunds need it to pay their network fees. Claim fees reach the fee wallet with each payout, so there is nothing to withdraw, and nobody can pause deposits: a vault is an ordinary address that anyone can always pay.</p>
+<p>On Robinhood Chain, the escrow admin has one switch: pausing new deposits. Claims and refunds keep working while deposits are paused, and launch fees wait at pons until deposits resume:</p>
 <pre class="dx-code" data-lang="bash"><code>ESCROW=0x9fd2f1Dc0B42e8a2E86e3Cf231a293654691E8d5   # your DomainEscrow
 RPC=https://rpc.mainnet.chain.robinhood.com
 ADMIN=admin   # the Foundry keystore that holds the escrow admin key (OWNER)
@@ -1660,8 +2077,8 @@ cast send $ESCROW "withdrawFees(address)" 0x5fc5360D0400a0Fd4f2af552ADD042D716F1
       </section>
 
       <section class="dx-section" id="testing" data-group="Operate">
-        <div class="dx-section-head"><span class="dx-kicker">Operate</span><h2>Testing</h2><p class="dx-lead">Run the offline JavaScript tests, the Foundry suite, the Robinhood Chain fork simulations and the real DNSSEC proof test.</p></div>
-<p>TYPE/262 has two test suites. <code>npm test</code> runs offline JavaScript tests for the SDK, the app's ABI encoder and the upload service. Foundry tests cover the contracts, including simulations on a Robinhood Chain fork against real USDG and the real pons v2 contracts, and a real DNSSEC proof checked against the IANA root keys.</p>
+        <div class="dx-section-head"><span class="dx-kicker">Operate</span><h2>Testing</h2><p class="dx-lead">Run the JavaScript tests, the end-to-end runs on a local validator, the on-chain program's LiteSVM suites, and the Foundry suite with its Robinhood Chain fork simulations.</p></div>
+<p>TYPE/262 has three groups of tests. <code>npm test</code> and the Solana client tests run offline JavaScript tests for the SDK, the app's encoders, the worker and the Solana clients. On Solana, the app's screens run end to end in a browser against a local validator, and the on-chain program is tested in LiteSVM with real DNSSEC proofs and the mainnet pump.fun programs, and end to end on a local validator. Foundry tests cover the Robinhood Chain contracts, including simulations on a Robinhood Chain fork against real USDG and the real pons v2 contracts, and a real DNSSEC proof checked against the IANA root keys. None of them sends anything to a public network, and every key and secret they use is generated for the run.</p>
 
 <h3 id="testing-js">JavaScript tests</h3>
 <pre class="dx-code" data-lang="bash"><code>npm install
@@ -1671,7 +2088,67 @@ npm test</code></pre>
 <tr><td><code>test/abi.test.mjs</code></td><td>The app's hand-written ABI code in <code>assets/abi.js</code> agrees with viem byte for byte: <code>launch</code>, <code>collect</code> and paged <code>launchesOf</code> calldata, and decoding of <code>recent</code>, <code>launchOf</code> and strings.</td></tr>
 <tr><td><code>test/upload.test.mjs</code></td><td>Starts <code>upload/server.mjs</code> against a mock Pinata and checks the upload behaviours: health, pinning, CORS and the origin allowlist, content checks that refuse non-images and SVG, the 5 MB limit, a missing file field, and the rate limit.</td></tr>
 </tbody></table></div>
-<p>None of these tests need the network. DNS is mocked, and the upload test runs its own mock Pinata.</p>
+<p>None of these tests need the network. DNS is mocked, and the upload test runs its own mock Pinata and RPC upstreams.</p>
+<p>The Solana client has its own tests, run directly:</p>
+<pre class="dx-code" data-lang="bash"><code>node test/solana.test.mjs          # base58, PDAs, token accounts, byte-exact transactions against mainnet ones
+node test/solana-vault.test.mjs    # the vault client: pump.fun instructions, launches, the worker API, vault history
+node test/solana-proof.test.mjs    # the six real DNSSEC chains, precompile layouts, transaction sizes, the planner
+node test/solana-type262.test.mjs  # every program instruction byte for byte against the IDL and the LiteSVM harness
+OFFLINE=1 node test/solana-proof.test.mjs   # skips the live DNS-over-HTTPS and read-only RPC checks</code></pre>
+<div class="dx-scroll"><table class="dx-table"><thead><tr><th>File</th><th>Tests</th><th>What it checks</th></tr></thead><tbody>
+<tr><td><code>test/solana.test.mjs</code></td><td>12, 2 of them read mainnet</td><td>base58 and leading zeros, the on-curve check, associated token accounts and PDAs, SOL and USDC transfer messages byte for byte against mainnet transactions, amounts out of range, Wallet Standard wallets, and the RPC fallback order.</td></tr>
+<tr><td><code>test/solana-vault.test.mjs</code></td><td>offline</td><td>The app's vault client, <code>assets/solana-vault.js</code>: every pump.fun instruction byte for byte against <code>solana/scripts/pump-ix.mjs</code>; a launch with the vault as creator and the opening buy, in one legacy transaction or two; the worker API's requests, answers and errors; a vault's deposits, claims and refunds read from its history; its coins and the creator fees waiting at pump.fun.</td></tr>
+<tr><td><code>test/solana-proof.test.mjs</code></td><td>20, 4 of them live</td><td>Wire names and canonical domains; the six real chains rebuilt byte for byte and verified from the IANA anchors; the parser against the Rust reference; PDA seeds; low-S P-256 signatures; the precompile layout; transaction sizes, buffers and the planner's transaction counts and cache rules; the wallet record shapes the program accepts.</td></tr>
+<tr><td><code>test/solana-type262.test.mjs</code></td><td>24</td><td>Every instruction of the on-chain program's client, byte for byte, against the IDL and the LiteSVM harness; the decoders; the wallet's rent for a tiny SOL payout; <code>BadRecipient</code> for a token account, a mint or a program as the wallet; a wallet proof for an Ed25519 zone, with an older record and a tie for another wallet refused.</td></tr>
+</tbody></table></div>
+<p>With <code>OFFLINE=1</code>, the live and mainnet checks are skipped; they only read DNS-over-HTTPS and public RPC data.</p>
+
+<h3 id="testing-solana">On-chain program tests</h3>
+<p>The tests of the on-chain program (see <a href="#solana-program">On-chain program</a>) run in LiteSVM, a fast in-process Solana runtime, against the compiled program. The harness in <code>solana/tests-rs</code> builds every instruction the way a client does, from the discriminators, borsh arguments and seeds, so it checks the real interface. <code>solana/README.md</code> lists the exact toolchain.</p>
+<pre class="dx-code" data-lang="bash"><code>cd solana
+anchor build                                              # the program, its IDL and types
+node scripts/fetch-fixtures.mjs                           # once: pump.fun's programs and accounts, read from mainnet
+cd tests-rs &amp;&amp; cargo test                                 # every LiteSVM suite, after rebuilding the program
+cd .. &amp;&amp; cargo test --manifest-path programs/type262/Cargo.toml   # the unit tests inside the program</code></pre>
+<p><code>cargo test</code> in <code>tests-rs</code> runs 78 tests in thirteen suites on Windows, and 86 in WSL with the <code>precompiles</code> feature. The program's own unit tests, the last line above, are 29 more.</p>
+<div class="dx-scroll"><table class="dx-table"><thead><tr><th>Suite</th><th>Tests</th><th>Covers</th></tr></thead><tbody>
+<tr><td><code>smoke.rs</code></td><td>4 (+1)</td><td>Only the upgrade authority initializes; bad settings are refused; the admin pauses and hands over in two steps; with the feature, the precompiles are loaded.</td></tr>
+<tr><td><code>escrow_sol.rs</code></td><td>11</td><td>SOL deposits, claims and fees to the lamport; the WALLET record also pays; an older proof never overrides a newer one; register opens a domain nobody paid; refunds follow the delay and the epochs; the pause stops deposits only; canonical names; nobody takes money that isn't theirs; ordering inside one transaction; every lamport is accounted for; a tiny payout to an empty wallet.</td></tr>
+<tr><td><code>escrow_token.rs</code></td><td>10</td><td>SPL Token, Token-2022 and Token-2022 with metadata end to end; transfer fees counted exactly; mints the books can't follow are refused; the pause covers tokens; token accounts can't be swapped; tokens sent straight to a vault stay out of the books; extension numbers; with no fee, the wallet gets everything.</td></tr>
+<tr><td><code>dnssec_rules.rs</code></td><td>9</td><td>A zone from its DS to the wallet record; SHA-1 DS digests accepted and RSASHA1 signatures refused; signatures from the right key only; names, labels and times; the caller picks neither parent nor result; newer signatures replace older ones, never the reverse; a prefunded address is still created; buffers upload in any order; closing needs expiry and pays the first payer.</td></tr>
+<tr><td><code>dnssec_real.rs</code></td><td>7</td><td>Real chains from the root for cloudflare.com, <code>_wallet.gemprotocol.io</code>, nlnetlabs.nl, ietf.org, nasa.gov and ed25519.nl; two domains share their TLD's cache; entries expire with their chain; the root DNSKEY set in two legacy transactions; nothing is valid before its inception; tampered proofs are rejected.</td></tr>
+<tr><td><code>launcher_pump.rs</code></td><td>5</td><td>Against the mainnet pump.fun programs: a launch with an opening buy; the launch in a v0 transaction; trades, then collect into the pool; one collect for every coin of a domain; graduation and the PumpSwap collect.</td></tr>
+<tr><td><code>launcher_adversarial.rs</code></td><td>6</td><td>A substituted pump.fun program or <code>create_v2</code> account is refused; canonical names only; substituted collect accounts are refused; a collect for another domain gets nothing; a creator that was never funded is funded.</td></tr>
+<tr><td><code>review_dnssec_cache.rs</code></td><td>9</td><td>Attacks on the cache with synthetic zones: a tie on signing time never locks the owner out, and never brings an old wallet back after the owner registered; only the parent zone writes a DS set, and a zone signing its own DS never outlives its parent; wrapped RRSIG times never help; a byte suffix is not a subdomain; records added to or dropped from a signed set don't verify; buffers stay private; lookalike wallet lines publish nothing.</td></tr>
+<tr><td><code>review_dnssec_rsa.rs</code></td><td>6</td><td>RSA keys under 1024 bits and the SHA-1 signature algorithms are refused; exponent-one keys, a cube-root forgery on an <code>e = 3</code> key and degenerate signatures verify nothing; odd-length moduli verify exactly.</td></tr>
+<tr><td><code>review_funds_escrow.rs</code></td><td>9</td><td>A transfer fee authority can't take payouts, and a scheduled fee is refused until it applies; a tie on signing time keeps the first registered wallet; a token account is refused as the wallet; small claims round the fee to zero; rent changes never move counted money; prefunded addresses change nothing; forged program accounts are refused; a reopened deposit record never refunds twice.</td></tr>
+<tr><td><code>review_funds_collect.rs</code></td><td>2</td><td>Against the mainnet pump.fun programs: dust and donations can't block or skim <code>collect</code>; the wrapped-SOL reserve is all a caller gets back.</td></tr>
+<tr><td><code>dnssec_precompile.rs</code></td><td>(+4)</td><td>High-S P-256 signatures are sent normalized; the precompile must have checked the program's exact bytes; several P-256 steps share a transaction; an Ed25519 zone.</td></tr>
+<tr><td><code>review_dnssec_precompile.rs</code></td><td>(+3)</td><td>Bytes past the checked message are not signed; a precompile after the step still binds it; one entry binds one instruction.</td></tr>
+</tbody></table></div>
+<p>Counts in brackets run only with the <code>precompiles</code> feature, below. The launcher and collect suites need the pump.fun fixtures from <code>fetch-fixtures.mjs</code>, which only reads mainnet; they are not committed.</p>
+
+<h3 id="testing-solana-precompiles">Precompile tests in WSL</h3>
+<p>The secp256r1 and ed25519 precompiles behind DNSSEC algorithms 13 and 15 load in LiteSVM only with the <code>precompiles</code> feature, which builds OpenSSL from source. That build needs a Linux Perl, so on Windows these tests run in WSL, against the program built on Windows and with a separate target directory:</p>
+<pre class="dx-code" data-lang="bash"><code># in WSL Ubuntu, from solana/tests-rs in your checkout
+CARGO_TARGET_DIR=$PWD/target/wsl TYPE262_SKIP_BUILD=1 RUSTUP_TOOLCHAIN=stable cargo test --features precompiles</code></pre>
+<p>With the feature, the real chains in <code>dnssec_real.rs</code> also run their P-256 and Ed25519 steps through the precompiles. The first run compiles for several minutes; later runs are incremental. On Linux and macOS, run the same <code>cargo test --features precompiles</code> directly.</p>
+
+<h3 id="testing-solana-e2e">End to end on a local validator</h3>
+<p><code>solana/scripts/e2e-local.mjs</code> runs the on-chain program's client, <code>assets/solana-type262.js</code>, against a local <code>solana-test-validator</code>: the program as an upgradeable program, the mainnet pump.fun programs and accounts from the fixtures, and throwaway keypairs only. <code>solana/scripts/e2e-validator.mjs</code> starts and stops that validator, in WSL on Windows, answering on <code>http://127.0.0.1:8899</code>. The run stops if the cluster it reaches has mainnet's or devnet's genesis hash.</p>
+<p>It sends 43 transactions and checks exact numbers at every step, 84 checks in all: <code>initialize</code> by the upgrade authority, and by nobody else; SOL and token deposits from two depositors; a real DNSSEC chain from the root to cloudflare.com's DNSKEY set (RSA through the buffer and inline, P-256 packed with the secp256r1 precompile), then the same chain again with nothing left to send; an Ed25519-signed <code>_wallet</code> record that publishes a SOL wallet; claims of both pools with the 0.5% fee; a wallet change proven by a newer record and registered; an older record refused (<code>StaleProof</code>), one signed at the same time as the last proof refused (<code>TiedProof</code>), and a token account or a mint as the wallet refused by the client and the program (<code>BadRecipient</code>); refunds refused before the delay and after a claim; the pause; <code>withdraw_fees</code>; a pump.fun launch with the opening buy in the same v0 transaction, a second trader's buy, <code>collect</code>, a refund after the delay, and a last claim that pays out the collected creator fees.</p>
+<pre class="dx-code" data-lang="bash"><code>cd solana &amp;&amp; anchor build &amp;&amp; node scripts/fetch-fixtures.mjs &amp;&amp; cd ..
+node solana/scripts/e2e-local.mjs             # a fresh validator, the run, then it stops the validator
+node solana/scripts/e2e-local.mjs --keep      # leaves the validator running afterwards
+node solana/scripts/e2e-validator.mjs status  # or stop</code></pre>
+<p>The real chain comes over DNS-over-HTTPS, or from the copy in <code>solana/bench/fixtures</code> with <code>--fixture</code>. The run writes its results to <code>solana/target/e2e/report.json</code>.</p>
+
+<h3 id="testing-solana-ui">The app's screens end to end</h3>
+<p><code>solana/scripts/ui-e2e.mjs</code> drives the app's Solana screens in headless Chromium, with clicks and typing like a user, against its own local validator, started by <code>e2e-validator.mjs</code> with the mainnet pump.fun programs and accounts from the fixtures. The page signs with a mock Wallet Standard wallet holding a throwaway key, its DNS answers come from a stub with a synthetic DNSSEC-signed zone, and its Solana RPC is routed to the local validator: any other Solana RPC host is refused in the page and at the browser's network layer, and the run stops if the validator has a public cluster's genesis hash. Every result is read back on-chain over RPC, and every final state is captured at 1440 and 375 pixels wide.</p>
+<pre class="dx-code" data-lang="bash"><code>node solana/scripts/ui-e2e.mjs                 # a fresh validator on 127.0.0.1:8999, the run, then it stops the validator
+node solana/scripts/ui-e2e.mjs --keep          # leaves the validator running afterwards
+node solana/scripts/ui-e2e.mjs --rpc-port N    # another RPC port; it can run next to e2e-local.mjs on 8899</code></pre>
+<p>It writes <code>solana/target/ui-e2e/report.json</code> and the screenshots next to it. <code>BROWSER=</code> picks the Chromium to drive.</p>
 
 <h3 id="testing-contracts">Contract tests</h3>
 <pre class="dx-code" data-lang="bash"><code># once: fetch the pinned Foundry libraries in contracts/lib
@@ -1714,72 +2191,90 @@ FORK_RPC=https://rpc.mainnet.chain.robinhood.com forge test --evm-version osaka 
 <p><code>make-proof.mjs</code> builds proofs the same way the app does, so you can also use it for a claim outside the app: <code>node contracts/script/make-proof.mjs TXT _wallet.yoursite.com &gt; proof.hex</code>. See <a href="#dnssec-proofs">DNSSEC proofs</a>.</p>
 
 <h3 id="testing-before-deploy">Before a deploy</h3>
-<p><code>contracts/script/deploy-robinhood.sh</code> runs the whole Foundry suite with 1,000 fuzz runs before it dry-runs or sends anything. After the deploy, <code>scripts/post-deploy.mjs</code> checks the live wiring, and DEPLOY.md includes a small real-money smoke test. See <a href="#self-hosting">Self-hosting</a>.</p>
+<p>Before redeploying the worker, run <code>npm test</code> and the end-to-end runs on a local validator against the code you will deploy. On Robinhood Chain, <code>contracts/script/deploy-robinhood.sh</code> runs the whole Foundry suite with 1,000 fuzz runs before it dry-runs or sends anything. After the deploy, <code>scripts/post-deploy.mjs</code> checks the live wiring, and DEPLOY.md includes a small real-money smoke test. See <a href="#self-hosting">Self-hosting</a>.</p>
       </section>
 
       <section class="dx-section" id="security" data-group="Operate">
-        <div class="dx-section-head"><span class="dx-kicker">Operate</span><h2>Security</h2><p class="dx-lead">The trust model, how claims are verified, the specifications, and how to report a vulnerability privately.</p></div>
-<p>TYPE/262 takes the attestor and the server out of claims. The escrow pays only a wallet that a DNSSEC proof shows, and the contract checks that proof on-chain, from the DNS root keys down. What remains to trust is DNS itself, the code and, for launches, pons. This section sets out exactly what that means.</p>
+        <div class="dx-section-head"><span class="dx-kicker">Operate</span><h2>Security</h2><p class="dx-lead">The trust model on each chain, how claims are checked, the specifications, and how to report a vulnerability privately.</p></div>
+<p>A claim pays only the wallet a domain's DNSSEC-signed record names. How the record is checked depends on the chain. On Solana, the TYPE/262 worker checks it through two independent resolvers and pays from the domain's vault, whose key it holds. On Robinhood Chain, the contracts verify the signatures themselves, from the DNS root keys down, and no server takes part. This section sets out exactly what each one relies on.</p>
 
 <h3 id="security-trust-model">Trust model</h3>
 <div class="dx-scroll"><table class="dx-table"><thead><tr><th>You rely on</th><th>For</th></tr></thead><tbody>
-<tr><td>ENS's DNSSEC oracle and the IANA root keys</td><td>Checking proofs. <code>DNSSECImpl</code> is ENS's production code, anchored to the root KSK-2017 and KSK-2024. Its ownership is renounced, so nobody can change its algorithms or anchors.</td></tr>
-<tr><td>Your DNS host and registrar</td><td>Control of the domain. Whoever controls a DNSSEC-signed zone can publish a <code>_wallet</code> record and claim that domain's escrow, instantly.</td></tr>
-<tr><td>Cloudflare and Google DNS-over-HTTPS</td><td>Off-chain answers. Resolve, Pay, Verify, the SDK and the CLI trust these resolvers' DNSSEC validation (the AD bit) and flag any disagreement between them.</td></tr>
-<tr><td>pons v2</td><td>Launch fees. pons's contracts create, hold and sweep creator fees, and pons's owner can redirect a token's fee recipient behind a 3-day timelock.</td></tr>
-<tr><td>The escrow admin</td><td>Pausing new deposits and handing the admin role over in two steps. Nothing else.</td></tr>
+<tr><td>The TYPE/262 worker</td><td>Solana vaults. It holds the master secret every vault key derives from, and pays a vault out in claims, to the wallet the domain's record names once Cloudflare and Google agree on it and both report it DNSSEC-authenticated, and in refunds of deposits to their senders. Vaults are custodial: you rely on the worker to keep the secret safe and to follow these rules.</td></tr>
+<tr><td>Cloudflare and Google DNS-over-HTTPS</td><td>DNSSEC validation, reported as the AD bit. Solana vault claims need both resolvers to answer and agree. Resolve, Pay, Verify, the SDK and the CLI query both and flag any disagreement.</td></tr>
+<tr><td>ENS's DNSSEC oracle and the IANA root keys</td><td>Checking proofs on Robinhood Chain. <code>DNSSECImpl</code> is ENS's production code, anchored to the root KSK-2017 and KSK-2024. Its ownership is renounced, so nobody can change its algorithms or anchors.</td></tr>
+<tr><td>Your DNS host and registrar</td><td>Control of the domain. Whoever controls a DNSSEC-signed zone can publish a <code>_wallet</code> record and claim that domain's vault and escrow, instantly.</td></tr>
+<tr><td>pump.fun</td><td>Launch fees on Solana. pump.fun's programs create coins and hold their creator fees until they are swept, and pump.fun's own admin and upgrade keys govern every coin on it, as described in <a href="#solana-launch-trust">Who can move the fees</a>.</td></tr>
+<tr><td>pons v2</td><td>Launch fees on Robinhood Chain. pons's contracts create, hold and sweep creator fees, and pons's owner can redirect a token's fee recipient behind a 3-day timelock.</td></tr>
+<tr><td>The escrow admin on Robinhood Chain</td><td>Pausing new deposits and handing the admin role over in two steps. Nothing else.</td></tr>
 </tbody></table></div>
+<h4>What anyone can check</h4>
+<ul>
+<li><strong>Every vault.</strong> Vault addresses, balances, deposits, payouts and refunds are all on-chain. Each claim payout carries the memo <code>type262:claim:&lt;domain&gt;</code> and each refund <code>type262:refund:&lt;deposit signature&gt;</code>, and the worker keeps no database, so a vault's transaction history is its complete record.</li>
+<li><strong>The code.</strong> The worker is <code>upload/server.mjs</code>, open source with the rest of TYPE/262. The Robinhood Chain contracts are verified on Sourcify with exact matches.</li>
+</ul>
 <h4>What you don't need to trust</h4>
 <ul>
-<li><strong>A server.</strong> No attestor or backend takes part in a claim. Your browser builds the proof from public DNS data, and the contract verifies every signature.</li>
-<li><strong>Whoever submits the proof.</strong> Anyone can submit it, a relayer paying the gas for example, and the money still goes only to the wallet the proof shows.</li>
-<li><strong>The admin.</strong> It can't move funds, change who gets paid, change the fee or the refund delay, or block claims and refunds.</li>
-<li><strong>The fee recipient.</strong> Claim fees are set aside and sent later with <code>withdrawFees</code>, so a fee address that can't receive never blocks a claim.</li>
-<li><strong>The fee forwarder.</strong> It has no owner and can only deposit into its own domain's escrow pool.</li>
+<li><strong>Whoever requests the claim.</strong> On both chains anyone can request or submit one, and the money still goes only to the wallet the domain's record names.</li>
+<li><strong>A single resolver.</strong> A Solana vault claim needs Cloudflare and Google to return the same DNSSEC-authenticated record, so neither one alone can redirect a payout.</li>
+<li><strong>A server, on Robinhood Chain.</strong> No attestor or backend takes part in a claim there. Your browser builds the proof from public DNS data, and the contracts verify every signature.</li>
+<li><strong>The admin, on Robinhood Chain.</strong> It can't move funds, change who gets paid, change the fee or the refund delay, or block claims and refunds.</li>
+<li><strong>The fee recipient, on Robinhood Chain.</strong> Claim fees are set aside and sent later with <code>withdrawFees</code>, so a fee address that can't receive never blocks a claim.</li>
+<li><strong>The fee forwarder, on Robinhood Chain.</strong> It has no owner and can only deposit into its own domain's escrow pool.</li>
 </ul>
 
 <h3 id="security-verification">How it's verified</h3>
-<p>Claims are checked by ENS's DNSSEC oracle, the production code that verifies DNS names on Ethereum, anchored to the IANA root keys with its ownership renounced. The TYPE/262 contracts are open source and verified on Sourcify, and they are covered by unit tests, fuzzing and simulations against Robinhood Chain mainnet, including real DNSSEC proofs and the live pons contracts. See <a href="#testing">Testing</a> and <a href="#deployments">Deployments</a>.</p>
+<p>On Solana, the worker runs the checks in <a href="#solana-claims-checks">What a claim checks</a> before every payout, and the app's Solana screens run end to end in a browser against a local validator with throwaway keys (see <a href="#testing-solana-ui">The app's screens end to end</a>). The on-chain program that would move these checks onto Solana itself is built and covered by LiteSVM suites that replay six real DNSSEC chains from the root, tampered and malformed proofs, the escrow's accounting to the lamport and launches against the mainnet pump.fun programs. See <a href="#solana-program">On-chain program</a>.</p>
+<p>On Robinhood Chain, claims are checked by ENS's DNSSEC oracle, the production code that verifies DNS names on Ethereum, anchored to the IANA root keys with its ownership renounced. The TYPE/262 contracts are open source and verified on Sourcify, and they are covered by unit tests, fuzzing and simulations against Robinhood Chain mainnet, including real DNSSEC proofs and the live pons contracts. See <a href="#testing">Testing</a> and <a href="#deployments">Deployments</a>.</p>
 
 <h3 id="security-dns">Instant claims</h3>
-<p>There is no waiting period. Whoever controls a domain's DNS, with DNSSEC on, can claim the domain's escrow and its launch fees in one transaction. Protect your registrar and DNS host accounts as carefully as a wallet key.</p>
-<p>Escrow orders proofs by when the DNS data was signed. A proof signed earlier than the last one used reverts with <code>StaleProof</code>, so a previous owner's old signed record can't be replayed over a newer one. Use this when a wallet or an owner changes:</p>
-<ol class="dx-steps">
-<li><strong>Publish the new record.</strong> Update <code>_wallet.&lt;domain&gt;</code> to the new wallet, with DNSSEC on.</li>
-<li><strong>Register it.</strong> In the app's Escrow tab, <strong>Register</strong> (shown when nothing is waiting) submits a proof of the current record without moving money. From then on, a record signed before it, such as one naming an old wallet, can never claim later payments.</li>
-</ol>
+<p>There is no waiting period on either chain. Whoever controls a domain's DNS, with DNSSEC on, can claim the domain's vault, its escrow and its launch fees right away. Protect your registrar and DNS host accounts as carefully as a wallet key.</p>
+<p>When a wallet or an owner changes:</p>
+<ul>
+<li><strong>On Solana</strong>, a claim pays the wallet the record names when the claim is requested. Publish the new address, remove the old one, and claim once both resolvers serve the new record; while they disagree, claims are refused. See <a href="#solana-claims-rotate">Changing the wallet</a>.</li>
+<li><strong>On Robinhood Chain</strong>, escrow orders proofs by when the DNS data was signed, and a proof signed earlier than the last one used reverts with <code>StaleProof</code>, so a previous owner's old signed record can't be replayed over a newer one. As soon as the zone serves the new record, <strong>Register</strong> in the app's Escrow tab (shown when nothing is waiting) submits a proof of it without moving money. From then on, a record signed before it can never claim later payments.</li>
+</ul>
 
 <h3 id="security-resolvers">Resolver trust and on-chain verification</h3>
 <p>Two different guarantees apply, depending on what you do:</p>
 <div class="dx-scroll"><table class="dx-table"><thead><tr><th>Feature</th><th>How the record is checked</th></tr></thead><tbody>
 <tr><td>Resolve, Pay, Verify (x402 <code>payTo</code>), the SDK and the CLI</td><td>Off-chain, through Cloudflare and Google DNS-over-HTTPS. You trust the resolvers' DNSSEC validation. <code>verified</code> is true only when records exist, every resolver that answered agrees, and every record is DNSSEC-authenticated. <code>verifyPayTo</code> reports <code>strong</code> when the address matches, the resolvers agree and the matching record is DNSSEC-authenticated.</td></tr>
-<tr><td>Escrow claims, including launch fees</td><td>On-chain. <code>DnssecVerifier</code> has ENS's oracle check the full signature chain from the root keys. No resolver is trusted.</td></tr>
+<tr><td>Solana vault claims, including launch fees</td><td>Off-chain, by the worker: Cloudflare and Google must both answer, return the same record and report it DNSSEC-authenticated.</td></tr>
+<tr><td>Robinhood Chain escrow claims, including launch fees</td><td>On-chain, from the root keys: <code>DnssecVerifier</code> has ENS's oracle check the whole chain. No resolver is trusted.</td></tr>
 </tbody></table></div>
 <p>Before a direct payment, require <code>verified</code> (or <code>strong</code>) rather than just a match. See <a href="#resolution">Resolution</a> and <a href="#payments">Payments</a>.</p>
 
 <h3 id="security-pons">Launchpad trust</h3>
+<p>On Solana, with pump.fun:</p>
+<ul>
+<li><strong>The vault is the creator.</strong> pump.fun's sweeps and collects can only pay the domain's vault, and a claim pays the vault only to the domain's proven owner.</li>
+<li><strong>pump.fun governs its coins.</strong> Its upgrade authority and its community-takeover admin key apply to every pump.fun coin, including a domain's. See <a href="#solana-launch-trust">Who can move the fees</a>.</li>
+<li><strong>Fees need a sweep.</strong> Creator fees reach the vault when someone sweeps and collects them; every claim does, and so does <code>POST /solana/collect</code>.</li>
+</ul>
+<p>On Robinhood Chain, with pons:</p>
 <ul>
 <li><strong>pons's owner can redirect fees.</strong> It can move any pons token's creator fee recipient behind a public 3-day timelock, and the forwarder can't stop it. The token page warns when that has happened or is pending.</li>
 <li><strong>Fees need a sweep.</strong> Curve fees reach pons's fee escrow only when someone sweeps them; pons's operator does, and so does <strong>Collect</strong>. After graduation, fees sit in pons's Uniswap v4 hook until swept. <code>collectPools</code> can sweep them; the app doesn't call it yet.</li>
 <li><strong>pons accounts for fees.</strong> The launcher and the forwarder rely on pons's contracts to credit fees correctly.</li>
 <li><strong>A deposit pause also pauses collection.</strong> Fees stay at pons until deposits resume.</li>
 </ul>
-<p>See <a href="#launchpad">Launchpad</a> for the full flow.</p>
+<p>See <a href="#solana-launch">pump.fun launchpad</a> and <a href="#launchpad">Launchpad</a> for the full flows.</p>
 
 <h3 id="security-limits">Specifications</h3>
 <ul>
-<li><strong>DNSSEC algorithms.</strong> The oracle supports algorithms 5, 7, 8 and 13, which covers the root, .com and Cloudflare-signed zones. Zones signed with other algorithms, such as Ed25519 (15), aren't supported for claims.</li>
-<li><strong>Records.</strong> The contract accepts <code>_wallet.&lt;domain&gt;</code> TXT and <code>WALLET</code> (type 262) at the domain itself. The app builds proofs for the TXT record only.</li>
-<li><strong>Coins and addresses.</strong> Only EVM coin codes count (ETH, EVM, HOOD, USDG, ARB, OP, POL, USDC, USDT, DAI), with exactly <code>0x</code> plus 40 hex digits. Anything else in the record is ignored and can never be claimed to.</li>
-<li><strong>Names.</strong> Escrow accepts only canonical names: lowercase ASCII with punycode for IDNs, labels of 1 to 63 characters, 253 characters at most. Anything else reverts with <code>BadDomain</code>, so one domain can never end up with two pools.</li>
-<li><strong>Wallet type.</strong> Publish a regular wallet address, not a multisig or smart-contract wallet: other apps read <code>ETH</code> and may pay it on Ethereum or other EVM chains.</li>
-<li><strong>Refunds.</strong> A sender can take a deposit back 180 days after their last deposit to that domain and asset, and only if no claim has paid that pool out since. Collected launch fees stay with the domain until its owner claims them.</li>
-<li><strong>Immutability.</strong> The fee, fee recipient and refund delay are fixed at deploy, and the contracts are not upgradeable, so the rules never change under you.</li>
+<li><strong>DNSSEC algorithms.</strong> Solana vault claims accept any algorithm both resolvers validate. Robinhood Chain claims accept 5, 7, 8 and 13. Both cover the root, .com and Cloudflare-signed zones.</li>
+<li><strong>Records.</strong> Both chains accept <code>_wallet.&lt;domain&gt;</code> TXT and <code>WALLET</code> (type 262) at the domain itself. On Solana the worker reads both; on Robinhood Chain the app proves the TXT record.</li>
+<li><strong>Coins and addresses.</strong> On Solana, only <code>SOL</code> lines count, naming a regular wallet: an account owned by the System Program, or one that doesn't exist yet. On Robinhood Chain, only EVM coin codes count (ETH, EVM, HOOD, USDG, ARB, OP, POL, USDC, USDT, DAI), with exactly <code>0x</code> plus 40 hex digits. Anything else in the record is ignored and can never be claimed to.</li>
+<li><strong>Names.</strong> Vaults and escrow pools exist only for canonical names: lowercase ASCII with punycode for IDNs, labels of 1 to 63 characters, 253 characters at most. The worker answers 400 for anything else and the contracts revert with <code>BadDomain</code>, so one domain can never end up with two vaults or two pools.</li>
+<li><strong>Wallet type.</strong> On Robinhood Chain, publish a regular wallet address, not a multisig or smart-contract wallet: other apps read <code>ETH</code> and may pay it on Ethereum or other EVM chains. On Solana, publish a wallet address you control. Vault claims refuse a token account, a mint, a program or any other program-owned account.</li>
+<li><strong>Tokens on Solana.</strong> A claim pays out SOL and every SPL token the vault holds, Token-2022 included.</li>
+<li><strong>Refunds.</strong> On Solana, each deposit can come back to its sender 180 days after it was made, if the domain hasn't claimed since. On Robinhood Chain, a sender can take a deposit back 180 days after their last deposit to that domain and asset, if no claim has paid that pool out since. Collected launch fees stay with the domain until its owner claims them, on both chains.</li>
+<li><strong>Settings.</strong> On Solana, the claim fee (50 basis points) and the refund delay (180 days) are the worker's settings, reported live by <code>GET /solana/status</code>. On Robinhood Chain, the fee, fee recipient and refund delay were set at deploy in contracts that are not upgradeable.</li>
 </ul>
 
 <h3 id="security-reporting">Report a vulnerability</h3>
 <p>Report security issues privately to the maintainers, and don't disclose them publicly until a fix is deployed.</p>
-<p>Say which component is affected (a contract, the SDK, the CLI, the app, the scripts or the upload service), how to reproduce the issue and what impact you see. For a contract issue, a Foundry test against a Robinhood Chain fork is the clearest reproduction.</p>
+<p>Say which component is affected (the worker, a contract, the on-chain program, the SDK, the CLI, the app or the scripts), how to reproduce the issue and what impact you see. For the worker, a run against a local validator with a throwaway master secret is the clearest reproduction; for the on-chain program, a LiteSVM test in <code>solana/tests-rs</code>; for a contract issue, a Foundry test against a Robinhood Chain fork.</p>
       </section>
 
       <section class="dx-section" id="contributing" data-group="Operate">
@@ -1795,12 +2290,20 @@ FORK_RPC=https://rpc.mainnet.chain.robinhood.com forge test --evm-version osaka 
 <tr><td><code>bin/type262.mjs</code></td><td>The <code>type262</code> CLI</td></tr>
 <tr><td><code>assets/app.js</code></td><td>App behaviour</td></tr>
 <tr><td><code>assets/abi.js</code></td><td>The app's minimal ABI encoder and decoder</td></tr>
-<tr><td><code>assets/dnssec.js</code></td><td>Builds DNSSEC proofs in the browser for claims</td></tr>
-<tr><td><code>assets/config.js</code></td><td>Deployed contract addresses, written by <code>scripts/post-deploy.mjs</code></td></tr>
+<tr><td><code>assets/solana.js</code></td><td>The app's Solana client: base58, PDAs, transactions, RPC and Wallet Standard wallets</td></tr>
+<tr><td><code>assets/solana-vault.js</code></td><td>The vault client: the worker's API, vault reads, and pump.fun launches and collects</td></tr>
+<tr><td><code>assets/solana-proof.js</code></td><td>Builds DNSSEC proofs for the on-chain program and plans their transactions</td></tr>
+<tr><td><code>assets/solana-type262.js</code></td><td>The on-chain program's instructions and account readers</td></tr>
+<tr><td><code>assets/solana-escrow.js</code>, <code>assets/solana-launch.js</code></td><td>The Escrow and Launch screens on Solana</td></tr>
+<tr><td><code>assets/dnssec.js</code></td><td>Builds DNSSEC proofs in the browser for Robinhood Chain claims</td></tr>
+<tr><td><code>assets/config.js</code></td><td>Deployed addresses and endpoints; <code>scripts/post-deploy.mjs</code> writes the Robinhood Chain ones</td></tr>
 <tr><td><code>assets/vendor/</code></td><td>A pinned copy of <code>@ensdomains/dnsprovejs</code> 1.0.1</td></tr>
 <tr><td><code>assets/</code> (other files)</td><td>UI helpers, effects, the landing page script, styles and artwork</td></tr>
-<tr><td><code>upload/server.mjs</code></td><td>The image upload service for the Launch form, and the read-only RPC fallback</td></tr>
+<tr><td><code>upload/server.mjs</code>, <code>upload/worker.mjs</code>, <code>upload/vault.mjs</code></td><td>The worker: Solana vault addresses, claims, collects and refunds (<code>worker.mjs</code>, with the rules in <code>vault.mjs</code>); image and metadata uploads for the Launch form; and the read-only RPC fallbacks</td></tr>
 <tr><td><code>test/</code></td><td>JavaScript tests, run by <code>npm test</code></td></tr>
+<tr><td><code>solana/programs/type262/</code></td><td>The on-chain program, built and tested, not deployed: escrow, DNSSEC verifier and pump.fun launcher</td></tr>
+<tr><td><code>solana/tests-rs/</code></td><td>The program's LiteSVM tests, in their own Cargo workspace</td></tr>
+<tr><td><code>solana/docs/</code>, <code>solana/bench/</code>, <code>solana/scripts/</code></td><td>The DNSSEC and pump.fun specifications, the DNSSEC benchmarks and real-proof fixtures, and the fixture, simulation and end-to-end scripts</td></tr>
 <tr><td><code>contracts/src/</code></td><td><code>DomainEscrow</code>, <code>DnssecVerifier</code>, <code>DomainLauncher</code>, <code>DomainFeeForwarder</code>, <code>IDomainVerifier</code> and the pons interfaces</td></tr>
 <tr><td><code>contracts/script/</code></td><td><code>Deploy.s.sol</code>, <code>Oracle.sol</code>, <code>deploy-robinhood.sh</code>, <code>make-proof.mjs</code> and <code>save-deployment.mjs</code></td></tr>
 <tr><td><code>contracts/test/</code></td><td>Foundry unit tests and fork simulations</td></tr>
@@ -1815,13 +2318,13 @@ FORK_RPC=https://rpc.mainnet.chain.robinhood.com forge test --evm-version osaka 
 npm install   # dev dependencies only: viem and @ensdomains/dnsprovejs
 npm test
 npm run dev   # serves http://127.0.0.1:5262 with Python 3</code></pre>
-<p>For contract work, install the Foundry libraries and run <code>npm run test:contracts</code>, as described in <a href="#testing">Testing</a>. You need Node 18 or later.</p>
+<p>For the Solana program, install the toolchain listed in <code>solana/README.md</code> (Rust, the Solana CLI and Anchor) and run <code>cargo test</code> in <code>solana/tests-rs</code>. For contract work, install the Foundry libraries and run <code>npm run test:contracts</code>. Both are described in <a href="#testing">Testing</a>. You need Node 18 or later, and Node 20 or later for the Solana proof tests.</p>
 
 <h3 id="contributing-changes">Propose a change</h3>
 <ol class="dx-steps">
 <li><strong>Agree on the approach.</strong> For anything larger than a small fix, discuss it with the maintainers before you write it.</li>
-<li><strong>Make the change with a test.</strong> SDK changes belong in <code>test/wallet262.test.mjs</code>, new app calls in <code>test/abi.test.mjs</code>, and contract changes in <code>contracts/test/</code>.</li>
-<li><strong>Run the suites.</strong> Run <code>npm test</code>, and <code>npm run test:contracts</code> for contract changes. If you touch escrow, launch or proof flows, also run the fork simulations.</li>
+<li><strong>Make the change with a test.</strong> SDK changes belong in <code>test/wallet262.test.mjs</code>, new app calls in <code>test/abi.test.mjs</code>, worker changes next to <code>test/upload.test.mjs</code>, Solana client changes in the <code>test/solana*.test.mjs</code> files, on-chain program changes in <code>solana/tests-rs/tests/</code>, and contract changes in <code>contracts/test/</code>.</li>
+<li><strong>Run the suites.</strong> Run <code>npm test</code>; <code>cargo test</code> in <code>solana/tests-rs</code> and the precompile tests for program changes; and <code>npm run test:contracts</code> for contract changes. If you touch claims, refunds, launches or proof flows, also run the end-to-end runs on a local validator or the fork simulations for that chain.</li>
 <li><strong>Open a pull request.</strong> Say what changed, why, and how you tested it.</li>
 </ol>
 <div class="dx-note">Report vulnerabilities privately, not in an issue or pull request. See <a href="#security">Security</a>. Never commit a private key or an <code>.env</code> file.</div>
@@ -1833,6 +2336,7 @@ npm run dev   # serves http://127.0.0.1:5262 with Python 3</code></pre>
 <li><strong>A zero-dependency SDK.</strong> <code>lib/wallet262.js</code> imports nothing and runs in browsers and Node 18+ with <code>fetch</code> and DNS-over-HTTPS JSON. The upload service has no dependencies either.</li>
 <li><strong>No runtime packages in the app.</strong> The app encodes contract calls with its own small ABI coder, which <code>test/abi.test.mjs</code> checks against viem, and loads a pinned, vendored copy of dnsprovejs. viem and dnsprovejs are dev dependencies only.</li>
 <li><strong>Formatting.</strong> Match the existing JavaScript: two-space indentation, no semicolons, single-quoted strings.</li>
+<li><strong>Rust.</strong> Anchor 0.31 with the versions pinned in <code>solana/README.md</code>, formatted with <code>cargo fmt</code>. Every instruction takes one <code>&lt;Name&gt;Args</code> struct defined in its module. Errors live in one enum with a code range per module; append inside your range and never renumber, because clients match on the numbers. The admin has no power over funds.</li>
 <li><strong>Solidity.</strong> <code>pragma solidity ^0.8.24</code>, built with solc 0.8.28, the optimizer at 10,000 runs and EVM version shanghai. Custom errors, NatSpec comments, and an MIT SPDX header on every file. The contracts have no proxies, and the admin has no power over funds.</li>
 </ul>
 
@@ -1842,7 +2346,7 @@ npm run dev   # serves http://127.0.0.1:5262 with Python 3</code></pre>
 <!-- /DOCS:CONTENT -->
 
       <footer class="dx-foot">
-        <span>TYPE/262 is <a href="https://github.com/Type262/262" target="_blank" rel="noopener">open source</a> under the MIT license. Not affiliated with IANA, ICANN, Robinhood or pons.</span>
+        <span>TYPE/262 is <a href="https://github.com/Type262/262" target="_blank" rel="noopener">open source</a> under the MIT license. Not affiliated with IANA, ICANN, Solana, pump.fun, Robinhood or pons.</span>
         <div class="socials"><a class="btn sm" href="https://x.com/type_262" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg><span>@type_262</span></a><a class="btn sm" href="https://github.com/Type262/262" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg><span>Type262/262</span></a></div>
       </footer>
     </main>

@@ -25,7 +25,7 @@
   },
   "scripts": {
     "dev": "python -m http.server 5262 --bind 127.0.0.1",
-    "test": "node test/wallet262.test.mjs && node test/abi.test.mjs && node test/upload.test.mjs",
+    "test": "node test/wallet262.test.mjs && node test/abi.test.mjs && node test/upload.test.mjs && node test/vault.test.mjs && node test/vault-worker.test.mjs",
     "test:contracts": "cd contracts && forge test",
     "upload:dev": "node upload/server.mjs"
   },

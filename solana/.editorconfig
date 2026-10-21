@@ -1,0 +1,3 @@
+# Rust code follows rustfmt: 4-space indents.
+[*.rs]
+indent_size = 4
