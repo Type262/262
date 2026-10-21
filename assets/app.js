@@ -23,6 +23,8 @@ const CHAIN = {
   id: 4663, name: 'Robinhood Chain', native: 'ETH',
   stable: { symbol: 'USDG', address: '0x5fc5360d0400a0fd4f2af552add042d716f1d168', decimals: 6 },
   rpc: config.RPC_URL || 'https://rpc.mainnet.chain.robinhood.com', explorer: 'https://robinhoodchain.blockscout.com',
+  // read-only fallback on our server for browsers that can't reach the public RPC (DNS trouble, outages)
+  rpcFallback: config.RPC_FALLBACK || 'https://type262-upload.onrender.com/rpc',
 }
 const SOL_USDC = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'
 
@@ -88,7 +90,7 @@ function watch() {
 }
 
 async function connect() {
-  if (!eth()) throw new Error('No browser wallet found. Install one, or use the payment link.')
+  if (!eth()) throw new Error('No browser wallet found. Install one, or copy the payment link into a phone wallet.')
   const [a] = await eth().request({ method: 'eth_requestAccounts' })
   setAccount(a)
   watch()
@@ -185,17 +187,25 @@ function renderPay() {
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:0.75rem">
       ${evm ? `<button class="btn solid" id="p-send" ${r.agree ? '' : 'disabled'}>Send from wallet</button>` : ''}
-      <a class="btn" id="p-link" href="#" target="_blank" rel="noopener">Open payment link ↗</a>
+      ${PHONE ? '<a class="btn" id="p-link" href="#">Open in wallet app</a>' : ''}
+      <button class="btn" id="p-copy-link" type="button">Copy payment link</button>
       <button class="btn" id="p-copy" type="button">Copy address</button>
     </div>
     <div id="p-status"></div>`
   $$('input[name=pick]', box).forEach(el => el.addEventListener('change', () => { payCtx.pick = +el.value; renderPay() }))
-  const sync = () => { $('#p-link').href = linkFor(rec, kind) }
+  const sync = () => { if ($('#p-link')) $('#p-link').href = linkFor(rec, kind) }
   ;['#p-asset', '#p-amt'].forEach(s => $(s) && $(s).addEventListener('input', sync))
   sync()
   $('#p-copy').addEventListener('click', e => copy(rec.address, e.currentTarget))
+  $('#p-copy-link').addEventListener('click', e => {
+    const link = linkFor(rec, kind)
+    if (link === '#') $('#p-status').innerHTML = '<div class="note warn">Enter a valid amount first.</div>'
+    else { $('#p-status').innerHTML = ''; copy(link, e.currentTarget) }
+  })
   if (evm) $('#p-send').addEventListener('click', () => send(rec))
 }
+
+const PHONE = navigator.userAgentData ? navigator.userAgentData.mobile : /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
 
 function linkFor(rec, kind) {
   const amount = $('#p-amt').value.trim()
@@ -232,9 +242,30 @@ async function send(rec) {
 const ZERO = '0x0000000000000000000000000000000000000000'
 const pause = ms => new Promise(r => setTimeout(r, ms))
 
+// The public RPC first. If it can't be reached, the fallback serves reads for the next minute.
+let publicDownAt = 0
+async function rpcPost(payload) {
+  const body = JSON.stringify(payload)
+  const urls = Date.now() - publicDownAt < 60_000 ? [CHAIN.rpcFallback, CHAIN.rpc] : [CHAIN.rpc, CHAIN.rpcFallback]
+  let last
+  for (const url of urls) {
+    try {
+      // the fallback may need a cold start on the host
+      const res = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body, signal: AbortSignal.timeout(url === CHAIN.rpc ? 20_000 : 60_000) })
+      if (!res.ok && (res.status >= 500 || res.status === 429 || url !== CHAIN.rpc)) throw new Error(`RPC answered ${res.status}`)
+      const j = await res.json()
+      if (url === CHAIN.rpc) publicDownAt = 0
+      return j
+    } catch (err) {
+      last = err
+      if (url === CHAIN.rpc) publicDownAt = Date.now()
+    }
+  }
+  throw new Error(`Can't reach Robinhood Chain right now (${last.message}). Try again in a moment.`)
+}
+
 async function rpc(method, params) {
-  const res = await fetch(CHAIN.rpc, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }) })
-  const j = await res.json()
+  const j = await rpcPost({ jsonrpc: '2.0', id: 1, method, params })
   if (j.error) throw new Error(j.error.message)
   return j.result
 }
@@ -631,11 +662,7 @@ async function batch(calls) {
   const out = []
   for (let i = 0; i < calls.length; i += 40) {
     const chunk = calls.slice(i, i + 40)
-    const res = await fetch(CHAIN.rpc, {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(chunk.map((c, id) => ({ jsonrpc: '2.0', id, method: c.method || 'eth_call', params: c.params || [{ to: c.to, data: c.data }, 'latest'] }))),
-    })
-    const arr = [].concat(await res.json())
+    const arr = [].concat(await rpcPost(chunk.map((c, id) => ({ jsonrpc: '2.0', id, method: c.method || 'eth_call', params: c.params || [{ to: c.to, data: c.data }, 'latest'] }))))
     const byId = new Map(arr.map(r => [r.id, r]))
     chunk.forEach((_, id) => { const r = byId.get(id); out.push(!r || r.error ? null : r.result) })
   }

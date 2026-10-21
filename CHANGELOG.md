@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- A read-only RPC fallback, `POST /rpc` on the upload service. When a browser can't reach the public Robinhood Chain RPC, for example because of a DNS failure, the app reads through it for a minute. It forwards read methods only, from the site's origin only, with a per-IP limit, and can use a keyed provider URL kept as a server secret.
+
+### Fixed
+
+- The Pay tab copies the payment link on desktop, where browsers can't open `ethereum:`, `bitcoin:` or `solana:` links, and opens it in a wallet app on phones.
+
 ## [0.1.0] - 2026-10-21
 
 The first public release. TYPE/262 switches on the DNS `WALLET` record (RRTYPE 262, allocated by IANA on 2024-06-21), so any domain can be resolved, verified and paid in USDG or ETH on Robinhood Chain (chain id 4663).

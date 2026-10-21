@@ -277,7 +277,7 @@ The full record, including the signature algorithms and digests, is in [`deploym
 ├── assets/                             site scripts, styles and art
 ├── lib/wallet262.js                    zero-dependency SDK for browsers and Node 18+
 ├── bin/type262.mjs                     CLI
-├── upload/server.mjs                   image upload service for coin launches (IPFS via Pinata)
+├── upload/server.mjs                   image uploads (IPFS via Pinata) and the read-only RPC fallback
 ├── contracts/                          Foundry: escrow, verifier, launcher, forwarder
 ├── deployments/                        addresses and transactions of the live deployment
 ├── scripts/                            site build and post-deploy scripts

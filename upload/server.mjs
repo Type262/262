@@ -1,11 +1,15 @@
-// TYPE/262 image upload. The Launch form's "Choose image" posts a file here; it is pinned to IPFS with
-// Pinata and the token gets ipfs://<cid>, the same kind of link pons stores. The Pinata key stays on the
-// server. Zero dependencies (Node 18+).
+// TYPE/262 image upload and RPC fallback. The Launch form's "Choose image" posts a file to /image; it is
+// pinned to IPFS with Pinata and the token gets ipfs://<cid>, the same kind of link pons stores. /rpc is a
+// read-only Robinhood Chain RPC the app falls back to when a browser can't reach the public one. Keys stay on
+// the server. Zero dependencies (Node 18+).
 //
 //   PINATA_JWT     Pinata API key (JWT) that can upload files. Required.
 //   ALLOW_ORIGINS  comma-separated origins allowed to upload (default https://type262.onrender.com)
 //   RATE_MAX       uploads per IP per 10 minutes (default 12)
 //   PINATA_URL     upload endpoint (default Pinata v3); tests point it at a mock
+//   ROBINHOOD_RPC_URL  keyed Robinhood Chain RPC for /rpc, tried first (optional; secret, never logged)
+//   PUBLIC_RPC_URL     public RPC tried after it (default https://rpc.mainnet.chain.robinhood.com)
+//   RPC_RATE_MAX       /rpc requests per IP per minute (default 240)
 import http from 'node:http'
 
 const PORT = Number(process.env.PORT || 8787)
@@ -45,13 +49,13 @@ function send(res, status, body, origin) {
   res.end(JSON.stringify(body))
 }
 
-function readBody(req) {
+function readBody(req, max = MAX_BODY, tooBig = 'Images must be 5 MB or smaller.') {
   return new Promise((resolve, reject) => {
     const chunks = []
     let size = 0
     req.on('data', c => {
       size += c.length
-      if (size > MAX_BODY) { reject(Object.assign(new Error('Images must be 5 MB or smaller.'), { status: 413 })); req.destroy(); return }
+      if (size > max) { reject(Object.assign(new Error(tooBig), { status: 413 })); req.destroy(); return }
       chunks.push(c)
     })
     req.on('end', () => resolve(Buffer.concat(chunks)))
@@ -73,13 +77,78 @@ async function pin(bytes, format) {
   return cid
 }
 
+// ---------- /rpc ----------
+
+const KEYED_RPC = (process.env.ROBINHOOD_RPC_URL || '').trim()
+const PUBLIC_RPC = (process.env.PUBLIC_RPC_URL || 'https://rpc.mainnet.chain.robinhood.com').trim()
+const RPC_RATE_MAX = Number(process.env.RPC_RATE_MAX || 240)
+const RPC_MAX_BODY = 64 * 1024
+const RPC_MAX_BATCH = 50
+// Reads only: nothing that signs, sends or subscribes.
+const READ_METHODS = new Set(['eth_chainId', 'net_version', 'eth_blockNumber', 'eth_call', 'eth_estimateGas', 'eth_gasPrice',
+  'eth_getBalance', 'eth_getCode', 'eth_getLogs', 'eth_getBlockByNumber', 'eth_getTransactionCount', 'eth_getTransactionByHash',
+  'eth_getTransactionReceipt'])
+// Keyed providers cap eth_getLogs ranges far below the public node, so log queries try the public node first.
+const upstreamsFor = methods => (methods.includes('eth_getLogs') ? [PUBLIC_RPC, KEYED_RPC] : [KEYED_RPC, PUBLIC_RPC]).filter(Boolean)
+// Move on to the next upstream only when this one is unavailable, never on an ordinary error such as a revert.
+const DOWN = /not enabled|unauthori|api key|forbidden|rate limit|too many requests|capacity|unavailable/i
+const unavailable = j => [].concat(j).every(x => x && x.error && (x.error.code === -32005 || x.error.code === 429 || DOWN.test(String(x.error.message || ''))))
+const rpcError = (code, message) => ({ jsonrpc: '2.0', id: null, error: { code, message } })
+
+const rpcHits = new Map() // ip -> request times in the last minute
+function rpcLimited(ip) {
+  const now = Date.now()
+  const recent = (rpcHits.get(ip) || []).filter(t => now - t < 60_000)
+  recent.push(now)
+  rpcHits.set(ip, recent)
+  if (rpcHits.size > 50_000) for (const [k, v] of rpcHits) if (!v.some(t => now - t < 60_000)) rpcHits.delete(k)
+  return recent.length > RPC_RATE_MAX
+}
+
+async function proxyRpc(req, res, origin, ip) {
+  if (rpcLimited(ip)) return send(res, 429, rpcError(-32005, 'Too many requests. Try again in a minute.'), origin)
+  let msg
+  try { msg = JSON.parse((await readBody(req, RPC_MAX_BODY, 'Request too large.')).toString('utf8')) } catch (err) {
+    return send(res, err.status || 400, rpcError(-32700, err.status ? err.message : 'Parse error'), origin)
+  }
+  const calls = [].concat(msg)
+  if (!calls.length || calls.length > RPC_MAX_BATCH || calls.some(c => !c || typeof c !== 'object' || c.jsonrpc !== '2.0' || typeof c.method !== 'string')) {
+    return send(res, 400, rpcError(-32600, `Invalid request (at most ${RPC_MAX_BATCH} calls per batch).`), origin)
+  }
+  const refused = calls.find(c => !READ_METHODS.has(c.method))
+  if (refused) return send(res, 400, rpcError(-32601, `${refused.method} is not available through this RPC.`), origin)
+
+  const body = JSON.stringify(msg)
+  let first
+  for (const [i, url] of upstreamsFor(calls.map(c => c.method)).entries()) {
+    try {
+      const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'application/json' }, body, signal: AbortSignal.timeout(20_000) })
+      if (r.status === 429 || r.status === 401 || r.status === 403 || r.status >= 500) { console.error(`rpc upstream ${i} unavailable (${r.status})`); continue }
+      const j = await r.json()
+      if (!unavailable(j)) return send(res, 200, j, origin)
+      first ??= j
+      console.error(`rpc upstream ${i} unavailable (${String([].concat(j)[0].error.message).slice(0, 80)})`)
+    } catch (err) {
+      console.error(`rpc upstream ${i} unreachable (${err.name})`)
+    }
+  }
+  return first ? send(res, 200, first, origin) : send(res, 502, rpcError(-32603, 'Robinhood Chain RPC is unreachable right now.'), origin)
+}
+
+const clientIp = req => {
+  // The edge sets cf-connecting-ip; otherwise the last x-forwarded-for hop is the one our proxy added
+  // (the first can be forged by the client).
+  const xff = String(req.headers['x-forwarded-for'] || '').split(',').map(s => s.trim()).filter(Boolean)
+  return String(req.headers['cf-connecting-ip'] || xff.at(-1) || req.socket.remoteAddress || '')
+}
+
 const server = http.createServer(async (req, res) => {
   const origin = req.headers.origin || ''
   const path = new URL(req.url, 'http://x').pathname
 
-  if (req.method === 'GET' && path === '/health') return send(res, 200, { ok: true, ready: !!JWT }, origin)
+  if (req.method === 'GET' && path === '/health') return send(res, 200, { ok: true, ready: !!JWT, rpc: true }, origin)
 
-  if (path !== '/image') return send(res, 404, { error: 'Not found' }, origin)
+  if (path !== '/image' && path !== '/rpc') return send(res, 404, { error: 'Not found' }, origin)
   if (req.method === 'OPTIONS') {
     if (!ORIGINS.has(origin)) { res.writeHead(403); return res.end() }
     res.writeHead(204, { 'access-control-allow-origin': origin, 'access-control-allow-methods': 'POST', 'access-control-allow-headers': 'content-type', 'access-control-max-age': '86400', vary: 'Origin' })
@@ -87,12 +156,10 @@ const server = http.createServer(async (req, res) => {
   }
   if (req.method !== 'POST') return send(res, 405, { error: 'Use POST' }, origin)
   if (!ORIGINS.has(origin)) return send(res, 403, { error: 'Forbidden' }, origin)
+  if (path === '/rpc') return proxyRpc(req, res, origin, clientIp(req))
   if (!JWT) return send(res, 503, { error: 'Uploads are not set up yet. Paste an image link instead.' }, origin)
 
-  // The edge sets cf-connecting-ip; otherwise the last x-forwarded-for hop is the one our proxy added
-  // (the first can be forged by the client).
-  const xff = String(req.headers['x-forwarded-for'] || '').split(',').map(s => s.trim()).filter(Boolean)
-  const ip = String(req.headers['cf-connecting-ip'] || xff.at(-1) || req.socket.remoteAddress || '')
+  const ip = clientIp(req)
   if (rateLimited(ip)) return send(res, 429, { error: 'Too many uploads. Try again in a few minutes.' }, origin)
   if (Number(req.headers['content-length'] || 0) > MAX_BODY) return send(res, 413, { error: 'Images must be 5 MB or smaller.' }, origin)
   if (!/^multipart\/form-data/i.test(req.headers['content-type'] || '')) return send(res, 400, { error: 'Send the image as multipart/form-data.' }, origin)
@@ -118,4 +185,4 @@ const server = http.createServer(async (req, res) => {
 })
 server.requestTimeout = 60_000
 server.headersTimeout = 20_000
-server.listen(PORT, () => console.log(`type262 upload on :${PORT} (${JWT ? 'ready' : 'PINATA_JWT not set'}; origins: ${[...ORIGINS].join(', ')})`))
+server.listen(PORT, () => console.log(`type262 upload on :${PORT} (${JWT ? 'ready' : 'PINATA_JWT not set'}; rpc: ${KEYED_RPC ? 'keyed + public' : 'public'}; origins: ${[...ORIGINS].join(', ')})`))

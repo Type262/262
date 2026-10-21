@@ -1,6 +1,7 @@
 # Render blueprint for TYPE/262.
 # type262: the static landing page, app and docs. Claims are checked on-chain with DNSSEC, so the app has no backend.
-# type262-upload: pins Launch-form images to IPFS through Pinata, so the Pinata key never reaches the browser.
+# type262-upload: pins Launch-form images to IPFS through Pinata, and serves the read-only /rpc fallback,
+# so the Pinata key and any RPC key never reach the browser.
 services:
   - type: web
     name: type262
@@ -24,3 +25,5 @@ services:
         sync: false
       - key: ALLOW_ORIGINS
         value: https://type262.onrender.com
+      - key: ROBINHOOD_RPC_URL # optional keyed Robinhood Chain RPC for /rpc, tried before the public one; never commit it
+        sync: false

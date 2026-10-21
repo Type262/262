@@ -102,7 +102,7 @@ launch   trades ──▶ pons fee escrow ──collect──▶ DomainFeeForwar
 <tr><td><code>docs.html</code></td><td>This documentation</td></tr>
 <tr><td><code>lib/wallet262.js</code></td><td>Zero-dependency SDK for browsers and Node 18+</td></tr>
 <tr><td><code>bin/type262.mjs</code></td><td>CLI</td></tr>
-<tr><td><code>upload/server.mjs</code></td><td>Image upload for the Launch form: pins images to IPFS through Pinata, so the Pinata key stays on the server</td></tr>
+<tr><td><code>upload/server.mjs</code></td><td>Image upload for the Launch form, pinned to IPFS through Pinata, and a read-only RPC fallback. Its keys stay on the server</td></tr>
 <tr><td><code>test/</code></td><td>Offline SDK tests, ABI-parity tests against viem, and upload-server tests against a mock Pinata</td></tr>
 <tr><td><code>contracts/</code></td><td>Foundry project: escrow, verifier, launcher and forwarder contracts, tests and deploy scripts</td></tr>
 <tr><td><code>assets/dnssec.js</code></td><td>Builds DNSSEC proofs in the browser for claims</td></tr>
@@ -1569,6 +1569,7 @@ cd dist &amp;&amp; python -m http.server 5262 --bind 127.0.0.1</code></pre>
 <tr><td><code>LAUNCHER_ADDRESS</code></td><td>none</td><td>The <code>DomainLauncher</code> address. Without it, the Launch tab reports that the launcher isn't deployed and disables launching.</td></tr>
 <tr><td><code>RPC_URL</code></td><td><code>https://rpc.mainnet.chain.robinhood.com</code></td><td>The JSON-RPC endpoint the app reads from, and the RPC it gives your wallet when it adds Robinhood Chain.</td></tr>
 <tr><td><code>UPLOAD_URL</code></td><td><code>https://type262-upload.onrender.com</code></td><td>The image upload service for the Launch form.</td></tr>
+<tr><td><code>RPC_FALLBACK</code></td><td><code>https://type262-upload.onrender.com/rpc</code></td><td>Read-only RPC the app uses when a browser can't reach <code>RPC_URL</code>, for example because of a DNS failure. After a failure it serves reads for a minute, then the app tries <code>RPC_URL</code> again.</td></tr>
 </tbody></table></div>
 <div class="dx-note"><code>scripts/post-deploy.mjs</code> rewrites the whole file with only <code>ESCROW_ADDRESS</code> and <code>LAUNCHER_ADDRESS</code>. If you set <code>RPC_URL</code> or <code>UPLOAD_URL</code>, add them back after running it.</div>
 
@@ -1583,6 +1584,7 @@ cd dist &amp;&amp; python -m http.server 5262 --bind 127.0.0.1</code></pre>
 </tbody></table></div>
 <pre class="dx-code" data-lang="bash"><code>PINATA_JWT=your-pinata-jwt ALLOW_ORIGINS=http://127.0.0.1:5262 npm run upload:dev</code></pre>
 <p>Then add <code>export const UPLOAD_URL = 'http://127.0.0.1:8787'</code> to <code>assets/config.js</code>. The service accepts <code>POST /image</code> with the file in a multipart field named <code>image</code>. It checks the bytes, not the declared type: only PNG, JPEG and WebP up to 5 MB are pinned, and SVG is refused. <code>GET /health</code> reports whether a Pinata key is configured.</p>
+<p>The same service answers <code>POST /rpc</code>, a read-only Robinhood Chain RPC the app falls back to when a browser can't reach the public one. It forwards only read methods such as <code>eth_call</code>, <code>eth_getLogs</code> and <code>eth_getTransactionReceipt</code>, never anything that signs or sends, accepts requests only from <code>ALLOW_ORIGINS</code>, and limits each IP to <code>RPC_RATE_MAX</code> requests a minute (default 240). It tries <code>ROBINHOOD_RPC_URL</code> first when you set one, such as a keyed provider URL kept as a secret on the host, and the public RPC after it; log queries go to the public RPC first, because keyed providers usually cap their block range. It moves to the next RPC only when one is unavailable, so a revert is returned as is.</p>
 
 <h3 id="self-hosting-contracts">Deploy your own contracts</h3>
 <p>You need this only for a separate deployment, for example on a fork of the project. One script checks the network, your balance and the tests, dry-runs the deploy with its real cost, and asks for confirmation before it sends anything. Run every command from the repository root in a Bash shell (Git Bash on Windows).</p>
@@ -1667,7 +1669,7 @@ npm test</code></pre>
 <div class="dx-scroll"><table class="dx-table"><thead><tr><th>File</th><th>What it checks</th></tr></thead><tbody>
 <tr><td><code>test/wallet262.test.mjs</code></td><td>13 SDK tests: <code>WALLET</code> RDATA encoding and parsing (and rejection of malformed RDATA), the <code>_wallet</code> TXT fallback forms, domain normalization for URLs, emails and IDNs, address kinds, USDG transfer calldata, the EIP-681 link on Robinhood Chain, <code>parseUnits</code> precision, x402 <code>payTo</code> extraction, and <code>verifyPayTo</code> against mocked DNS.</td></tr>
 <tr><td><code>test/abi.test.mjs</code></td><td>The app's hand-written ABI code in <code>assets/abi.js</code> agrees with viem byte for byte: <code>launch</code>, <code>collect</code> and paged <code>launchesOf</code> calldata, and decoding of <code>recent</code>, <code>launchOf</code> and strings.</td></tr>
-<tr><td><code>test/upload.test.mjs</code></td><td>Starts <code>upload/server.mjs</code> against a mock Pinata and checks 13 behaviours: health, pinning, CORS and the origin allowlist, content checks that refuse non-images and SVG, the 5 MB limit, a missing file field, and the rate limit.</td></tr>
+<tr><td><code>test/upload.test.mjs</code></td><td>Starts <code>upload/server.mjs</code> against a mock Pinata and checks the upload behaviours: health, pinning, CORS and the origin allowlist, content checks that refuse non-images and SVG, the 5 MB limit, a missing file field, and the rate limit.</td></tr>
 </tbody></table></div>
 <p>None of these tests need the network. DNS is mocked, and the upload test runs its own mock Pinata.</p>
 
@@ -1797,7 +1799,7 @@ FORK_RPC=https://rpc.mainnet.chain.robinhood.com forge test --evm-version osaka 
 <tr><td><code>assets/config.js</code></td><td>Deployed contract addresses, written by <code>scripts/post-deploy.mjs</code></td></tr>
 <tr><td><code>assets/vendor/</code></td><td>A pinned copy of <code>@ensdomains/dnsprovejs</code> 1.0.1</td></tr>
 <tr><td><code>assets/</code> (other files)</td><td>UI helpers, effects, the landing page script, styles and artwork</td></tr>
-<tr><td><code>upload/server.mjs</code></td><td>The image upload service for the Launch form</td></tr>
+<tr><td><code>upload/server.mjs</code></td><td>The image upload service for the Launch form, and the read-only RPC fallback</td></tr>
 <tr><td><code>test/</code></td><td>JavaScript tests, run by <code>npm test</code></td></tr>
 <tr><td><code>contracts/src/</code></td><td><code>DomainEscrow</code>, <code>DnssecVerifier</code>, <code>DomainLauncher</code>, <code>DomainFeeForwarder</code>, <code>IDomainVerifier</code> and the pons interfaces</td></tr>
 <tr><td><code>contracts/script/</code></td><td><code>Deploy.s.sol</code>, <code>Oracle.sol</code>, <code>deploy-robinhood.sh</code>, <code>make-proof.mjs</code> and <code>save-deployment.mjs</code></td></tr>
