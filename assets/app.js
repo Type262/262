@@ -740,6 +740,12 @@ if (!LAUNCHER_ADDRESS) {
 }
 
 function showLaunch(arg) {
+  if (arg.startsWith('new/')) {
+    let d = ''
+    try { d = normalizeDomain(arg.slice(4)) } catch {}
+    if (d) { fld('domain').value = d; onDomain() }
+    arg = 'new'
+  }
   const sub = arg === 'new' ? 'new' : /^0x[0-9a-fA-F]{40}$/.test(arg) ? 'token' : 'board'
   $$('.ln-pane').forEach(p => p.classList.toggle('on', p.id === `ln-${sub}`))
   $$('.ln-switch a').forEach(a => a.classList.toggle('on', a.dataset.lv === sub))

@@ -191,6 +191,7 @@ a.tag:hover, button.tag:hover { background: var(--fg); color: var(--bg); border-
 .cmp { display: grid; gap: 1.75rem; padding: clamp(1.75rem, 3.4vw, 3rem); border: 1px solid var(--line-2); background: var(--bg-2); }
 .cmp-top { display: flex; justify-content: space-between; align-items: flex-start; }
 .cmp .num { font-size: clamp(6rem, 12vw, 11.5rem); }
+.hero-alt { margin: 0.875rem 0 0; font-size: 0.875rem; color: var(--dim); }
 .cmp .track { position: relative; height: 2px; background: var(--line-2); }
 .cmp .track i { position: absolute; inset: 0; background: var(--fg); transform-origin: left; transform: scaleX(calc(var(--p, 0) * var(--max, 1))); }
 .cmp.now .track i { background: var(--fg); }

@@ -1,5 +1,5 @@
-import { resolveWallets } from '../lib/wallet262.js'
-import { esc, renderResult, renderError, loading, pool, TOP } from './ui.js'
+import { resolveWallets, normalizeDomain } from '../lib/wallet262.js'
+import { esc, renderError, pool, TOP } from './ui.js'
 import { $, $$, reduced, intro, reveal, onProgress, flap, ambient, parallax } from './fx.js'
 
 const sleep = ms => new Promise(r => setTimeout(r, ms))
@@ -19,7 +19,7 @@ addEventListener('scroll', solid, { passive: true })
 solid()
 
 // ---------- hero: "Every domain is a wallet." then the word becomes real domains ----------
-const WORDS = ['stripe.com', 'nytimes.com', 'x402.org', 'openai.com', 'robinhood.com', 'wikipedia.org', 'github.com', 'yoursite.com', 'domain']
+const WORDS = ['stripe.com', 'chess.com', 'nytimes.com', 'slither.io', 'openai.com', 'wikipedia.org', 'x402.org', 'yourapp.com', 'domain']
 const heroFlap = $('#hero-flap')
 intro().then(async () => {
   if (reduced) return
@@ -44,13 +44,14 @@ if (!reduced && matchMedia('(hover: hover)').matches) {
 }
 addEventListener('scroll', () => flora.style.setProperty('--par', `${(scrollY * 0.25).toFixed(1)}px`), { passive: true })
 
-// ---------- hero: live resolver ----------
+// ---------- hero: launch a coin for a domain ----------
 const tryOut = $('#try-out')
-$('#try-form').addEventListener('submit', async e => {
+$('#try-form').addEventListener('submit', e => {
   e.preventDefault()
-  const d = $('#try-in').value || $('#try-in').placeholder
-  loading(tryOut)
-  try { renderResult(tryOut, await resolveWallets(d)) } catch (err) { renderError(tryOut, err.message) }
+  const raw = $('#try-in').value.trim()
+  if (!raw) { location.href = 'app.html#launch/new'; return }
+  // www.yourapp.com means yourapp.com: fees go to the name that publishes the record
+  try { location.href = `app.html#launch/new/${normalizeDomain(raw).replace(/^www\./, '')}` } catch (err) { renderError(tryOut, err.message) }
 })
 
 // ---------- 01 compare tracks ----------
