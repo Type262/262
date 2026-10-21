@@ -30,7 +30,7 @@
         <a href="#escrow">Vaults</a>
         <a href="#adoption">Adoption</a>
       </nav>
-      <div class="end"><a class="btn sm" href="docs.html">Docs</a><a class="btn sm icon hide-sm" href="https://x.com/type_262" target="_blank" rel="noopener" aria-label="TYPE/262 on X" title="@type_262 on X"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a><a class="btn sm icon hide-sm" href="https://github.com/Type262/262" target="_blank" rel="noopener" aria-label="TYPE/262 on GitHub" title="Type262/262 on GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></a><a class="btn primary sm" href="app.html#launch/new">Launch a coin</a></div>
+      <div class="end"><a class="btn sm hide-sm" href="board">Board</a><a class="btn sm" href="docs.html">Docs</a><a class="btn sm icon hide-sm" href="https://x.com/type_262" target="_blank" rel="noopener" aria-label="TYPE/262 on X" title="@type_262 on X"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a><a class="btn sm icon hide-sm" href="https://github.com/Type262/262" target="_blank" rel="noopener" aria-label="TYPE/262 on GitHub" title="Type262/262 on GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></a><a class="btn primary sm" href="app.html#launch/new">Launch a coin</a></div>
     </div>
   </header>
 
@@ -155,7 +155,8 @@
           <h2 class="h2 split">x402 made URLs payable. 262 makes them <span class="accent">accountable.</span></h2>
           <p class="body" data-reveal>When an API answers <b>402 Payment Required</b>, it tells your agent where to send money, and the agent just trusts it. A hijacked server or a prompt injection can swap that address.</p>
           <p class="body" data-reveal>TYPE/262 adds one check: <b>does this address belong to the domain I'm talking to?</b> One line of code, answered by DNS.</p>
-          <a class="btn" href="app.html#verify" data-reveal>Try the verifier</a>
+          <p class="body" data-reveal>Or give your agent the whole thing. The <b>TYPE/262 MCP server</b> lets Claude, Cursor or any MCP client pay a website by name in USDG or ETH on Robinhood Chain, inside spend limits no prompt can talk its way past.</p>
+          <div class="ag-actions" data-reveal><a class="btn primary" href="docs.html#mcp">Add it to your agent</a><a class="btn" href="app.html#verify">Try the verifier</a></div>
         </div>
         <div class="term" data-reveal data-d="1">
           <div class="term-bar"><div class="dots"><i></i><i></i><i></i></div><span class="label">agent · x402 client</span></div>
@@ -188,6 +189,21 @@
       </div>
     </section>
 
+    <!-- live: the unclaimed board -->
+    <section class="section" id="waiting">
+      <div class="container">
+        <div class="wt-head">
+          <div>
+            <span class="eyebrow" data-reveal>Live · The Unclaimed Board</span>
+            <h2 class="h2 split">Money waiting for <span class="accent">the internet.</span></h2>
+          </div>
+          <div class="wt-total" data-reveal><span class="label">Waiting on Robinhood Chain</span><b id="wt-total">…</b><em id="wt-sub">Reading Robinhood Chain…</em></div>
+        </div>
+        <div class="wt-list" id="wt-list" data-reveal></div>
+        <div class="wt-actions" data-reveal><a class="btn primary" href="board">Open the board</a><a class="btn" href="app.html?net=robinhood#escrow">Send a website money</a></div>
+      </div>
+    </section>
+
     <!-- 05 adoption -->
     <section class="section" id="adoption">
       <img class="bg-art bg-myc" loading="lazy" decoding="async" src="assets/art/mycelium.webp" alt="" aria-hidden="true">
@@ -216,9 +232,11 @@
         <ol class="road">
           <li data-reveal><span><span class="tag good">Live</span></span><div><h3 class="h3">Website coins</h3><p class="body">Launch a coin for any app, web game or website on pump.fun, with the domain's vault as its creator, so every creator fee goes to the domain. The owner claims them with a DNSSEC-signed record. Also on pons, on Robinhood Chain. <a class="ul" href="app.html#launch">Open the launchpad →</a></p></div><span class="label">01</span></li>
           <li data-reveal><span><span class="tag good">Live</span></span><div><h3 class="h3">A vault for every domain</h3><p class="body">Pay any domain before it publishes: SOL, USDC or any token to its vault on Solana, or into escrow on Robinhood Chain. Owners claim instantly once their DNSSEC-signed record names a wallet; senders can refund after 180 days. <a class="ul" href="app.html#escrow">Send a website money →</a></p></div><span class="label">02</span></li>
-          <li data-reveal><span><span class="tag good">Live</span></span><div><h3 class="h3">Claims checked by DNSSEC</h3><p class="body">A claim pays only the wallet the domain's signed record names. On Solana, TYPE/262 pays a vault out once Cloudflare and Google agree on that record and both validated its signatures. On Robinhood Chain, ENS's oracle verifies them on-chain from the DNS root keys.</p></div><span class="label">03</span></li>
-          <li data-reveal><span><span class="tag good">Live</span></span><div><h3 class="h3">Resolve, pay, publish, verify</h3><p class="body">Look up any name, pay it USDC or SOL from your wallet, generate your record and check x402 payTo addresses against DNS. App, SDK and CLI.</p></div><span class="label">04</span></li>
-          <li data-reveal><span><span class="tag">Next</span></span><div><h3 class="h3">DNSSEC on-chain on Solana</h3><p class="body">A Solana program that verifies DNSSEC itself, from the root keys, so Solana claims need no server: RSA in the program, P-256 and Ed25519 through Solana's native precompiles. Built and tested in the repository, ready for a later deploy.</p></div><span class="label">05</span></li>
+          <li data-reveal><span><span class="tag good">Live</span></span><div><h3 class="h3">The Unclaimed Board</h3><p class="body">Every website with money waiting on Robinhood Chain, ranked live from the chain, and a public profile for every domain. <a class="ul" href="board">Open the board →</a></p></div><span class="label">03</span></li>
+          <li data-reveal><span><span class="tag good">Live</span></span><div><h3 class="h3">Pay-by-name for AI agents</h3><p class="body">An MCP server that lets any agent resolve, verify and pay domains on Robinhood Chain, with spend limits enforced outside the model. <a class="ul" href="docs.html#mcp">Set it up →</a></p></div><span class="label">04</span></li>
+          <li data-reveal><span><span class="tag good">Live</span></span><div><h3 class="h3">Claims checked by DNSSEC</h3><p class="body">A claim pays only the wallet the domain's signed record names. On Solana, TYPE/262 pays a vault out once Cloudflare and Google agree on that record and both validated its signatures. On Robinhood Chain, ENS's oracle verifies them on-chain from the DNS root keys.</p></div><span class="label">05</span></li>
+          <li data-reveal><span><span class="tag good">Live</span></span><div><h3 class="h3">Resolve, pay, publish, verify</h3><p class="body">Look up any name, pay it USDC or SOL from your wallet, generate your record and check x402 payTo addresses against DNS. App, SDK and CLI.</p></div><span class="label">06</span></li>
+          <li data-reveal><span><span class="tag">Next</span></span><div><h3 class="h3">DNSSEC on-chain on Solana</h3><p class="body">A Solana program that verifies DNSSEC itself, from the root keys, so Solana claims need no server: RSA in the program, P-256 and Ed25519 through Solana's native precompiles. Built and tested in the repository, ready for a later deploy.</p></div><span class="label">07</span></li>
         </ol>
       </div>
     </section>
@@ -244,6 +262,7 @@
         <a href="app.html">App</a>
         <a href="app.html#publish">Publish</a>
         <a href="app.html#escrow">Escrow</a>
+        <a href="board">Unclaimed Board</a>
         <a href="docs.html">Docs</a>
         <a href="docs.html#sdk">SDK</a>
         <a href="https://www.iana.org/assignments/dns-parameters/dns-parameters.xhtml#dns-parameters-4" target="_blank" rel="noopener">IANA registry ↗</a>

@@ -51,6 +51,7 @@ console.log(`ok  admin ${await addrAt(escrow, '0xf851a440')}, fee ${BigInt(await
 writeFileSync(new URL('../assets/config.js', import.meta.url), `// Robinhood Chain mainnet deployment (${dep.deployedAt}, commit ${dep.commit}). See deployments/robinhood-4663.json.
 export const ESCROW_ADDRESS = '${escrow}'
 export const LAUNCHER_ADDRESS = '${launcher}'
+export const FROM_BLOCK = ${Math.min(...dep.blocks)} // first block of this deployment: the board reads history from here
 `)
 console.log('ok  assets/config.js updated')
 console.log(`

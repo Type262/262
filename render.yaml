@@ -15,6 +15,13 @@ services:
       - path: /*
         name: Cache-Control
         value: no-cache
+    routes: # clean URLs for the Unclaimed Board and domain profiles
+      - type: rewrite
+        source: /board
+        destination: /board.html
+      - type: rewrite
+        source: /d/*
+        destination: /domain.html
 
   - type: web
     name: type262-upload

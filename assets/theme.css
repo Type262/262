@@ -157,4 +157,7 @@ a.ln-card:hover { --edge: linear-gradient(135deg, var(--acid), rgba(200, 255, 30
 
 /* buttons inside a field keep only their left divider */
 .field .btn:not(.primary):not(.solid):not(.invert):not(.dark) { border-width: 0 0 0 1px; }
+
+.wt-row { border: 1px solid transparent !important; background: linear-gradient(var(--glass), var(--glass)) padding-box, var(--edge) border-box !important; -webkit-backdrop-filter: blur(14px) saturate(1.3); backdrop-filter: blur(14px) saturate(1.3); }
+.wt-row:hover { --edge: linear-gradient(135deg, var(--acid), rgba(200, 255, 30, .1) 45%, var(--violet)); }
 .wmenu { --glass: rgba(10, 10, 10, .92); }

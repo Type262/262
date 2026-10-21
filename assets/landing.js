@@ -210,6 +210,31 @@ function countUp(el, to, fmt, dur = 1400) {
   requestAnimationFrame(tick)
 }
 
+// ---------- live: the unclaimed board, top five ----------
+let waitingLoaded = false
+const loadWaiting = async () => {
+  if (waitingLoaded) return
+  waitingLoaded = true
+  const list = $('#wt-list')
+  try {
+    const { domains, money, favicon } = await import('./chain-data.js')
+    const fav = d => `<img src="${favicon(d)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">`
+    const { list: all } = await domains()
+    const live = all.filter(s => s.usd > 0)
+    $('#wt-total').textContent = money(live.reduce((n, s) => n + s.usd, 0))
+    $('#wt-sub').textContent = live.length ? `across ${live.length} website${live.length > 1 ? 's' : ''}` : 'The first pile is up for grabs'
+    list.innerHTML = live.length
+      ? live.slice(0, 5).map((s, i) => `<a class="wt-row" href="d/${esc(s.domain)}"><span class="wt-rank">${String(i + 1).padStart(2, '0')}</span>${fav(s.domain)}<strong>${esc(s.domain)}</strong><span class="wt-sup">${s.supporters} supporter${s.supporters === 1 ? '' : 's'}</span><b>${money(s.usd)}</b></a>`).join('')
+      : ['nytimes.com', 'wikipedia.org', 'openai.com', 'x402.org', 'robinhood.com'].map((d, i) => `<a class="wt-row" href="d/${d}"><span class="wt-rank">${String(i + 1).padStart(2, '0')}</span>${fav(d)}<strong>${d}</strong><span class="wt-sup">Be the first to send it money</span><b>$0</b></a>`).join('')
+  } catch {
+    $('#wt-total').textContent = '—'
+    $('#wt-sub').textContent = 'Live data is unavailable right now'
+  }
+}
+// load when it comes into view, or shortly after the page settles (one light chain read)
+whenVisible($('#waiting'), loadWaiting, '300px')
+setTimeout(loadWaiting, 2500)
+
 // ---------- 05 adoption board ----------
 const board = $('#board')
 board.innerHTML = TOP.map(d => `<div class="row" data-d="${d}"><span>${d}</span><i class="flap"></i></div>`).join('')

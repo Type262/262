@@ -32,7 +32,11 @@ const CHAIN = {
 
 // ---------- network: Solana is the main chain, Robinhood Chain the second ----------
 const NET_KEY = 't262-net'
-let network = (() => { try { return localStorage.getItem(NET_KEY) === 'robinhood' ? 'robinhood' : 'solana' } catch { return 'solana' } })()
+// ?net=robinhood or ?net=solana picks the network for this page load: the board and profiles show Robinhood Chain
+// money, so their links must open the Robinhood Chain screens. It is not saved; the switch below saves a choice.
+const NET_PARAM = new URLSearchParams(location.search).get('net')
+let network = NET_PARAM === 'robinhood' || NET_PARAM === 'solana' ? NET_PARAM
+  : (() => { try { return localStorage.getItem(NET_KEY) === 'robinhood' ? 'robinhood' : 'solana' } catch { return 'solana' } })()
 // The Solana escrow and launch screens plug in here as { mount(el, ctx), route(arg, ctx) } modules. Until one is
 // set, the view shows a short card and the Robinhood Chain version stays one click away.
 const SOLANA_VIEWS = { escrow: solEscrow, launch: solLaunch }
@@ -41,6 +45,7 @@ function setNetwork(n) {
   if (n === network) return
   network = n
   try { localStorage.setItem(NET_KEY, n) } catch {}
+  if (NET_PARAM) history.replaceState(null, '', location.pathname + location.hash) // a reload keeps the user's choice
   syncNetwork()
   if (payCtx) { payCtx.pick = preferredPick(payCtx.r); renderPay() }
   lastKey = ''
@@ -272,7 +277,11 @@ function renderPay() {
     ? '<div class="note warn">Resolvers disagree about this domain\'s wallet. Something is tampering with DNS. Sending is disabled.</div>'
     : r.verified
       ? '<div class="note good">✓ DNSSEC-signed and confirmed by every resolver. This address is what the domain owner published.</div>'
-      : '<div class="note warn">This zone is not DNSSEC-signed. The record is probably right, but a network attacker could swap it. Double-check large amounts.</div>'
+      : r.resolvers.some(x => !x.ok)
+        ? '<div class="note warn">Not every resolver answered, so this record could not be cross-checked. It is probably right, but double-check large amounts.</div>'
+        : r.records.some(x => x.dnssec)
+          ? '<div class="note warn">This record is not DNSSEC-signed on every resolver. It is probably right, but a network attacker could swap it. Double-check large amounts.</div>'
+          : '<div class="note warn">This zone is not DNSSEC-signed. The record is probably right, but a network attacker could swap it. Double-check large amounts.</div>'
   const picker = r.records.map((x, i) => `
     <label class="r-row pick ${i === payCtx.pick ? 'sel' : ''}">
       <input type="radio" name="pick" value="${i}" ${i === payCtx.pick ? 'checked' : ''} class="sr">
@@ -520,7 +529,7 @@ function renderEscrow(domain, s) {
   const status$ = $('#esc-status')
   // One action at a time; buttons stay disabled until it settles. A failed refresh after a successful
   // transaction is not reported as a failure, and a result never overwrites another domain's view.
-  const run = async (label, done, fn) => {
+  const run = async (label, done, fn, extra = '') => {
     const btns = $$('button', out)
     const prev = btns.map(b => b.disabled)
     btns.forEach(b => (b.disabled = true))
@@ -532,7 +541,7 @@ function renderEscrow(domain, s) {
     }
     if (escDomain !== domain) { toast(`${done} (${domain})`); return }
     try { renderEscrow(domain, await escrowState(domain)) } catch {}
-    $('#esc-status').innerHTML = `<div class="note good">✓ ${esc(done)}</div>`
+    $('#esc-status').innerHTML = `<div class="note good">✓ ${esc(done)}${extra}</div>`
   }
 
   $('#esc-dep').addEventListener('click', () => run('Sending to escrow', `Sent to ${domain}'s escrow.`, async () => {
@@ -549,7 +558,7 @@ function renderEscrow(domain, s) {
       await sendTx({ to: t.address, data: encodeCall(SEL.approve, ['address', 'uint256'], [ESCROW_ADDRESS, units]) })
     }
     return sendTx({ to: ESCROW_ADDRESS, data: encodeCall(SEL.depositToken, ['string', 'address', 'uint256'], [domain, t.address, units]) })
-  }))
+  }, ` <span class="esc-share"><a class="btn sm" target="_blank" rel="noopener" href="https://x.com/intent/tweet?text=${encodeURIComponent(`I just sent ${domain} money on TYPE/262. It's waiting on-chain until the owner claims it with one DNS record.`)}&url=${encodeURIComponent(`${location.origin}/d/${domain}`)}">Share on X</a><a class="btn sm" href="/d/${encodeURIComponent(domain)}">See ${esc(domain)}'s profile</a></span>`))
 
   $('#esc-claim').addEventListener('click', () => run('Building the DNSSEC proof', waiting ? `Claimed to ${short(txtWallet.address)}.` : 'Registered. Older records can no longer claim.', async () => {
     const proof = await walletProof(domain)
@@ -667,7 +676,7 @@ function syncRow(row) {
 }
 const syncRemove = () => $$('.pb-x', entries).forEach(b => (b.hidden = $$('.pb-row', entries).length < 2))
 
-addEntry()
+addEntry(network === 'robinhood' ? 'evm' : 'sol')
 $('#pub-add').addEventListener('click', () => {
   const used = new Set($$('.pb-row', entries).map(r => r.dataset.net))
   addEntry(['sol', 'evm', 'btc', 'other'].find(k => !used.has(k)) || 'other')
@@ -763,10 +772,12 @@ $('[data-form=verify]').addEventListener('submit', async e => {
   out.innerHTML = '<div class="note">Checking DNS…</div>'
   try {
     const results = await Promise.all([...new Set(addrs)].map(a => verifyPayTo(target, a).then(v => ({ a, v }))))
+    // strong: every resolver answered and returned the address DNSSEC-signed. ok only: published, but not
+    // verified everywhere (unsigned zone, a resolver failed, or one did not sign it); the reason says which.
     out.innerHTML = results.map(({ a, v }) => `
       <div class="result">
         <div class="r-empty" style="${v.strong ? 'background:var(--acid);color:var(--on-acid)' : v.ok ? '' : 'background:var(--hot);color:#fff'}">
-          <strong>${v.strong ? 'Match. Safe to pay.' : v.ok ? 'Match, unsigned.' : 'No match. Don\'t pay.'}</strong>
+          <strong>${v.strong ? 'Match. Safe to pay.' : v.ok ? (/zone is not DNSSEC-signed/.test(v.reason) ? 'Match, unsigned.' : 'Match, not verified.') : 'No match. Don\'t pay.'}</strong>
           <span class="mono">${esc(short(a))} · ${esc(v.reason)} · checked ${esc(v.resolvedAt)}</span>
         </div>
       </div>`).join('')

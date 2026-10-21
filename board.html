@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <base href="/">
+  <title>The Unclaimed Board · TYPE/262</title>
+  <meta name="description" content="Money waiting for the internet. Anyone can send USDG or ETH to any website; it waits on Robinhood Chain until the owner claims it with one DNS record.">
+  <meta name="theme-color" content="#0b0b0b">
+  <meta property="og:title" content="The Unclaimed Board · TYPE/262">
+  <meta property="og:description" content="Money waiting for the internet. Send any website money; the owner claims it with one DNS record.">
+  <meta property="og:image" content="https://type262.onrender.com/assets/art/logo-lockup.webp">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" type="image/webp" href="assets/art/emblem.webp">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,700..900&family=Geist:wght@300..800&family=Geist+Mono:wght@400..600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/style.css">
+  <link rel="stylesheet" href="assets/theme.css">
+  <link rel="stylesheet" href="assets/pages.css">
+</head>
+<body class="pg-page ready" data-page="board">
+  <header class="hud">
+    <div class="container">
+      <a class="logo" href="./"><img src="assets/art/emblem.webp" alt=""><span class="wm">TYPE<b>/</b>262</span></a>
+      <div class="end">
+        <a class="btn sm hide-sm" href="docs.html">Docs</a>
+        <a class="btn sm icon hide-sm" href="https://x.com/type_262" target="_blank" rel="noopener" aria-label="TYPE/262 on X" title="@type_262 on X"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a><a class="btn sm icon hide-sm" href="https://github.com/Type262/262" target="_blank" rel="noopener" aria-label="TYPE/262 on GitHub" title="Type262/262 on GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></a>
+        <a class="btn primary sm" href="app.html">Open app</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="pg">
+    <section class="pg-hero">
+      <span class="eyebrow">The Unclaimed Board</span>
+      <h1 class="display">Money waiting for <span class="accent">the internet.</span></h1>
+      <p class="body">Anyone can send USDG or ETH to any website. It waits on Robinhood Chain, in public, until the site's owner claims it with one DNS record.</p>
+      <div class="pg-stats">
+        <div><span class="label">Waiting</span><b id="st-total">…</b></div>
+        <div><span class="label">Websites</span><b id="st-sites">…</b></div>
+        <div><span class="label">Supporters</span><b id="st-supporters">…</b></div>
+        <div><span class="label">Claimed so far</span><b id="st-claimed">…</b></div>
+      </div>
+      <form class="field pg-fund" data-form="fund" autocomplete="off">
+        <span class="pre">fund</span>
+        <input name="d" placeholder="nytimes.com" aria-label="Website to fund" spellcheck="false">
+        <button class="btn primary" type="submit">Send it money</button>
+      </form>
+      <p class="pg-fund-err" id="fund-err"></p>
+    </section>
+
+    <section class="pg-board">
+      <div class="pg-tools">
+        <div class="seg sm" data-sort>
+          <button type="button" data-val="waiting" class="on">Most waiting</button>
+          <button type="button" data-val="new">Newest</button>
+          <button type="button" data-val="supporters">Most supporters</button>
+          <button type="button" data-val="coins">Has coins</button>
+        </div>
+        <div class="field sm pg-search"><input id="board-q" placeholder="Search a domain" aria-label="Search the board" spellcheck="false"></div>
+      </div>
+      <div class="pg-list" id="board-list"><div class="pg-empty"><span class="spin"></span><span>Reading Robinhood Chain…</span></div></div>
+    </section>
+
+    <section class="pg-board">
+      <div class="pg-sec-head"><h2>Live activity</h2><span class="label">Robinhood Chain · 4663</span></div>
+      <div class="pg-feed" id="board-feed"><p class="pg-none">Loading…</p></div>
+    </section>
+
+    <section class="pg-how">
+      <div><small>01</small><b>Send</b><span>Pick any website and send USDG or ETH. No permission needed.</span></div>
+      <div><small>02</small><b>It waits</b><span>The money sits in an on-chain escrow under the domain's name, visible to everyone.</span></div>
+      <div><small>03</small><b>The owner claims</b><span>One DNS record plus DNSSEC, and a proof checked on-chain pays the owner instantly.</span></div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <a class="logo" href="./"><img src="assets/art/emblem.webp" alt=""><span class="wm">TYPE<b>/</b>262</span></a>
+      <nav><a href="app.html">App</a><a href="board">Board</a><a href="docs.html">Docs</a><a href="docs.html#escrow">How escrow works</a></nav>
+      <div class="socials"><a class="btn sm" href="https://x.com/type_262" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg><span>@type_262</span></a><a class="btn sm" href="https://github.com/Type262/262" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg><span>Type262/262</span></a></div>
+      <small>Payments settle on Robinhood Chain (4663). Not affiliated with IANA, ICANN or Robinhood.</small>
+    </div>
+  </footer>
+  <script type="module" src="assets/pages.js"></script>
+</body>
+</html>
