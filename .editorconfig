@@ -16,8 +16,8 @@ indent_size = 4
 [*.md]
 trim_trailing_whitespace = false
 
-# Vendored files are left exactly as their tools wrote them.
-[assets/vendor/**]
+# Generated and vendored files are left exactly as their tools wrote them.
+[{mcp/type262-mcp.mjs,assets/vendor/**}]
 indent_style = unset
 indent_size = unset
 insert_final_newline = unset

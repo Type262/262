@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-The Solana release. Solana is now TYPE/262's main network: pay a domain's published address in SOL or USDC, pay any domain's vault before it publishes a wallet, and launch pump.fun coins whose creator fees go to the domain's vault. The TYPE/262 worker pays a vault out to the wallet the domain's DNSSEC-signed record names. Robinhood Chain stays fully supported, with its contracts and deployment unchanged.
+## [0.2.0] - 2026-10-21
+
+The Solana release. Solana is now TYPE/262's main network: pay a domain's published address in SOL or USDC, pay any domain's vault before it publishes a wallet, and launch pump.fun coins whose creator fees go to the domain's vault. The TYPE/262 worker pays a vault out to the wallet the domain's DNSSEC-signed record names. Robinhood Chain stays fully supported, with its contracts and deployment unchanged, and gains the Unclaimed Board, a public profile for every domain and an MCP server that lets AI agents pay domains by name.
 
 ### Added
 
@@ -53,9 +55,36 @@ The Solana release. Solana is now TYPE/262's main network: pay a domain's publis
 
 - The docs cover Solana in full: an overview with the settings and the trust model, domain vaults, claims and refunds, the pump.fun launchpad, the worker API, running your own worker, and the on-chain program.
 
+#### The Unclaimed Board and domain profiles
+
+- `/board` lists every domain that has been sent money through `DomainEscrow` or had a coin launched for it, sorted by **Most waiting**, **Newest**, **Most supporters** or **Has coins**, with a live activity feed.
+- `/d/<domain>` shows a domain's wallet status in DNS, the money waiting for it, its rank, its top supporters, the coins whose fees pay it, and its recent activity, with share and copy-link buttons.
+- Both read Robinhood Chain straight from the browser, with no indexer or database: escrow and launcher events from the deployment block onward (`FROM_BLOCK` in `assets/config.js`), and live `balanceOf` reads that match what a claim pays out before the 0.5% fee.
+- The landing page shows the money waiting right now and the top domains, and links to the board.
+- After an escrow deposit, the app offers a share on X and a link to the domain's profile. `app.html#launch/new/<domain>` opens the launch form for that domain.
+
+#### MCP server for AI agents, on Robinhood Chain
+
+- `mcp/type262-mcp.mjs`, one self-contained file for Claude Desktop, Claude Code, Cursor and any MCP client: a hand-written MCP server over stdio with viem and the SDK bundled. It needs Node 18+ and nothing else.
+- Five tools: `resolve_domain`, `verify_payto`, `pay_domain`, `escrow_status` and `wallet_status`. Every successful result carries a one-line summary; refusals and errors carry a one-line error instead.
+- `pay_domain` pays directly only to a DNSSEC-signed EVM record that every resolver returns, and otherwise deposits into `DomainEscrow`, always under the requested name. It never pays when resolvers disagree or any resolver says the domain does not exist, and `dry_run: true` returns the full plan.
+- `resolve_domain` shows what `pay_domain` would do: pay directly, deposit into escrow, or refuse, including when `TYPE262_ALLOW_ESCROW=false` blocks the escrow path.
+- Per-payment and daily limits for USDG and ETH, enforced by the server. Payments run one at a time within a server process, and a lock file shared by every process keeps the daily limit across them.
+- An identical payment within 10 minutes needs `repeat: true`: the same asset and amount to the same name, or to the same recipient wallet (or the same escrow name) under a different name or URL.
+- Transactions are signed locally, so their hash is known before broadcast, and a lost RPC response can never release spend that may have gone out. Only a receipt for that exact hash counts, so a replacement transaction is never reported as the payment.
+- A `pay_domain` call that the client cancels (`notifications/cancelled`), or that is still queued when the client disconnects, is never sent. Payments already broadcast still finish.
+- The agent key is read once, never logged or echoed, and custom RPC and DNS-over-HTTPS URLs are scrubbed from every result.
+- `TYPE262_ALLOW_ESCROW=false` is a ceiling the agent cannot override.
+
 ### Changed
 
 - The landing page, the README and the docs lead with Solana and pump.fun. Robinhood Chain's escrow, DNSSEC proofs, launchpad, contract reference and deployment have their own section in the docs.
+- `resolveWallets` counts an answer only when its owner name is the queried name, so a name that is a CNAME no longer takes on its target's records.
+- `resolveWallets` sets `nxdomain` when any answering resolver reports NXDOMAIN, not only the first one.
+- `verified` now also requires every resolver to answer, and every record to be DNSSEC-authenticated on every resolver.
+- `resolveWalletsUp` walks up to the parent only when every resolver answered the host with NOERROR and no record, and they agree. It no longer walks up when a resolver fails or returns SERVFAIL for the host, when the resolvers disagree, or when any resolver says the host does not exist. It never walks into a two-letter-country second level such as `co.uk`, or into a shared hosting domain on its built-in list (`github.io`, `vercel.app`, `pages.dev` and about 70 more).
+- `verifyPayTo` reports resolver disagreement at the host instead of falling back to the parent's record.
+- `verifyPayTo` gives `strong` only when every resolver answered and returned the address DNSSEC-signed, with two new reasons: `Match, but not every resolver answered` and `Match, but not DNSSEC-signed on every resolver`. The app's Verify tab shows these as **Match, not verified.**
 
 ### Fixed
 
@@ -127,5 +156,6 @@ The first public release. TYPE/262 switches on the DNS `WALLET` record (RRTYPE 2
 - `contracts/script/make-proof.mjs` builds a DNSSEC proof the same way the app does, for tests and for claims outside the app.
 - `scripts/build.sh` builds the static site with a versioned asset folder per deploy, and `render.yaml` defines the site and the upload service.
 
-[Unreleased]: https://github.com/Type262/262/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/Type262/262/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/Type262/262/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Type262/262/releases/tag/v0.1.0

@@ -13,8 +13,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  site-sdk:
-    name: Site and SDK
+  site-sdk-mcp:
+    name: Site, SDK and MCP
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -29,12 +29,12 @@ jobs:
 
       - name: Check syntax
         run: |
-          for f in assets/*.js lib/*.js bin/*.mjs upload/*.mjs; do
+          for f in assets/*.js lib/*.js bin/*.mjs mcp/src/*.mjs upload/*.mjs; do
             node --check "$f" || exit 1
             echo "ok $f"
           done
 
-      - name: Test SDK, ABI and upload service
+      - name: Test SDK, ABI, chain data, upload service and MCP server
         run: npm test
 
       - name: Build the site
@@ -42,7 +42,7 @@ jobs:
 
       - name: Check the build output
         run: |
-          for f in dist/index.html dist/app.html dist/docs.html dist/lib/wallet262.js dist/bin/type262.mjs; do
+          for f in dist/index.html dist/app.html dist/docs.html dist/board.html dist/domain.html dist/lib/wallet262.js dist/bin/type262.mjs dist/mcp/type262-mcp.mjs; do
             test -f "$f" || { echo "missing $f"; exit 1; }
             echo "ok $f"
           done

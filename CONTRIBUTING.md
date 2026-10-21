@@ -27,11 +27,14 @@ The full documentation lives in [`docs.html`](https://type262.onrender.com/docs.
 |---|---|
 | `index.html` | Landing page with a live resolver and a live adoption scan |
 | `app.html` | The app: Resolve, Pay, Escrow, Publish, Verify, Badge and Launch, on Solana or Robinhood Chain |
+| `board.html`, `domain.html` | The Unclaimed Board (`/board`) and domain profiles (`/d/<domain>`), read from Robinhood Chain |
 | `docs.html` | The full documentation, with `assets/docs.js` and `assets/docs.css` |
 | `lib/wallet262.js` | The zero-dependency SDK for browsers and Node 18+, and the package's main export |
 | `bin/type262.mjs` | The `type262` CLI |
+| `mcp/src/server.mjs` | The MCP server for AI agents (source) |
+| `mcp/type262-mcp.mjs` | The MCP server as one self-contained file, built by `npm run mcp:build` |
 | `upload/server.mjs` | The worker: Solana vault addresses, claims, collects and refunds under `/solana/` (`worker.mjs`, with the rules in `vault.mjs` and the transactions in `chain.mjs` and `pump.mjs`); image and coin-metadata uploads for the Launch form (IPFS through Pinata); and the read-only RPC fallbacks for both chains. Zero dependencies |
-| `assets/` | Page scripts, styles and artwork. `config.js` holds the deployed addresses, `dnssec.js` builds Robinhood Chain claim proofs, `vendor/` is a pinned copy of dnsprovejs 1.0.1 |
+| `assets/` | Page scripts, styles and artwork. `config.js` holds the deployed addresses and the board's first block, `dnssec.js` builds Robinhood Chain claim proofs, `vendor/` is a pinned copy of dnsprovejs 1.0.1 |
 | `assets/solana.js` | The Solana client: base58, token accounts, transactions, RPC and Wallet Standard wallets |
 | `assets/solana-vault.js` | The vault client: the worker's API, reads of a vault and its history, and pump.fun launches and collects sent from the user's wallet |
 | `assets/solana-proof.js`, `assets/solana-type262.js` | Clients for the on-chain program: DNSSEC proofs for it, and its instructions and account readers |
@@ -54,7 +57,7 @@ The full documentation lives in [`docs.html`](https://type262.onrender.com/docs.
 
 | Tool | Version | Used for |
 |---|---|---|
-| [Node.js](https://nodejs.org) | 18 or later (CI uses 22); 20.19 or later for proof building | Tests, the CLI, the upload service, proof building |
+| [Node.js](https://nodejs.org) | 18 or later (CI uses 22); 20.19 or later for proof building | Tests, the CLI, the MCP server, the upload service, proof building |
 | Rust, the Solana CLI and Anchor | the exact versions in [`solana/README.md`](solana/README.md) | The on-chain program and its LiteSVM tests, and `solana-test-validator` for the end-to-end runs |
 | WSL Ubuntu (Windows only) | 24.04 | The local validator and the precompile tests, which don't run natively on Windows |
 | [Foundry](https://getfoundry.sh) | stable (`forge`, `cast`, `anvil`) | Contract builds, contract tests, fork tests |
@@ -70,7 +73,7 @@ npm ci
 ```
 
 `npm ci` installs the two dev dependencies, `viem` and `@ensdomains/dnsprovejs`.
-Tests and the proof script use them. The site, the SDK and the upload service need nothing installed.
+Tests, the proof script and the MCP build use them. The site, the SDK and the upload service need nothing installed.
 
 Cloned without `--recurse-submodules`? Fetch the contract libraries with:
 
@@ -91,7 +94,10 @@ Open [http://127.0.0.1:5262](http://127.0.0.1:5262).
 | Landing page | `/` |
 | App | `/app.html` (tools take a domain in the hash, e.g. `/app.html#resolve/yoursite.com`) |
 | Docs | `/docs.html` |
+| The Unclaimed Board | `/board.html` |
+| A domain profile | `/domain.html?d=yoursite.com` |
 
+The clean URLs `/board` and `/d/<domain>` are rewrites on the host (see `render.yaml`), so use the `.html` paths locally.
 Pages load native ES modules and must be served over HTTP. Opening the files directly won't work.
 
 The app reads the live worker and contracts by default. `assets/config.js` is its only configuration; see [Self-hosting](https://type262.onrender.com/docs.html#self-hosting).
@@ -120,11 +126,23 @@ npm test
 
 | File | What it checks |
 |---|---|
-| `test/wallet262.test.mjs` | SDK: WALLET RDATA encoding and parsing, `_wallet` TXT forms, domain normalization for URLs, emails and IDNs, address kinds, USDG calldata, EIP-681 links, `parseUnits` precision, x402 `payTo` extraction, `verifyPayTo` against mocked DNS |
+| `test/wallet262.test.mjs` | SDK: WALLET RDATA encoding and parsing, `_wallet` TXT forms, domain normalization for URLs, emails and IDNs, address kinds, USDG calldata, EIP-681 links, `parseUnits` precision, x402 `payTo` extraction, and, against mocked DNS, the `resolveWalletsUp` walk-up rules, `nxdomain` and `verified` across resolvers, CNAME answers, and every `verifyPayTo` reason |
 | `test/abi.test.mjs` | The app's hand-written ABI coder in `assets/abi.js` matches viem byte for byte |
+| `test/vault.test.mjs` | The vault rules in `upload/vault.mjs`: key derivation, canonical domains, the fee, what DNS must say, which addresses can be paid, what counts as a deposit, and memos |
+| `test/vault-worker.test.mjs` | The vault worker in `upload/worker.mjs` against a mocked Solana RPC and stub DNS: every transaction it sends, the lock, gas checks, refund rules, retries and priority fees |
+| `test/chain-data.test.mjs` | The board and profile event decoders in `assets/chain-data.js` match viem, then one read-only call to the live escrow |
 | `test/upload.test.mjs` | The upload endpoints against a mock Pinata: health, pinning, CORS and the origin allowlist, content checks, the 5 MB limit, the rate limit |
+| `test/mcp.test.mjs` | The bundled MCP server over stdio: protocol, live DNS, dry runs, spending limits, key handling, mock DNS |
 
-All three run offline.
+`chain-data` and `mcp` make read-only network calls (DNS-over-HTTPS and the Robinhood Chain RPC). The rest run offline.
+
+To also send real payments through the MCP server on a local anvil fork of Robinhood Chain:
+
+```bash
+npm run test:mcp:fork
+```
+
+It funds fresh throwaway keys on the fork and never sends anything to mainnet. It needs Foundry's `anvil`.
 
 The Solana clients have their own tests, run directly:
 
@@ -210,10 +228,20 @@ Run the fork tests whenever you touch escrow, launch or proof flows.
 
 | Job | Steps |
 |---|---|
-| Site and SDK | `npm ci`, `node --check` on every source file, `npm test`, `sh scripts/build.sh` and a check of the build output |
+| Site, SDK and MCP | `npm ci`, `node --check` on every source file, `npm test`, `sh scripts/build.sh` and a check of the build output |
 | Contracts | A fresh DNSSEC proof fixture, `forge build --sizes`, `forge test`, then the fork tests against Robinhood Chain mainnet |
 
 ## Builds
+
+### MCP server bundle
+
+```bash
+npm run mcp:build
+```
+
+This bundles `mcp/src/server.mjs` with the SDK and viem into one file, `mcp/type262-mcp.mjs`, using esbuild 0.24.0 through `npx`.
+It then checks that the bundle keeps its `#!` line and imports nothing outside `node:`.
+The bundle is committed. Rebuild and commit it whenever you change `mcp/src/server.mjs` or `lib/wallet262.js`; `test/mcp.test.mjs` warns when a source is newer than the bundle.
 
 ### Static site
 
@@ -223,7 +251,7 @@ cd dist && python -m http.server 5262 --bind 127.0.0.1
 ```
 
 `scripts/build.sh` copies the site into `dist/` and gives every deploy its own asset folder, `v/<commit>` (`v/dev` locally), so a browser or CDN never mixes files from two deploys.
-It also publishes stable download paths for `/lib/wallet262.js` and `/bin/type262.mjs`.
+It also publishes stable download paths for `/lib/wallet262.js`, `/bin/type262.mjs` and `/mcp/type262-mcp.mjs`.
 The site itself needs no build: `dist/` only exists to version asset paths for the host.
 
 ## Code style
@@ -242,7 +270,7 @@ The site itself needs no build: `dist/` only exists to version asset paths for t
 
 1. **Agree on the approach.** For anything larger than a small fix, open an issue first so the design is settled before the code.
 2. **Keep it focused.** One logical change per pull request. Leave unrelated code and formatting alone.
-3. **Add a test.** SDK changes go in `test/wallet262.test.mjs`, new app contract calls in `test/abi.test.mjs`, the worker next to `test/upload.test.mjs`, the Solana client in `test/solana*.test.mjs`, on-chain program changes in `solana/tests-rs/tests/`, and contract changes in `contracts/test/`.
+3. **Add a test.** SDK changes go in `test/wallet262.test.mjs`, new app contract calls in `test/abi.test.mjs`, board decoders in `test/chain-data.test.mjs`, MCP tools in `test/mcp.test.mjs`, the worker next to `test/upload.test.mjs`, the Solana client in `test/solana*.test.mjs`, on-chain program changes in `solana/tests-rs/tests/`, and contract changes in `contracts/test/`.
 4. **Run the suites.** `npm test` always. The [Solana screens](#the-apps-solana-screens) run for Solana screen or worker changes, the [on-chain program](#on-chain-solana-program) suites for program changes, and `forge test` and the [fork tests](#fork-tests) for contract changes.
 5. **Update the docs.** Change `docs.html` when behaviour, commands or addresses change, and add a line to `CHANGELOG.md` under **Unreleased**.
 6. **Write clear commits.** A short summary line in the imperative mood, under about 72 characters, optionally prefixed with the area: `Escrow: reject proofs signed before the last claim`. Use the body to explain why when it isn't obvious.
@@ -257,7 +285,8 @@ A change to the worker ships as a redeploy of the `type262-upload` service; run 
 
 | Where | What |
 |---|---|
-| [`docs.html`](https://type262.onrender.com/docs.html) | The full reference: quickstart, the WALLET record, resolution, SDK, CLI, agents and x402, payments, Solana (vaults, claims and refunds, the pump.fun launchpad, the worker API, the on-chain program), the Robinhood Chain contracts, self-hosting, testing, security |
+| [`docs.html`](https://type262.onrender.com/docs.html) | The full reference: quickstart, the WALLET record, resolution, SDK, CLI, agents and x402, MCP server, payments, board and profiles, Solana (vaults, claims and refunds, the pump.fun launchpad, the worker API, the on-chain program), the Robinhood Chain contracts, self-hosting, testing, security |
+| [`mcp/README.md`](mcp/README.md) | MCP server tools, configuration and limits |
 | [`solana/README.md`](solana/README.md) | Building and testing the on-chain Solana program: toolchain, LiteSVM, WSL, the local validator |
 | [`solana/docs/`](solana/docs) | `DNSSEC.md` and `PUMP.md`, the specifications and measurements behind the program |
 | [`DEPLOY.md`](DEPLOY.md) | Deploying the contracts and pointing the app at them |

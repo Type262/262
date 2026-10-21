@@ -40,8 +40,8 @@
 <text x="293" y="296" font-size="12" fill="#CFCFCF" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" xml:space="preserve">on-chain</text>
 <text x="293" y="314" font-size="12" fill="#CFCFCF" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" xml:space="preserve">in public</text>
 <text x="293" y="364" font-size="13.5" fill="#8F8F8F">Visible to anyone on</text>
-<text x="293" y="384" font-size="13.5" fill="#8F8F8F">Robinhood Chain,</text>
-<text x="293" y="404" font-size="13.5" fill="#8F8F8F">keyed by the domain.</text>
+<text x="293" y="384" font-size="13.5" fill="#8F8F8F">Robinhood Chain and</text>
+<text x="293" y="404" font-size="13.5" fill="#8F8F8F">the Unclaimed Board.</text>
 <circle cx="487.5" cy="168" r="3" fill="#C8FF1E"/><circle cx="487.5" cy="168" r="1.35" fill="#F7FFE0"/>
 <rect x="498" y="204" width="204" height="232" rx="16" fill="url(#pg)" stroke="#262626"/>
 <line x1="600.0" y1="184" x2="600.0" y2="204" stroke="#C8FF1E" stroke-opacity=".45"/>

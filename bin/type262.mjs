@@ -22,7 +22,7 @@ async function main() {
   }
   if (cmd === 'verify' && args[1]) {
     const v = await verifyPayTo(args[0], args[1])
-    console.log(`${v.strong ? 'MATCH' : v.ok ? 'MATCH (unsigned)' : 'NO MATCH'}: ${v.reason} [${v.resolvedAt}]`)
+    console.log(`${v.strong ? 'MATCH' : v.ok ? 'MATCH (not verified)' : 'NO MATCH'}: ${v.reason} [${v.resolvedAt}]`)
     process.exitCode = v.ok ? 0 : 1
     return
   }

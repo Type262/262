@@ -68,6 +68,8 @@
 <li><strong>Check an x402 <code>payTo</code>.</strong> Before an agent pays an HTTP 402 requirement, <code>verifyPayTo</code> confirms that the address is published by the domain it is talking to. See <a href="#agents">Agents and x402</a>.</li>
 <li><strong>Pay a domain that has not published yet.</strong> On Solana, send to the domain's vault, an address of its own; the TYPE/262 worker pays it out to the owner once the domain's DNSSEC-signed record names a wallet. On Robinhood Chain, send to <code>DomainEscrow</code>, which pays the owner against a DNSSEC proof checked on-chain. If nobody claims, senders can take their money back after 180 days. See <a href="#solana-vaults">Domain vaults</a> and, on Robinhood Chain, <a href="#escrow">Escrow</a>.</li>
 <li><strong>Launch a coin that pays a domain.</strong> Launch with creator fees routed to a domain instead of a wallet: on pump.fun on Solana (see <a href="#solana-launch">pump.fun launchpad</a>), or on pons v2 on Robinhood Chain (see <a href="#launchpad">Launchpad</a>).</li>
+<li><strong>See who is owed what.</strong> The Unclaimed Board ranks every domain with money waiting on Robinhood Chain, and each domain has a public profile. See <a href="#board">Board and profiles</a>.</li>
+<li><strong>Let an AI agent pay by name.</strong> Add the MCP server to Claude, Cursor or any MCP client, and your agent can resolve, verify and pay domains on Robinhood Chain within limits you set. See <a href="#mcp">MCP server</a>.</li>
 </ul>
 <h3 id="intro-three-pieces">The three pieces</h3>
 <div class="dx-scroll"><table class="dx-table"><thead><tr><th>Piece</th><th>Source</th><th>What it does</th></tr></thead><tbody>
@@ -118,21 +120,23 @@ launch    trades ──▶ pons fee escrow ──collect──▶ DomainFeeForwa
 <div class="dx-scroll"><table class="dx-table"><thead><tr><th>Path</th><th>Contents</th></tr></thead><tbody>
 <tr><td><code>index.html</code></td><td>Landing page with a live resolver and a live adoption scan of well-known domains</td></tr>
 <tr><td><code>app.html</code></td><td>The app: Resolve, Pay, Escrow, Publish, Verify, Badge and Launch</td></tr>
+<tr><td><code>board.html</code>, <code>domain.html</code></td><td>The Unclaimed Board (<code>/board</code>) and domain profiles (<code>/d/&lt;domain&gt;</code>)</td></tr>
 <tr><td><code>docs.html</code></td><td>This documentation</td></tr>
 <tr><td><code>lib/wallet262.js</code></td><td>Zero-dependency SDK for browsers and Node 18+</td></tr>
 <tr><td><code>bin/type262.mjs</code></td><td>CLI</td></tr>
+<tr><td><code>mcp/</code></td><td>The MCP server for AI agents: its source and the single-file bundle</td></tr>
 <tr><td><code>upload/server.mjs</code></td><td>The worker: Solana vault addresses, claims, collects and refunds; image and coin-metadata uploads for the Launch form, pinned to IPFS through Pinata; and read-only RPC fallbacks for Solana and Robinhood Chain. Its keys stay on the server</td></tr>
-<tr><td><code>test/</code></td><td>Offline SDK tests, ABI-parity tests against viem, upload-server tests against a mock Pinata, and tests of the Solana client and proof builder</td></tr>
+<tr><td><code>test/</code></td><td>SDK tests against mocked DNS, ABI-parity tests against viem, tests for the board's chain reader, upload-server tests against a mock Pinata, MCP server tests, and tests of the Solana client and proof builder</td></tr>
 <tr><td><code>solana/</code></td><td>Anchor workspace: the <code>type262</code> program, built and tested, not deployed (see <a href="#solana-program">On-chain program</a>), its LiteSVM tests, the DNSSEC benchmarks, and the pump.fun research and encoders</td></tr>
 <tr><td><code>contracts/</code></td><td>Foundry project for Robinhood Chain: escrow, verifier, launcher and forwarder contracts, tests and deploy scripts</td></tr>
 <tr><td><code>assets/solana.js</code></td><td>The app's Solana client: base58, token accounts, transactions, RPC and Wallet Standard wallets</td></tr>
 <tr><td><code>assets/solana-vault.js</code></td><td>The vault client: the worker's API, reads of a vault and its history, and pump.fun launches and collects sent from the user's wallet</td></tr>
 <tr><td><code>assets/solana-proof.js</code>, <code>assets/solana-type262.js</code></td><td>Clients for the on-chain program: DNSSEC proofs for it, and its instructions and account readers</td></tr>
 <tr><td><code>assets/dnssec.js</code></td><td>Builds DNSSEC proofs in the browser for Robinhood Chain claims</td></tr>
-<tr><td><code>assets/config.js</code></td><td>The addresses and endpoints the app uses</td></tr>
+<tr><td><code>assets/config.js</code></td><td>The addresses and endpoints the app uses, and the board's first block</td></tr>
 <tr><td><code>deployments/robinhood-4663.json</code></td><td>Addresses, transactions and settings of the Robinhood Chain deployment</td></tr>
 </tbody></table></div>
-<p><code>render.yaml</code> defines two Render services: <code>type262</code>, a static site with the landing page, app and docs, built by <code>scripts/build.sh</code>; and <code>type262-upload</code>, the worker: a small Node service that runs Solana vault claims, collects and refunds, and pins Launch-form images and coin metadata to IPFS through Pinata, so its keys never reach the browser. Claims on Robinhood Chain need no server, because they are DNSSEC proofs checked on-chain. See <a href="#self-hosting">Self-hosting</a>.</p>
+<p><code>render.yaml</code> defines two Render services: <code>type262</code>, a static site with the landing page, app, docs, board and profiles, built by <code>scripts/build.sh</code>; and <code>type262-upload</code>, the worker: a small Node service that runs Solana vault claims, collects and refunds, and pins Launch-form images and coin metadata to IPFS through Pinata, so its keys never reach the browser. Claims on Robinhood Chain need no server, because they are DNSSEC proofs checked on-chain. See <a href="#self-hosting">Self-hosting</a>.</p>
 <ul>
 <li><strong>App:</strong> <a href="https://type262.onrender.com/app.html">type262.onrender.com/app.html</a></li>
 </ul>
@@ -172,7 +176,7 @@ import { resolveWallets } from './wallet262.js'
 const r = await resolveWallets('yoursite.com')
 console.log(r.verified, r.records)
 // true [ { code: 'ETH', address: '0x7a1f…c0de', source: 'TXT', dnssec: true } ]</code></pre>
-<p><code>verified</code> is <code>true</code> only when the domain publishes at least one record, every resolver that answered returned the same records, and every record is DNSSEC-authenticated. <a href="#resolution">Resolution</a> covers every field of the result.</p>
+<p><code>verified</code> is <code>true</code> only when the domain publishes at least one record, every resolver answered and returned the same records, and every record is DNSSEC-authenticated on every resolver. <a href="#resolution">Resolution</a> covers every field of the result.</p>
 <h4>3. Pay it</h4>
 <p>On Solana, pay a domain's <code>SOL</code> address in SOL or USDC with <code>assets/solana.js</code>; see <a href="#payments-solana">Send on Solana</a>. On Robinhood Chain, in a browser with an injected wallet, find the domain's EVM address, switch the wallet to Robinhood Chain, and send USDG. <code>transferTx</code> builds the EIP-1193 transaction parameters for a native or ERC-20 transfer.</p>
 <pre class="dx-code" data-lang="js"><code>import { resolveWallets, addressKind, transferTx } from './wallet262.js'
@@ -286,7 +290,8 @@ _wallet.example.com. 3600 IN TXT "ETH 0x7a1fe1c2b0d3a4f5e6d7c8b9a0f1e2d3c4b5c0de
 _wallet.shop.example.com. 3600 IN TXT "ETH 0x7a1fe1c2b0d3a4f5e6d7c8b9a0f1e2d3c4b5c0de"</code></pre>
 <p>In the dashboard for the <code>example.com</code> zone, the TXT record's name is <code>_wallet.shop</code>. The Publish tab works this out for you.</p>
 <ul>
-<li><strong>Resolving.</strong> <code>resolveWalletsUp</code>, which the app's Pay tool and <code>verifyPayTo</code> use, falls back one level to the parent when a host publishes nothing, so <code>api.example.com</code> can be paid through the record of <code>example.com</code>. See <a href="#resolution">Resolution</a>.</li>
+<li><strong>Resolving.</strong> <code>resolveWalletsUp</code>, which the app's Pay tool and <code>verifyPayTo</code> use, falls back one level to the parent when every resolver answers cleanly that the host publishes nothing, so <code>api.example.com</code> can be paid through the record of <code>example.com</code>. See <a href="#res-resolve-wallets-up">resolveWalletsUp</a> for the exact rules.</li>
+<li><strong>Aliases.</strong> Only records owned by the exact name count. If <code>shop.example.com</code> is a CNAME, the records of the name it points to are ignored. DNS allows no other record beside a CNAME, so publish the <code>_wallet.shop.example.com</code> TXT record for it.</li>
 <li><strong>Claiming.</strong> Claims never fall back. Each name has its own vault on Solana and its own escrow pools on Robinhood Chain, and a claim reads only the record owned by that exact name or by <code>_wallet.</code> followed by that name. A parent's record cannot claim a subdomain's money.</li>
 </ul>
 <h3 id="wr-multiple-addresses">Multiple addresses</h3>
@@ -308,9 +313,9 @@ _wallet.example.com. 300 IN TXT "BTC bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh"
 <h3 id="wr-dnssec">DNSSEC</h3>
 <p>DNSSEC signs your zone, so a resolver or a contract can prove that the record came from you. Without it, an attacker on the network path between a payer and the DNS could substitute their own address.</p>
 <div class="dx-scroll"><table class="dx-table"><thead><tr><th>Behavior</th><th>Unsigned zone</th><th>Signed zone</th></tr></thead><tbody>
-<tr><td><code>resolveWallets</code></td><td><code>verified</code> is always <code>false</code></td><td><code>verified</code> is <code>true</code> when the resolvers agree</td></tr>
+<tr><td><code>resolveWallets</code></td><td><code>verified</code> is always <code>false</code></td><td><code>verified</code> is <code>true</code> when every resolver answers, they agree, and each one authenticates the records</td></tr>
 <tr><td>App Pay tool</td><td>Sends, with a warning to double-check</td><td>Marks the address as signed and confirmed by every resolver</td></tr>
-<tr><td><code>verifyPayTo</code></td><td><code>ok</code> on a match when the resolvers agree; <code>strong</code> is <code>false</code></td><td><code>ok</code> and <code>strong</code> on a match when the resolvers agree</td></tr>
+<tr><td><code>verifyPayTo</code></td><td><code>ok</code> on a match when the resolvers agree; <code>strong</code> is <code>false</code></td><td><code>ok</code> on a match when the resolvers agree; <code>strong</code> when every resolver also returns the address signed</td></tr>
 <tr><td>Vault and escrow claims</td><td>Not possible</td><td>Instant</td></tr>
 </tbody></table></div>
 <p>Resolving, paying and Solana vault claims trust the DNSSEC validation of the DNS-over-HTTPS resolvers, reported as the AD bit; a vault claim needs Cloudflare and Google both to report it and to agree. Escrow claims on Robinhood Chain trust no resolver: the contracts check the signatures themselves, from the IANA root keys (KSK-2017 and KSK-2024) down to your record.</p>
@@ -325,9 +330,9 @@ _wallet.example.com. 300 IN TXT "BTC bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh"
 <ol class="dx-steps">
 <li><strong>Normalize the name.</strong> <code>normalizeDomain</code> turns a domain, URL or email into a lowercase host name. Invalid input throws before any network request.</li>
 <li><strong>Query every resolver.</strong> For each resolver, two DNS JSON queries run at once: type 262 at the domain, and type 16 (TXT) at <code>_wallet.&lt;domain&gt;</code>. The defaults are Cloudflare (<code>https://cloudflare-dns.com/dns-query</code>) and Google (<code>https://dns.google/resolve</code>).</li>
-<li><strong>Parse the answers.</strong> Type 262 answers go through <code>parseWalletRdata</code>, which reads both the RFC 3597 generic form and quoted strings. TXT answers go through <code>parseFallbackTxt</code>. Each record is tagged with its <code>source</code> and with the AD bit of the response that carried it. Answers that fail to parse go to <code>invalid</code>.</li>
-<li><strong>Compare resolvers.</strong> Resolvers that failed are set aside. The first resolver in your list that answered is the primary, and its records are returned. <code>agree</code> is <code>true</code> when every resolver that answered returned the same coin code and address pairs. Order does not matter, and EVM addresses are compared case-insensitively.</li>
-<li><strong>Score the result.</strong> <code>verified</code> is <code>true</code> when there is at least one record, the resolvers agree, and every record is DNSSEC-authenticated.</li>
+<li><strong>Parse the answers.</strong> Only answers whose owner name is the queried name count: when the name is a CNAME, the records of the name it points to are ignored. Type 262 answers go through <code>parseWalletRdata</code>, which reads both the RFC 3597 generic form and quoted strings. TXT answers go through <code>parseFallbackTxt</code>. Each record is tagged with its <code>source</code> and with the AD bit of the response that carried it. Answers that fail to parse go to <code>invalid</code>.</li>
+<li><strong>Compare resolvers.</strong> Resolvers that failed are set aside. The first resolver in your list that answered is the primary, and its records are returned. <code>agree</code> is <code>true</code> when every resolver that answered returned the same coin code and address pairs. Order does not matter, and EVM addresses are compared case-insensitively. <code>nxdomain</code> is <code>true</code> when any resolver that answered reports NXDOMAIN.</li>
+<li><strong>Score the result.</strong> <code>verified</code> is <code>true</code> when there is at least one record, every resolver answered, they all agree, and every record is DNSSEC-authenticated on every resolver.</li>
 </ol>
 <p>Each query is a GET request with an <code>accept: application/dns-json</code> header:</p>
 <pre class="dx-code" data-lang="txt"><code>GET https://cloudflare-dns.com/dns-query?name=yoursite.com&amp;type=262
@@ -353,10 +358,10 @@ if (r.verified) {
 <tr><td><code>domain</code></td><td><code>string</code></td><td>The normalized name that was queried.</td></tr>
 <tr><td><code>records</code></td><td><code>{ code, address, source, dnssec }[]</code></td><td>Wallets from the primary resolver. <code>code</code> is uppercase; <code>source</code> is <code>'TYPE262'</code> or <code>'TXT'</code>; <code>dnssec</code> is the AD bit of the response that carried the record.</td></tr>
 <tr><td><code>invalid</code></td><td><code>{ source, data, error }[]</code></td><td>Answers from the primary resolver that failed to parse.</td></tr>
-<tr><td><code>nxdomain</code></td><td><code>boolean</code></td><td>The primary resolver returned NXDOMAIN (status 3) for the type 262 query.</td></tr>
+<tr><td><code>nxdomain</code></td><td><code>boolean</code></td><td>Any resolver that answered returned NXDOMAIN (status 3) for the type 262 query.</td></tr>
 <tr><td><code>dnssec</code></td><td><code>boolean</code></td><td>Every resolver that answered set the AD bit on the type 262 response.</td></tr>
 <tr><td><code>agree</code></td><td><code>boolean</code></td><td>Every resolver that answered returned the same coin code and address pairs.</td></tr>
-<tr><td><code>verified</code></td><td><code>boolean</code></td><td><code>records</code> is non-empty, <code>agree</code> is <code>true</code>, and every record has <code>dnssec: true</code>.</td></tr>
+<tr><td><code>verified</code></td><td><code>boolean</code></td><td><code>records</code> is non-empty, every resolver answered, <code>agree</code> is <code>true</code>, and every record has <code>dnssec: true</code> on every resolver.</td></tr>
 <tr><td><code>resolvers</code></td><td><code>object[]</code></td><td>One entry per resolver: <code>{ resolver, ok, ms, status, signed, records, invalid }</code>, or <code>{ resolver, ok: false, ms, error, records: [], invalid: [] }</code> when it failed. <code>status</code> is the DNS response code of the type 262 query, <code>signed</code> its AD bit, and <code>ms</code> the elapsed time.</td></tr>
 </tbody></table></div>
 <p>A real lookup of a DNSSEC-signed domain that publishes no wallet returns this (timings vary):</p>
@@ -375,7 +380,7 @@ if (r.verified) {
 }</code></pre>
 <h3 id="res-resolve-wallets-up">resolveWalletsUp</h3>
 <div class="dx-api"><div class="dx-sig"><code>resolveWalletsUp(target, opts?) → Promise&lt;Result &amp; { resolvedAt, requested? }&gt;</code></div>
-<p>Resolves a host and, if it publishes nothing, its parent one level up: <code>api.example.com</code> falls back to <code>example.com</code>. The app's Pay tool and <code>verifyPayTo</code> use it, because the host a payer talks to is often an API subdomain.</p>
+<p>Resolves a host and, if every resolver answers cleanly that it publishes nothing, its parent one level up: <code>api.example.com</code> falls back to <code>example.com</code>. The app's Pay tool and <code>verifyPayTo</code> use it, because the host a payer talks to is often an API subdomain.</p>
 <div class="dx-scroll"><table class="dx-table"><thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead><tbody>
 <tr><td><code>target</code></td><td><code>string</code></td><td>A domain, URL or email.</td></tr>
 <tr><td><code>opts</code></td><td><code>object</code></td><td>The same options as <code>resolveWallets</code>, plus <code>walkUp</code>: set it to <code>false</code> to disable the fallback.</td></tr>
@@ -388,11 +393,12 @@ console.log(r.requested, r.resolvedAt)
 <p>The walk follows these rules:</p>
 <ul>
 <li>It goes up exactly one level. <code>a.b.example.com</code> falls back to <code>b.example.com</code>, never to <code>example.com</code>.</li>
-<li>It does not walk when the host has records, when <code>opts.walkUp</code> is <code>false</code>, or when the host has fewer than three labels.</li>
-<li>It stops before shared suffixes made of <code>co</code>, <code>com</code>, <code>net</code>, <code>org</code>, <code>gov</code>, <code>edu</code>, <code>ac</code>, <code>or</code>, <code>ne</code> or <code>go</code> followed by a two-letter label, such as <code>co.uk</code> or <code>com.au</code>. <code>shop.co.uk</code> is never resolved through <code>co.uk</code>.</li>
+<li>It walks only when all of these hold for the host: it has no records; every resolver answered with NOERROR (status 0), so no request failed and none returned SERVFAIL; the resolvers agree; no resolver said NXDOMAIN; <code>opts.walkUp</code> is not <code>false</code>; and it has at least three labels.</li>
+<li>It stops before a two-letter-country second level: <code>co</code>, <code>com</code>, <code>net</code>, <code>org</code>, <code>gov</code>, <code>edu</code>, <code>ac</code>, <code>or</code>, <code>ne</code> or <code>go</code> followed by a two-letter label, such as <code>co.uk</code> or <code>com.au</code>. <code>shop.co.uk</code> is never resolved through <code>co.uk</code>.</li>
+<li>It never walks into a shared hosting domain on its built-in list of about 70, whose subdomains belong to different people, such as <code>github.io</code>, <code>vercel.app</code>, <code>netlify.app</code>, <code>pages.dev</code> or <code>herokuapp.com</code>. <code>myapp.vercel.app</code> is answered by its own record or not at all.</li>
 <li>If the parent has records, you get the parent's result with <code>resolvedAt</code> set to the parent and <code>requested</code> set to the original host. Otherwise you get the host's own result with <code>resolvedAt</code> set to the host and no <code>requested</code>.</li>
 </ul>
-<div class="dx-note">The suffix check is a fixed pattern, not the Public Suffix List. A host under another shared suffix, such as <code>myapp.vercel.app</code>, falls back to <code>vercel.app</code>. Always show <code>resolvedAt</code> to the payer, as the app does, so they can see which name the wallet came from.</div>
+<div class="dx-note">The suffix checks are a fixed pattern and a built-in list of about 70 hosting domains, not the full Public Suffix List. Always show <code>resolvedAt</code> to the payer, as the app does, so they can see which name the wallet came from.</div>
 <h3 id="res-normalize-domain">normalizeDomain</h3>
 <div class="dx-api"><div class="dx-sig"><code>normalizeDomain(input) → string</code></div>
 <p>Turns a domain, URL or email into the canonical lowercase host name that every other function uses. Throws <code>Enter a domain</code> for empty input and <code>Not a valid domain: &lt;input&gt;</code> for anything it cannot turn into a valid host name.</p>
@@ -416,32 +422,34 @@ normalizeDomain('bob@stripe.com') // 'stripe.com'</code></pre></div>
 </ol>
 <div class="dx-note">Pass the normalized name to the escrow contracts. <code>DomainEscrow</code> accepts only lowercase ASCII names, with punycode for IDNs and no trailing dot, so that one domain can never end up with two pools. <code>normalizeDomain</code> produces names in that form.</div>
 <h3 id="res-verified">What verified means</h3>
-<p><code>verified: true</code> states three things at once:</p>
+<p><code>verified: true</code> states four things at once:</p>
 <ul>
 <li>The domain publishes at least one record.</li>
-<li>Every resolver that answered returned the same coin code and address pairs.</li>
-<li>Every returned record arrived in a response with the AD (Authenticated Data) bit set, meaning the resolver validated its DNSSEC signatures.</li>
+<li>Every resolver answered. None failed.</li>
+<li>Every resolver returned the same coin code and address pairs.</li>
+<li>Every record arrived, on every resolver, in a response with the AD (Authenticated Data) bit set, meaning each resolver validated its DNSSEC signatures.</li>
 </ul>
-<p>The SDK does not check DNSSEC signatures itself. It relies on the validation of the resolvers it queries, and by default it asks two independent operators and requires every one that answers to agree, which guards against a single bad resolver or a tampered network path. Escrow claims do not rely on this at all: the contract verifies the full signature chain on-chain. See <a href="#dnssec-proofs">DNSSEC proofs</a>.</p>
-<p>Agreement is measured among the resolvers that answered. If one resolver fails, <code>agree</code> and <code>verified</code> reflect the remaining resolver alone. When you need two independent answers, check <code>resolvers</code> as well:</p>
+<p>The SDK does not check DNSSEC signatures itself. It relies on the validation of the resolvers it queries, and by default it asks two independent operators and requires both to answer and agree, which guards against a single bad resolver or a tampered network path. Escrow claims do not rely on this at all: the contract verifies the full signature chain on-chain. See <a href="#dnssec-proofs">DNSSEC proofs</a>.</p>
+<p><code>agree</code> is measured among the resolvers that answered, so when one is down it compares only the rest. <code>verified</code> is stricter: it is <code>false</code> whenever a resolver failed. To tell a failure apart from an unsigned zone, read <code>resolvers</code>:</p>
 <pre class="dx-code" data-lang="js"><code>import { resolveWallets } from './wallet262.js'
 
 const r = await resolveWallets('yoursite.com')
-const independent = r.verified &amp;&amp; r.resolvers.every(x =&gt; x.ok)</code></pre>
+const failed = r.resolvers.filter(x =&gt; !x.ok).map(x =&gt; x.resolver) // e.g. ['google']</code></pre>
 <p>The tools in this repository act on the result as follows:</p>
 <div class="dx-scroll"><table class="dx-table"><thead><tr><th>Consumer</th><th>Rule</th></tr></thead><tbody>
 <tr><td>App, Resolve tool</td><td>Shows <code>Resolvers disagree</code>, or how many resolvers answered and agree, for example <code>1/2 resolvers agree</code> when one failed.</td></tr>
 <tr><td>App, Pay tool</td><td>Disables sending when <code>agree</code> is <code>false</code>; warns when <code>verified</code> is <code>false</code>.</td></tr>
 <tr><td>CLI <code>link</code></td><td>Prints the payment link, plus <code>warning: record is not DNSSEC-verified by every resolver</code> on stderr when <code>verified</code> is <code>false</code>.</td></tr>
-<tr><td><code>verifyPayTo</code></td><td><code>ok</code> when the address matches and the resolvers agree; <code>strong</code> when the matching record is also DNSSEC-signed. See <a href="#agents">Agents and x402</a>.</td></tr>
+<tr><td><code>verifyPayTo</code></td><td><code>ok</code> when the address matches, the resolvers agree and none said NXDOMAIN; <code>strong</code> when, in addition, every resolver answered and returned the address DNSSEC-signed. See <a href="#agents-outcomes">Outcomes</a>.</td></tr>
 </tbody></table></div>
 <h3 id="res-failure-modes">Failure modes</h3>
 <div class="dx-scroll"><table class="dx-table"><thead><tr><th>Situation</th><th>What you get</th><th>What to do</th></tr></thead><tbody>
 <tr><td>Input is not a domain</td><td>Throws <code>Enter a domain</code> or <code>Not a valid domain: &lt;input&gt;</code></td><td>Validate input before resolving.</td></tr>
 <tr><td>Every resolver fails</td><td>Throws one error that joins each resolver's message, for example <code>cloudflare: HTTP 503; google: HTTP 503</code></td><td>Retry, or pass <code>opts.resolvers</code> or <code>opts.fetch</code>.</td></tr>
-<tr><td>One resolver fails</td><td>A result from the resolvers that answered; the failed entry in <code>resolvers</code> has <code>ok: false</code> and an <code>error</code></td><td>Decide whether one answer is enough for your use.</td></tr>
-<tr><td>Name does not exist</td><td><code>records</code> is empty and <code>nxdomain</code> is <code>true</code></td><td>Check the spelling.</td></tr>
+<tr><td>One resolver fails</td><td>A result from the resolvers that answered, with <code>verified</code> <code>false</code>; the failed entry in <code>resolvers</code> has <code>ok: false</code> and an <code>error</code></td><td>Retry, or decide whether one answer is enough for your use.</td></tr>
+<tr><td>Name does not exist</td><td><code>nxdomain</code> is <code>true</code>, because at least one resolver said NXDOMAIN; <code>records</code> is empty when every resolver did</td><td>Check the spelling.</td></tr>
 <tr><td>No record published</td><td><code>records</code> is empty and <code>nxdomain</code> is <code>false</code></td><td>Pay the domain's <a href="#solana-vaults">vault</a> on Solana, or <a href="#escrow">Escrow</a> on Robinhood Chain, instead.</td></tr>
+<tr><td>Name is a CNAME</td><td>The target's records are ignored, so <code>records</code> holds only what the name itself publishes, such as its <code>_wallet</code> TXT record</td><td>Publish <code>_wallet.&lt;name&gt;</code> TXT for the name itself.</td></tr>
 <tr><td>Malformed record</td><td>Left out of <code>records</code> and listed in <code>invalid</code> with its <code>source</code>, raw <code>data</code> and <code>error</code></td><td>Fix the record. See <a href="#wallet-record">The WALLET record</a>.</td></tr>
 <tr><td>Resolvers disagree</td><td><code>agree</code> and <code>verified</code> are <code>false</code></td><td>Do not pay. Disagreement can mean DNS tampering. It can also appear briefly after a record change, while one resolver still serves a cached answer.</td></tr>
 <tr><td>Zone is unsigned</td><td><code>dnssec</code>, every <code>records[].dnssec</code> and <code>verified</code> are <code>false</code></td><td>Turn on DNSSEC for the zone.</td></tr>
@@ -489,7 +497,7 @@ const independent = r.verified &amp;&amp; r.resolvers.every(x =&gt; x.ok)</code>
 
 <div class="dx-api">
 <div class="dx-sig"><code>resolveWallets(input, opts?) → Promise&lt;Resolution&gt;</code></div>
-<p>Resolves the wallets published by one name. For each resolver it sends two DoH queries at once: type 262 at the domain and, unless you turn it off, TXT at <code>_wallet.&lt;domain&gt;</code>. The returned <code>records</code>, <code>invalid</code> and <code>nxdomain</code> come from the first resolver in the list that answered, which is Cloudflare by default. Every resolver that answered counts toward <code>agree</code> and <code>dnssec</code>.</p>
+<p>Resolves the wallets published by one name. For each resolver it sends two DoH queries at once: type 262 at the domain and, unless you turn it off, TXT at <code>_wallet.&lt;domain&gt;</code>. Only answers owned by the queried name count, so a CNAME never lends a name its target's records. The returned <code>records</code> and <code>invalid</code> come from the first resolver in the list that answered, which is Cloudflare by default. Every resolver that answered counts toward <code>agree</code>, <code>dnssec</code> and <code>nxdomain</code>, and <code>verified</code> needs every resolver to answer.</p>
 <div class="dx-scroll"><table class="dx-table">
 <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
 <tbody>
@@ -506,10 +514,10 @@ const independent = r.verified &amp;&amp; r.resolvers.every(x =&gt; x.ok)</code>
 <tr><td><code>domain</code></td><td><code>string</code></td><td>The normalized name that was queried.</td></tr>
 <tr><td><code>records</code></td><td><code>WalletRecord[]</code></td><td><code>{ code, address, source, dnssec }</code>. <code>code</code> is uppercased. <code>source</code> is <code>'TYPE262'</code> or <code>'TXT'</code>. <code>dnssec</code> is the AD bit of the response that carried the record.</td></tr>
 <tr><td><code>invalid</code></td><td><code>object[]</code></td><td><code>{ source, data, error }</code> for each of that resolver's answers that failed to parse.</td></tr>
-<tr><td><code>nxdomain</code></td><td><code>boolean</code></td><td>That resolver's type 262 query returned NXDOMAIN (DNS <code>Status</code> 3).</td></tr>
+<tr><td><code>nxdomain</code></td><td><code>boolean</code></td><td>Any resolver that answered returned NXDOMAIN (DNS <code>Status</code> 3) for the type 262 query.</td></tr>
 <tr><td><code>dnssec</code></td><td><code>boolean</code></td><td>Every resolver that answered set the AD bit on the type 262 query.</td></tr>
 <tr><td><code>agree</code></td><td><code>boolean</code></td><td>Every resolver that answered returned the same records. EVM addresses are compared case-insensitively.</td></tr>
-<tr><td><code>verified</code></td><td><code>boolean</code></td><td><code>records</code> is not empty, <code>agree</code> is true, and every record has <code>dnssec: true</code>.</td></tr>
+<tr><td><code>verified</code></td><td><code>boolean</code></td><td><code>records</code> is not empty, every resolver answered, <code>agree</code> is true, and every record has <code>dnssec: true</code> on every resolver.</td></tr>
 <tr><td><code>resolvers</code></td><td><code>object[]</code></td><td>Per resolver: <code>{ resolver, ok: true, ms, status, signed, records, invalid }</code>, or <code>{ resolver, ok: false, ms, error, records: [], invalid: [] }</code> if a query failed.</td></tr>
 </tbody>
 </table></div>
@@ -551,12 +559,12 @@ if (r.verified) {
     }
   ]
 }</code></pre>
-<div class="dx-note">A resolver that fails is reported with <code>ok: false</code> and is left out of <code>agree</code> and <code>dnssec</code>. If only one resolver answers, <code>agree</code> is trivially true. When you need two independent answers, check that every entry in <code>resolvers</code> has <code>ok: true</code>.</div>
+<div class="dx-note">A resolver that fails is reported with <code>ok: false</code> and is left out of <code>agree</code> and <code>dnssec</code>. If only one resolver answers, <code>agree</code> is trivially true, but <code>verified</code> is <code>false</code>, because it needs every resolver to answer.</div>
 </div>
 
 <div class="dx-api">
 <div class="dx-sig"><code>resolveWalletsUp(target, opts?) → Promise&lt;Resolution &amp; { resolvedAt, requested? }&gt;</code></div>
-<p>Resolves the host, and if it publishes no record, its parent. <code>api.yoursite.com</code> falls back to <code>yoursite.com</code>. It walks up exactly one label, and only when the host has at least three labels and the parent is not a two-label public suffix of the form <code>co|com|net|org|gov|edu|ac|or|ne|go</code> plus a two-letter country code, such as <code>co.uk</code>. If the parent publishes nothing either, you get the host's result.</p>
+<p>Resolves the host, and if it publishes no record, its parent. <code>api.yoursite.com</code> falls back to <code>yoursite.com</code>. It walks up exactly one label, and only when the host has at least three labels and every resolver answered it with NOERROR, agreed, and found no record. It never walks into a two-letter-country second level such as <code>co.uk</code>, or a shared hosting domain on its built-in list such as <code>vercel.app</code>; see <a href="#res-resolve-wallets-up"><code>resolveWalletsUp</code></a> for the full rules. If the parent publishes nothing either, you get the host's result.</p>
 <div class="dx-scroll"><table class="dx-table">
 <thead><tr><th>Parameter</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
 <tbody>
@@ -592,8 +600,8 @@ r.requested  // 'api.yoursite.com'</code></pre>
 <div class="dx-scroll"><table class="dx-table">
 <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
 <tbody>
-<tr><td><code>ok</code></td><td><code>boolean</code></td><td>A published record matches <code>payTo</code> and the resolvers agree.</td></tr>
-<tr><td><code>strong</code></td><td><code>boolean</code></td><td><code>ok</code>, and the matching record is DNSSEC-authenticated.</td></tr>
+<tr><td><code>ok</code></td><td><code>boolean</code></td><td>A published record matches <code>payTo</code>, the resolvers agree, and none of them said NXDOMAIN.</td></tr>
+<tr><td><code>strong</code></td><td><code>boolean</code></td><td><code>ok</code>, every resolver answered, and every resolver returned the matching address DNSSEC-authenticated.</td></tr>
 <tr><td><code>reason</code></td><td><code>string</code></td><td>One human-readable verdict, listed below.</td></tr>
 <tr><td><code>match</code></td><td><code>WalletRecord | null</code></td><td>The matching record.</td></tr>
 </tbody>
@@ -602,12 +610,14 @@ r.requested  // 'api.yoursite.com'</code></pre>
 <div class="dx-scroll"><table class="dx-table">
 <thead><tr><th>Condition</th><th><code>reason</code></th><th><code>ok</code></th><th><code>strong</code></th></tr></thead>
 <tbody>
-<tr><td>No records, NXDOMAIN</td><td><code>Domain does not exist</code></td><td>false</td><td>false</td></tr>
-<tr><td>No records</td><td><code>Domain publishes no WALLET record</code></td><td>false</td><td>false</td></tr>
-<tr><td>No record has this address</td><td><code>Address is not published by this domain</code></td><td>false</td><td>false</td></tr>
+<tr><td>A resolver said NXDOMAIN</td><td><code>Domain does not exist</code></td><td>false</td><td>false</td></tr>
+<tr><td>No resolver returned any record</td><td><code>Domain publishes no WALLET record</code></td><td>false</td><td>false</td></tr>
+<tr><td>No resolver returned this address</td><td><code>Address is not published by this domain</code></td><td>false</td><td>false</td></tr>
 <tr><td>Resolvers returned different records</td><td><code>Resolvers disagree. Possible tampering</code></td><td>false</td><td>false</td></tr>
-<tr><td>Match without the AD bit</td><td><code>Match, but the zone is not DNSSEC-signed</code></td><td>true</td><td>false</td></tr>
-<tr><td>Match with the AD bit</td><td><code>Match, DNSSEC-verified</code></td><td>true</td><td>true</td></tr>
+<tr><td>Match, but no resolver returned it with the AD bit</td><td><code>Match, but the zone is not DNSSEC-signed</code></td><td>true</td><td>false</td></tr>
+<tr><td>Match, but a resolver failed</td><td><code>Match, but not every resolver answered</code></td><td>true</td><td>false</td></tr>
+<tr><td>Match, but a resolver returned it without the AD bit</td><td><code>Match, but not DNSSEC-signed on every resolver</code></td><td>true</td><td>false</td></tr>
+<tr><td>Match, signed on every resolver</td><td><code>Match, DNSSEC-verified</code></td><td>true</td><td>true</td></tr>
 </tbody>
 </table></div>
 <p><strong>Throws</strong> the same errors as <code>resolveWallets</code>.</p>
@@ -621,9 +631,9 @@ if (res.status === 402) {
   // Walks up to yoursite.com if api.yoursite.com publishes no record.
   const check = await verifyPayTo(url, payTo)
   if (!check.strong) throw new Error(`Refusing to pay ${payTo}: ${check.reason}`)
-  // payTo is published by check.resolvedAt and DNSSEC-authenticated. Sign the payment.
+  // payTo is published by check.resolvedAt, and every resolver returned it DNSSEC-authenticated. Sign the payment.
 }</code></pre>
-<div class="dx-note tip">Gate automated payments on <code>strong</code>. <code>ok</code> also accepts records from unsigned zones, which rely on the resolvers alone and cannot be authenticated.</div>
+<div class="dx-note tip">Gate automated payments on <code>strong</code>. <code>ok</code> also accepts records from unsigned zones, which rely on the resolvers alone and cannot be authenticated, and answers that not every resolver confirmed.</div>
 </div>
 
 <div class="dx-api">
@@ -874,10 +884,11 @@ const ADDRESS = '0x7a1fe1c2b0d3a4f5e6d7c8b9a0f1e2d3c4b5c0de'
 const rdata = encodeWalletRdata('ETH', ADDRESS).generic
 
 // shop.test publishes one signed WALLET record. Every other query returns no answer.
+// An answer counts only when its name is the name queried.
 const fetch = async url =&gt; ({
   ok: true,
   json: async () =&gt; url.includes('name=shop.test') &amp;&amp; url.includes('type=262')
-    ? { Status: 0, AD: true, Answer: [{ type: 262, data: rdata }] }
+    ? { Status: 0, AD: true, Answer: [{ name: 'shop.test.', type: 262, data: rdata }] }
     : { Status: 0, AD: true },
 })
 
@@ -938,22 +949,22 @@ node type262/bin/type262.mjs resolve yoursite.com</code></pre>
 <p><code>resolve</code> exits with status 0 whether or not a record exists. It queries only the name you give; it does not fall back to the parent domain. Answers that fail to parse are not printed. To see them, read <code>invalid</code> from <code>resolveWallets</code>.</p>
 
 <h3 id="cli-verify">verify</h3>
-<p>Checks that an address is published by the domain behind a URL, email or domain, using <code>verifyPayTo</code>. If the host publishes nothing, it walks up one level, from <code>api.yoursite.com</code> to <code>yoursite.com</code>, under the rules of <a href="#sdk-resolve"><code>resolveWalletsUp</code></a>.</p>
+<p>Checks that an address is published by the domain behind a URL, email or domain, using <code>verifyPayTo</code>. If every resolver answers that the host publishes nothing, it walks up one level, from <code>api.yoursite.com</code> to <code>yoursite.com</code>, under the rules of <a href="#res-resolve-wallets-up"><code>resolveWalletsUp</code></a>.</p>
 <pre class="dx-code" data-lang="bash"><code>node bin/type262.mjs verify https://api.yoursite.com/data 0x7a1fe1c2b0d3a4f5e6d7c8b9a0f1e2d3c4b5c0de</code></pre>
 <pre class="dx-code" data-lang="txt"><code>MATCH: Match, DNSSEC-verified [yoursite.com]</code></pre>
 <p>The line is <code>&lt;verdict&gt;: &lt;reason&gt; [&lt;name checked&gt;]</code>. The reason is one of the <code>verifyPayTo</code> reasons listed in <a href="#sdk-verify">Verify</a>, and the bracket shows the name whose records were compared.</p>
 <div class="dx-scroll"><table class="dx-table">
 <thead><tr><th>Verdict</th><th>When</th><th>Exit status</th></tr></thead>
 <tbody>
-<tr><td><code>MATCH</code></td><td>The address is published, the resolvers agree, and the record is DNSSEC-authenticated.</td><td>0</td></tr>
-<tr><td><code>MATCH (unsigned)</code></td><td>The address is published and the resolvers agree, but the zone is not signed.</td><td>0</td></tr>
+<tr><td><code>MATCH</code></td><td>The address is published, every resolver answered and agrees, and every resolver returned it DNSSEC-authenticated (<code>strong</code>).</td><td>0</td></tr>
+<tr><td><code>MATCH (not verified)</code></td><td>The address is published and the resolvers agree, but the zone is not signed, not every resolver answered, or not every resolver authenticated it. The reason says which.</td><td>0</td></tr>
 <tr><td><code>NO MATCH</code></td><td>No record, a different address, or the resolvers disagree.</td><td>1</td></tr>
 </tbody>
 </table></div>
 <p>When neither the host nor its parent publishes a record, the bracket shows the host you passed:</p>
 <pre class="dx-code" data-lang="bash"><code>node bin/type262.mjs verify https://api.example.com/data 0x7a1fe1c2b0d3a4f5e6d7c8b9a0f1e2d3c4b5c0de</code></pre>
 <pre class="dx-code" data-lang="txt"><code>NO MATCH: Domain publishes no WALLET record [api.example.com]</code></pre>
-<div class="dx-note">Exit status 0 includes unsigned matches. To require DNSSEC in a script, match the <code>MATCH:</code> prefix, which only a signed match prints.</div>
+<div class="dx-note">Exit status 0 includes unsigned matches. To require DNSSEC in a script, match the <code>MATCH:</code> prefix, which only a <code>strong</code> match prints.</div>
 <pre class="dx-code" data-lang="bash"><code>node bin/type262.mjs verify "$URL" "$PAY_TO" | grep -q '^MATCH:' || exit 1</code></pre>
 
 <h3 id="cli-encode">encode</h3>
@@ -986,7 +997,7 @@ ethereum:0x7a1fe1c2b0d3a4f5e6d7c8b9a0f1e2d3c4b5c0de@4663?value=10000000000000000
 <tr><td>Any other value, such as <code>ETH</code></td><td>Native ETH transfer</td><td>18</td></tr>
 </tbody>
 </table></div>
-<p>The link goes to standard output. If the lookup is not <code>verified</code> (records found, resolvers agree, every record signed), the CLI also writes <code>warning: record is not DNSSEC-verified by every resolver</code> to standard error and still exits with status 0, so piping the link elsewhere stays clean. Like <code>resolve</code>, <code>link</code> does not fall back to the parent domain.</p>
+<p>The link goes to standard output. If the lookup is not <code>verified</code> (records found, every resolver answered and agrees, every record signed on every resolver), the CLI also writes <code>warning: record is not DNSSEC-verified by every resolver</code> to standard error and still exits with status 0, so piping the link elsewhere stays clean. Like <code>resolve</code>, <code>link</code> does not fall back to the parent domain.</p>
 
 <h3 id="cli-errors">Exit status and errors</h3>
 <div class="dx-scroll"><table class="dx-table">
@@ -1019,7 +1030,7 @@ ethereum:0x7a1fe1c2b0d3a4f5e6d7c8b9a0f1e2d3c4b5c0de@4663?value=10000000000000000
 <ol class="dx-steps">
 <li><strong>Read the requirement.</strong> <code>payTosFromX402(body)</code> pulls every <code>payTo</code> out of the 402 response.</li>
 <li><strong>Verify each address.</strong> <code>verifyPayTo(target, payTo)</code> resolves the domain you are paying and looks for a published record with that address.</li>
-<li><strong>Decide.</strong> Pay only on a match. Apply a stricter policy to unsigned zones, and never pay when the resolvers disagree.</li>
+<li><strong>Decide.</strong> Pay only on a match. Apply a stricter policy to a match that isn't <code>strong</code>, and never pay when the resolvers disagree.</li>
 </ol>
 <pre class="dx-code" data-lang="js"><code>import { payTosFromX402, verifyPayTo } from './wallet262.js'
 
@@ -1030,7 +1041,7 @@ if (res.status === 402) {
     const check = await verifyPayTo('https://api.yoursite.com/report', payTo)
     if (!check.strong) throw new Error(`Refusing to pay ${payTo}: ${check.reason}`)
   }
-  // every payTo is published by yoursite.com, DNSSEC-signed, and the resolvers agree: pay
+  // every payTo is published by yoursite.com, and every resolver returned it DNSSEC-signed: pay
 }</code></pre>
 
 <h3 id="agents-x402-body">Reading the 402 body</h3>
@@ -1052,28 +1063,115 @@ if (res.status === 402) {
 <h3 id="agents-outcomes">Outcomes</h3>
 <p><code>verifyPayTo</code> returns every field of the resolution plus <code>ok</code>, <code>strong</code>, <code>reason</code> and <code>match</code>. The address is compared case-insensitively for EVM addresses and exactly for everything else; the coin code is not compared. The first rule that applies sets <code>reason</code>:</p>
 <div class="dx-scroll"><table class="dx-table"><thead><tr><th><code>reason</code></th><th><code>ok</code></th><th><code>strong</code></th><th>What to do</th></tr></thead><tbody>
-<tr><td><code>Domain does not exist</code></td><td>false</td><td>false</td><td>Don't pay. The name has no DNS at all (NXDOMAIN).</td></tr>
+<tr><td><code>Domain does not exist</code></td><td>false</td><td>false</td><td>Don't pay. A resolver reports that the name has no DNS at all (NXDOMAIN).</td></tr>
 <tr><td><code>Domain publishes no WALLET record</code></td><td>false</td><td>false</td><td>Don't pay to this address. If you must pay the domain, use its <a href="#solana-vaults">vault</a> on Solana or <a href="#escrow">escrow</a> on Robinhood Chain.</td></tr>
 <tr><td><code>Address is not published by this domain</code></td><td>false</td><td>false</td><td>Don't pay. The address was swapped or belongs to someone else.</td></tr>
 <tr><td><code>Resolvers disagree. Possible tampering</code></td><td>false</td><td>false</td><td>Don't pay. Cloudflare and Google returned different records.</td></tr>
 <tr><td><code>Match, but the zone is not DNSSEC-signed</code></td><td>true</td><td>false</td><td>The address matches, but an attacker on the network path could have forged the answer. Pay small amounts or ask a human.</td></tr>
-<tr><td><code>Match, DNSSEC-verified</code></td><td>true</td><td>true</td><td>Pay.</td></tr>
+<tr><td><code>Match, but not every resolver answered</code></td><td>true</td><td>false</td><td>The address matches, but a resolver failed, so the answer wasn't cross-checked. Retry, or treat it like an unsigned match.</td></tr>
+<tr><td><code>Match, but not DNSSEC-signed on every resolver</code></td><td>true</td><td>false</td><td>The address matches, but at least one resolver didn't authenticate it. Retry, or treat it like an unsigned match.</td></tr>
+<tr><td><code>Match, DNSSEC-verified</code></td><td>true</td><td>true</td><td>Pay. Every resolver returned the address, DNSSEC-signed.</td></tr>
 </tbody></table></div>
 
 <h3 id="agents-which-domain">Which domain is checked</h3>
-<p><code>target</code> can be a URL, an email address or a bare domain; it is normalised with <code>normalizeDomain</code>. Verification uses <code>resolveWalletsUp</code>: if the host publishes nothing and has at least three labels, its parent is checked too, so <code>api.yoursite.com</code> can rely on the record at <code>yoursite.com</code>. The walk stops below multi-label public suffixes such as <code>co.uk</code>, and you can turn it off with <code>{ walkUp: false }</code>. The result's <code>resolvedAt</code> tells you where the record was found, and <code>requested</code> holds the original host when the parent was used.</p>
+<p><code>target</code> can be a URL, an email address or a bare domain; it is normalised with <code>normalizeDomain</code>. Verification uses <code>resolveWalletsUp</code>: if the host has at least three labels and every resolver answered it with NOERROR, agreed, and found no record, its parent is checked too, so <code>api.yoursite.com</code> can rely on the record at <code>yoursite.com</code>. A host is never answered by its parent when any resolver says it does not exist (NXDOMAIN), when a resolver failed or returned SERVFAIL for it, or when the resolvers disagree about it. The walk also never goes up into a shared suffix it knows: two-letter-country second levels such as <code>co.uk</code>, and the shared hosting domains on its built-in list, such as <code>github.io</code>, <code>vercel.app</code>, <code>netlify.app</code> or <code>pages.dev</code>, whose subdomains belong to different people. That list holds about 70 domains; it is not the full Public Suffix List. You can turn the walk off with <code>{ walkUp: false }</code>. The result's <code>resolvedAt</code> tells you where the record was found, and <code>requested</code> holds the original host when the parent was used.</p>
 <div class="dx-note tip">Check the domain you are actually talking to, taken from the URL you requested. Never take the domain from the 402 body itself: a tampered response would simply name a domain the attacker controls.</div>
 
 <h3 id="agents-policy">Recommended policy</h3>
 <ul>
-<li><strong>Require <code>strong</code></strong> for autonomous payments. It means the record is DNSSEC-signed and both resolvers agree.</li>
+<li><strong>Require <code>strong</code></strong> for autonomous payments. It means every resolver answered, they agree, and each one returned the address DNSSEC-signed.</li>
 <li><strong>Treat <code>ok</code> without <code>strong</code> as unverified.</strong> Cap the amount or ask for approval.</li>
 <li><strong>Refuse on <code>!ok</code></strong>, and log <code>reason</code> and <code>resolvers</code> for review.</li>
 <li><strong>Re-check per payment.</strong> Records can change; the check costs two DNS-over-HTTPS queries per name.</li>
 </ul>
 
 <h3 id="agents-app">In the app</h3>
-<p>The app's <a href="app.html#verify">Verify</a> tab runs the same check. Give it a URL or domain and either a <code>payTo</code> address or a whole 402 body. Each address gets one of three verdicts: <strong>Match. Safe to pay.</strong> (<code>strong</code>), <strong>Match, unsigned.</strong> (<code>ok</code> only) or <strong>No match. Don't pay.</strong></p>
+<p>The app's <a href="app.html#verify">Verify</a> tab runs the same check. Give it a URL or domain and either a <code>payTo</code> address or a whole 402 body. Each address gets one of four verdicts, shown with its reason: <strong>Match. Safe to pay.</strong> (<code>strong</code>), <strong>Match, unsigned.</strong> (<code>ok</code>, and the zone is not DNSSEC-signed), <strong>Match, not verified.</strong> (<code>ok</code>, but not every resolver answered or signed it) or <strong>No match. Don't pay.</strong></p>
+<p>To give an AI agent these checks as tools, plus the ability to pay domains on Robinhood Chain, use the <a href="#mcp">MCP server</a>.</p>
+      </section>
+
+      <section class="dx-section" id="mcp" data-group="Build">
+        <div class="dx-section-head"><span class="dx-kicker">Build</span><h2>MCP server</h2><p class="dx-lead">Let Claude, Cursor or any MCP client resolve, verify and pay domains by name on Robinhood Chain, within spend limits you set.</p></div>
+<p>The TYPE/262 MCP server is one self-contained file: a hand-written Model Context Protocol server over stdio, with viem bundled in, so any MCP client can start it and nothing else needs installing. With it, an agent can be told <em>"send nytimes.com 5 USDG"</em> and it will look up the domain's wallet in DNS, check the answer, and either pay the published wallet or put the money in escrow for the owner to claim.</p>
+
+<h3 id="mcp-install">Install</h3>
+<p>You need Node.js 18 or later. Download the server:</p>
+<pre class="dx-code" data-lang="bash"><code>curl -fsSL https://type262.onrender.com/mcp/type262-mcp.mjs -o ~/type262-mcp.mjs</code></pre>
+<p>Then add it to your client. For Claude Desktop, edit <code>claude_desktop_config.json</code> (Settings → Developer → Edit Config); Cursor and most other clients take the same block in their MCP settings:</p>
+<pre class="dx-code" data-lang="json"><code>{
+  "mcpServers": {
+    "type262": {
+      "command": "node",
+      "args": ["/Users/you/type262-mcp.mjs"],
+      "env": {
+        "TYPE262_PRIVATE_KEY": "0x…",
+        "TYPE262_MAX_USDG": "25",
+        "TYPE262_DAILY_USDG": "100"
+      }
+    }
+  }
+}</code></pre>
+<p>For Claude Code:</p>
+<pre class="dx-code" data-lang="bash"><code>claude mcp add type262 -e TYPE262_PRIVATE_KEY=0x… -- node ~/type262-mcp.mjs</code></pre>
+<p>Restart the client and the five tools below appear. Without <code>TYPE262_PRIVATE_KEY</code> the server still runs: resolving, verifying, escrow balances and <code>pay_domain</code> dry runs all work, and real payments and <code>wallet_status</code> explain how to add a wallet.</p>
+<div class="dx-note tip">Give the agent its own wallet, funded with only what it may spend, plus a little ETH for gas. The key is read once at startup, removed from the environment and never written to a log or a tool result.</div>
+
+<h3 id="mcp-tools">Tools</h3>
+<div class="dx-scroll"><table class="dx-table"><thead><tr><th>Tool</th><th>Arguments</th><th>What it does</th></tr></thead><tbody>
+<tr><td><code>resolve_domain</code></td><td><code>domain</code></td><td>The wallets a domain publishes, whether the resolvers agree and DNSSEC signed them, what <code>pay_domain</code> would do (pay directly, deposit into escrow, or refuse, including when <code>TYPE262_ALLOW_ESCROW=false</code> blocks escrow), and how much already waits in escrow. Read-only.</td></tr>
+<tr><td><code>verify_payto</code></td><td><code>target</code>, <code>pay_to</code> or <code>x402_body</code></td><td>Checks one address, or every <code>payTo</code> in a 402 body, against the domain you are talking to. Verdict per address: <code>safe</code> (<code>strong</code>), <code>unsigned</code> (<code>ok</code> without <code>strong</code>) or <code>no_match</code>, with the <a href="#agents-outcomes"><code>verifyPayTo</code> reason</a>. Read-only.</td></tr>
+<tr><td><code>pay_domain</code></td><td><code>domain</code>, <code>amount</code>, <code>asset</code>, <code>allow_escrow</code>, <code>dry_run</code>, <code>repeat</code></td><td>Pays a domain by name in USDG (default) or ETH. With <code>dry_run: true</code> it returns the full plan and sends nothing. <code>repeat: true</code> allows an identical payment to the same recipient within 10 minutes (see <a href="#mcp-retries">Retries</a>).</td></tr>
+<tr><td><code>escrow_status</code></td><td><code>domain</code></td><td>USDG and ETH waiting in <code>DomainEscrow</code> for the domain, and whether deposits are open. Read-only.</td></tr>
+<tr><td><code>wallet_status</code></td><td>none</td><td>The agent wallet's address, balances, spend limits and what it has spent today. Read-only.</td></tr>
+</tbody></table></div>
+<p>A domain argument can be a bare domain, a URL or an email address; only the host is used. Input with a dot before an <code>@</code>, such as <code>good.com@other.com</code>, is refused as ambiguous, because only the part after the <code>@</code> would be used. Every successful result carries a one-line <code>summary</code> the agent can repeat to you, plus structured fields; a refusal or error carries a one-line <code>error</code> instead.</p>
+
+<h3 id="mcp-pay">How <code>pay_domain</code> decides</h3>
+<div class="dx-scroll"><table class="dx-table"><thead><tr><th>What DNS says</th><th>What happens</th></tr></thead><tbody>
+<tr><td>A DNSSEC-signed EVM wallet, and every resolver returns it</td><td>Paid straight to that address</td></tr>
+<tr><td>No wallet, an unsigned record, or a resolver failed or answered with an error such as SERVFAIL</td><td>Deposited into <code>DomainEscrow</code> under the exact name you gave. Only the owner who proves that name with DNSSEC, through a signed <code>WALLET</code> record or <code>_wallet</code> TXT record, can claim it; a claim pays out the deposit minus the 0.5% claim fee. The agent wallet can take it back in full after 180 days. Set <code>allow_escrow: false</code> to refuse instead; with <code>TYPE262_ALLOW_ESCROW=false</code> on the server, it is always refused.</td></tr>
+<tr><td>The resolvers disagree, or any resolver says the domain doesn't exist</td><td>Refused, nothing is sent</td></tr>
+</tbody></table></div>
+<p>If every resolver answers <code>api.yoursite.com</code> with NOERROR, they agree, and none finds a record, a DNSSEC-signed record at <code>yoursite.com</code> can be paid directly, under the rules in <a href="#agents-which-domain">Agents and x402</a>. Only records owned by the name itself count: if a name is a CNAME, its target's records never count as its own. An escrow deposit always goes under the exact name you gave, never under its parent, so only that name's owner can claim it. USDG escrow deposits approve the exact amount first when the allowance is short. Before anything is signed, the wallet's ETH is checked against the payment plus its estimated gas.</p>
+
+<h3 id="mcp-limits">Spend limits</h3>
+<p>Limits are enforced by the server, not by the model, so no prompt can talk its way past them. Each payment is checked against the per-payment cap and against today's total (UTC) before anything is sent. The daily totals are kept in a small spend log at <code>~/.type262/agent-spend.json</code>, together with the payments of the last 10 minutes (domain, recipient, asset, amount and time; no keys or hashes).</p>
+<p>Payments run one at a time in each server process. Each MCP client starts its own server, so every process that shares the spend log takes a lock file next to it (<code>agent-spend.json.lock</code>) around the limit and repeat checks, so the daily limit and the repeat guard hold across all of them. A lock left behind by a process that stopped is cleared after 30 seconds.</p>
+
+<h3 id="mcp-retries">Retries</h3>
+<p>Every transaction is signed by the server itself, so its hash is known before it is broadcast. If the RPC returns an error or times out while broadcasting, the server still waits for the receipt, because the transaction may have gone out, and reports the hash either way. Only a receipt for that exact hash counts: if another transaction from the same key replaces it, the payment is never reported as sent.</p>
+<ul>
+<li><strong>Counted once it may have been sent.</strong> A payment counts against today's limit as soon as it may have been broadcast. It is taken back off only if nothing was broadcast, or if the transaction reverted on-chain.</li>
+<li><strong>No accidental double payments.</strong> An identical payment within 10 minutes is refused unless the call passes <code>repeat: true</code>. Identical means the same asset and amount, either to the same name or to the same recipient: the same wallet for a direct payment, the same escrow name for a deposit, even when the name or URL is written differently. An agent that lost a result and retries is told to check the agent wallet on the explorer first. The 10-minute window is kept in the spend log, so it survives a restart.</li>
+<li><strong>Cancelled means not sent.</strong> A <code>pay_domain</code> call that the client cancels (<code>notifications/cancelled</code>), or that is still queued when the client disconnects, is never sent. It ends with <code>Not sent: the request was cancelled or the client disconnected before the payment started.</code> A payment that was already broadcast still runs to its receipt.</li>
+</ul>
+
+<h3 id="mcp-config">Configuration</h3>
+<div class="dx-scroll"><table class="dx-table"><thead><tr><th>Variable</th><th>Default</th><th>Meaning</th></tr></thead><tbody>
+<tr><td><code>TYPE262_PRIVATE_KEY</code></td><td>none</td><td>The agent wallet's key, <code>0x</code> plus 64 hex characters. Needed only for real payments.</td></tr>
+<tr><td><code>TYPE262_MAX_USDG</code></td><td><code>25</code></td><td>Largest single USDG payment</td></tr>
+<tr><td><code>TYPE262_DAILY_USDG</code></td><td><code>100</code></td><td>USDG the agent may spend per UTC day</td></tr>
+<tr><td><code>TYPE262_MAX_ETH</code></td><td><code>0.01</code></td><td>Largest single ETH payment</td></tr>
+<tr><td><code>TYPE262_DAILY_ETH</code></td><td><code>0.05</code></td><td>ETH the agent may spend per UTC day</td></tr>
+<tr><td><code>TYPE262_REQUIRE_DNSSEC</code></td><td><code>true</code></td><td>Pay directly only to DNSSEC-signed records. With <code>false</code>, an unsigned record that every resolver agrees on is paid directly too.</td></tr>
+<tr><td><code>TYPE262_ALLOW_ESCROW</code></td><td><code>true</code></td><td>With <code>false</code>, escrow is off for every call: payments that would go to escrow are refused, and <code>resolve_domain</code> reports <code>refuse</code> for them. An agent's <code>allow_escrow</code> can turn escrow off for one call, never back on.</td></tr>
+<tr><td><code>TYPE262_SPEND_FILE</code></td><td><code>~/.type262/agent-spend.json</code></td><td>Where the daily totals and the last 10 minutes of payments are kept. Server processes that share it also share the daily limit.</td></tr>
+<tr><td><code>TYPE262_RPC</code></td><td><code>https://rpc.mainnet.chain.robinhood.com</code></td><td>Robinhood Chain RPC. The server checks it serves chain 4663. A custom URL is never echoed in results or logs.</td></tr>
+<tr><td><code>TYPE262_DOH</code></td><td>Cloudflare and Google</td><td>Comma-separated DNS-over-HTTPS JSON endpoints (https, or http on loopback). List at least two so every answer is cross-checked. Results name them <code>doh1</code>, <code>doh2</code> and so on; the URLs are never echoed.</td></tr>
+</tbody></table></div>
+
+<h3 id="mcp-example">What a session looks like</h3>
+<pre class="dx-code" data-lang="txt"><code>you    Send openai.com 5 USDG.
+agent  → pay_domain { domain: "openai.com", amount: "5", dry_run: true }
+       ← Dry run, nothing sent. Would deposit 5 USDG into DomainEscrow for openai.com,
+         because openai.com publishes no WALLET record. Only openai.com's DNSSEC-proven
+         owner can claim it, minus the 0.5% claim fee. If nobody claims, this wallet can
+         refund it in full after 180 days.
+agent  openai.com hasn't published a wallet, so the 5 USDG would wait in escrow for them. Go ahead?
+you    Yes.
+agent  → pay_domain { domain: "openai.com", amount: "5" }
+       ← Deposited 5 USDG into DomainEscrow for openai.com. https://robinhoodchain.blockscout.com/tx/0x…</code></pre>
+<p>The deposit shows up on the <a href="board">Unclaimed Board</a> and on <a href="d/openai.com">openai.com's profile</a> right away.</p>
       </section>
 
       <section class="dx-section" id="payments" data-group="Build">
@@ -1088,7 +1186,7 @@ if (!r.records.length) throw new Error('yoursite.com publishes no wallet')
 if (!r.agree) throw new Error('Resolvers disagree: possible tampering')
 const record = r.records.find(x => x.code === 'SOL') ?? r.records[0]
 console.log(record.address, r.verified ? 'DNSSEC-verified' : 'unsigned zone')</code></pre>
-<p><code>r.verified</code> is true when there is at least one record, the resolvers agree and every record is DNSSEC-authenticated. The app disables sending when the resolvers disagree and warns when the zone is unsigned.</p>
+<p><code>r.verified</code> is true when there is at least one record, every resolver answered, they agree, and every record is DNSSEC-authenticated on every resolver. The app disables sending when the resolvers disagree and warns when the record isn't verified.</p>
 
 <h3 id="payments-solana">Send on Solana</h3>
 <p>The app's Solana client, <code>assets/solana.js</code>, has no dependencies: it builds legacy transactions itself, derives associated token accounts, and signs through any Wallet Standard wallet. SOL is a System Program transfer. USDC is an SPL Token <code>transferChecked</code> to the recipient's associated token account, preceded by <code>createAssociatedTokenAccountIdempotent</code>, which opens that account if it doesn't exist yet (the sender pays its rent once, about 0.0015 SOL at today's mainnet rent).</p>
@@ -1150,6 +1248,42 @@ paymentUri(record.address, { amount: '25', chainId: 4663, token: USDG, decimals:
 <p>If the domain publishes no wallet yet, send to its vault on Solana (see <a href="#solana-vaults">Domain vaults</a>) or to <a href="#escrow">escrow</a> on Robinhood Chain instead. The money waits for the domain until its owner claims it with a DNSSEC-signed record, and you can take it back after 180 days if nobody does.</p>
       </section>
 
+      <section class="dx-section" id="board" data-group="Build">
+        <div class="dx-section-head"><span class="dx-kicker">Build</span><h2>Board and profiles</h2><p class="dx-lead">Every domain with money waiting gets a public page, and the Unclaimed Board ranks them all, read live from Robinhood Chain.</p></div>
+<p>The <a href="board">Unclaimed Board</a> lists every website that has been sent money through <code>DomainEscrow</code> on Robinhood Chain or had a pons coin launched for it through <code>DomainLauncher</code>, with how much is waiting, how many people sent it and what has been claimed. Each domain also has a profile at <code>/d/&lt;domain&gt;</code>: its wallet status in DNS, the money waiting for it in escrow on Robinhood Chain, its top supporters, the pons coins whose creator fees pay it, and its recent activity.</p>
+
+<h3 id="board-links">Links</h3>
+<p>Every page takes the domain in its path, so you can link straight to it from anywhere.</p>
+<div class="dx-scroll"><table class="dx-table"><thead><tr><th>Link</th><th>Opens</th></tr></thead><tbody>
+<tr><td><code>/board</code></td><td>The Unclaimed Board, sorted by money waiting</td></tr>
+<tr><td><code>/d/yoursite.com</code></td><td>The profile for <code>yoursite.com</code></td></tr>
+<tr><td><code>/app.html?net=robinhood#escrow/yoursite.com</code></td><td>Send <code>yoursite.com</code> money in escrow on Robinhood Chain, or claim it as the owner</td></tr>
+<tr><td><code>/app.html?net=robinhood#launch/new/yoursite.com</code></td><td>Launch a pons coin on Robinhood Chain whose creator fees go to <code>yoursite.com</code></td></tr>
+<tr><td><code>/app.html?net=robinhood#publish/yoursite.com</code></td><td>Make the <code>_wallet</code> record for <code>yoursite.com</code>, starting with an EVM address</td></tr>
+</tbody></table></div>
+<p><code>?net=robinhood</code> opens the app on Robinhood Chain, where the board's money is; <code>?net=solana</code> opens it on Solana. Without it, the app opens on the network the visitor chose last, Solana by default. Either way the visitor can switch, and the link's choice is not saved.</p>
+<pre class="dx-code" data-lang="html"><code>&lt;a href="https://type262.onrender.com/d/yoursite.com"&gt;Support yoursite.com on-chain&lt;/a&gt;</code></pre>
+
+<h3 id="board-ranking">Ranking</h3>
+<div class="dx-scroll"><table class="dx-table"><thead><tr><th>Sort</th><th>Order</th></tr></thead><tbody>
+<tr><td>Most waiting</td><td>Current escrow balance in US dollars, highest first. USDG counts at $1; ETH uses the live spot price.</td></tr>
+<tr><td>Newest</td><td>The domain's first deposit or launch, most recent first</td></tr>
+<tr><td>Most supporters</td><td>Distinct addresses that have deposited for the domain</td></tr>
+<tr><td>Has coins</td><td>Only domains with a coin launched for them, most coins first</td></tr>
+</tbody></table></div>
+<p>A profile's rank is its position under Most waiting.</p>
+
+<h3 id="board-data">Where the numbers come from</h3>
+<p>There is no indexer or database. The page reads the chain directly from your browser:</p>
+<ul>
+<li><strong>History.</strong> <code>Deposited</code>, <code>Claimed</code> and <code>Refunded</code> events from <code>DomainEscrow</code>, and <code>DomainTokenLaunched</code> from <code>DomainLauncher</code>, fetched with <code>eth_getLogs</code> from the deployment block (<code>FROM_BLOCK</code> in <code>assets/config.js</code>) onward. When a query returns too many logs, the range is split in half and retried.</li>
+<li><strong>Balances.</strong> The amount waiting is read with <code>balanceOf(domain, token)</code> for USDG and ETH, so it always matches what a claim would pay before the 0.5% fee.</li>
+<li><strong>Coins.</strong> Name, symbol, curve reserves and graduation status are read from each pons token and its curve.</li>
+<li><strong>Prices.</strong> The ETH spot price comes from Coinbase, falling back to CoinGecko. It only affects the dollar figures, never what anyone can claim.</li>
+</ul>
+<p>Results are cached for 30 seconds, and the board reads the chain again every 30 seconds while its tab is visible. The profile's wallet status is a live DNS lookup through the same resolvers as the <a href="#resolution">SDK</a>; <strong>Pay directly</strong> appears only when the domain publishes an EVM address and the resolvers agree.</p>
+      </section>
+
       <section class="dx-section" id="solana" data-group="Solana">
         <div class="dx-section-head"><span class="dx-kicker">Solana</span><h2>On Solana</h2><p class="dx-lead">Pay a domain's published address directly, or pay its vault, an address of its own that waits for the owner. Launch pump.fun coins whose creator fees collect in that vault.</p></div>
 <p>Solana mainnet is TYPE/262's main network. There are three ways to pay a domain on it:</p>
@@ -1176,7 +1310,7 @@ refund   anyone ──POST /solana/refund──▶ worker checks the deposit ─
 <tr><td>Vault</td><td>One address per domain, from <code>GET /solana/vault?domain=&lt;domain&gt;</code>. See <a href="#solana-vaults-address">The vault address</a>.</td></tr>
 <tr><td>Claim fee</td><td>0.5% of each asset a claim pays out (<code>FEE_BPS</code> = 50), sent to the fee wallet with the payout</td></tr>
 <tr><td>Fee wallet</td><td><a href="https://solscan.io/account/3sde4YJpX2oYMSWaozHareWrXn6MASLxhQgfuCKJNPoK"><code>3sde4YJpX2oYMSWaozHareWrXn6MASLxhQgfuCKJNPoK</code></a></td></tr>
-<tr><td>Gas wallet</td><td><a href="https://solscan.io/account/7ko5ykhPaGE4Tb6XoCqTj5hQNGwBRRRvqnHPnxeTSJGB"><code>7ko5ykhPaGE4Tb6XoCqTj5hQNGwBRRRvqnHPnxeTSJGB</code></a>: pays the network fees of claims, collects and refunds, and the rent of the token accounts the owner and the fee wallet need</td></tr>
+<tr><td>Gas wallet</td><td><a href="https://solscan.io/account/3sde4YJpX2oYMSWaozHareWrXn6MASLxhQgfuCKJNPoK"><code>3sde4YJpX2oYMSWaozHareWrXn6MASLxhQgfuCKJNPoK</code></a>, the same wallet as the fee wallet: pays the network fees of claims, collects and refunds, and the rent of the token accounts the owner and the fee wallet need</td></tr>
 <tr><td>Refund delay</td><td>180 days after the deposit (<code>REFUND_DELAY_DAYS</code>)</td></tr>
 <tr><td>Memos</td><td><code>type262:claim:&lt;domain&gt;</code> on every claim payout, <code>type262:refund:&lt;deposit signature&gt;</code> on every refund</td></tr>
 <tr><td>USDC</td><td><code>EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v</code> (6 decimals, SPL Token program)</td></tr>
@@ -1226,7 +1360,7 @@ gas    = the same, with message "type262:gas"</code></pre>
   "vault": "&lt;the vault's address&gt;",
   "usdcAccount": "&lt;the vault's USDC token account&gt;"
 }</code></pre>
-<p><code>usdcAccount</code> is the vault's associated token account for USDC, which a USDC payment goes to. The gas wallet, derived the same way, is the address in <a href="#solana-settings">Settings</a>.</p>
+<p><code>usdcAccount</code> is the vault's associated token account for USDC, which a USDC payment goes to. A worker derives its gas wallet the same way, with the message <code>type262:gas</code>, unless <code>SOLANA_GAS_KEYPAIR</code> gives it a wallet funded directly, as the live worker does; the live gas wallet's address is in <a href="#solana-settings">Settings</a>.</p>
 
 <h3 id="solana-vaults-names">Canonical names</h3>
 <p>A vault is keyed by the canonical form of the domain, so <code>https://YourSite.com/pay</code>, <code>bob@yoursite.com</code> and <code>yoursite.com.</code> all reach the vault of <code>yoursite.com</code>. The worker runs the SDK's <code>normalizeDomain</code>, which keeps the host name, lowercases it, takes the domain of an email address, converts internationalized names to punycode and drops a trailing dot, then applies the same rules as the escrow on Robinhood Chain: 1 to 253 characters, labels of 1 to 63 characters from <code>a-z</code>, <code>0-9</code>, <code>-</code> and <code>_</code>. Anything else is refused with HTTP 400.</p>
@@ -1919,10 +2053,11 @@ cast call 0x9fd2f1Dc0B42e8a2E86e3Cf231a293654691E8d5 "refundDelay()(uint64)" --r
 <div class="dx-note tip"><code>node scripts/post-deploy.mjs</code> runs the complete set of checks: code at every address, the wiring above, algorithms 5, 7, 8 and 13 and digests 1 and 2 on the oracle, the escrow parameters, and deposits not paused. It also rewrites <code>assets/config.js</code>, so run it in a checkout you intend to change.</div>
 
 <h3 id="deployments-app">Addresses in the app</h3>
-<p>The app reads the two addresses it calls from <code>assets/config.js</code>, which <code>scripts/post-deploy.mjs</code> generates from the deployment record:</p>
+<p>The app reads the two addresses it calls, and the block the board starts reading from, from <code>assets/config.js</code>, which <code>scripts/post-deploy.mjs</code> generates from the deployment record:</p>
 <pre class="dx-code" data-lang="js"><code>// Robinhood Chain mainnet deployment (2026-10-21T02:04:54.323Z, commit b663228). See deployments/robinhood-4663.json.
 export const ESCROW_ADDRESS = '0x9fd2f1dc0b42e8a2e86e3cf231a293654691e8d5'
-export const LAUNCHER_ADDRESS = '0x022657ac8bdd969fa5149e7a86fbbda2afaf716f'</code></pre>
+export const LAUNCHER_ADDRESS = '0x022657ac8bdd969fa5149e7a86fbbda2afaf716f'
+export const FROM_BLOCK = 93920186 // first block of this deployment: the board reads history from here</code></pre>
       </section>
 
       <section class="dx-section" id="self-hosting" data-group="Operate">
@@ -1932,7 +2067,7 @@ export const LAUNCHER_ADDRESS = '0x022657ac8bdd969fa5149e7a86fbbda2afaf716f'</co
 <h3 id="self-hosting-local">Run the site locally</h3>
 <pre class="dx-code" data-lang="bash"><code># from the project folder
 npm run dev</code></pre>
-<p><code>npm run dev</code> runs <code>python -m http.server 5262 --bind 127.0.0.1</code>, so it needs Python 3. Open <code>http://127.0.0.1:5262</code> for the landing page, <code>/app.html</code> for the app and <code>/docs.html</code> for these docs. The pages load ES modules, so they must be served over HTTP: opening the files directly won't work.</p>
+<p><code>npm run dev</code> runs <code>python -m http.server 5262 --bind 127.0.0.1</code>, so it needs Python 3. Open <code>http://127.0.0.1:5262</code> for the landing page, <code>/app.html</code> for the app and <code>/docs.html</code> for these docs. The clean URLs <code>/board</code> and <code>/d/&lt;domain&gt;</code> are rewrites on the host, so locally open <code>/board.html</code> for the board and <code>/domain.html?d=yoursite.com</code> for a profile. The pages load ES modules, so they must be served over HTTP: opening the files directly won't work.</p>
 
 <h3 id="self-hosting-static">Deploy the static site</h3>
 <p><code>render.yaml</code> is a Render Blueprint with two services: the static site, <code>type262</code>, and the worker, <code>type262-upload</code>, described below. The site service:</p>
@@ -1945,17 +2080,34 @@ npm run dev</code></pre>
     headers:
       - path: /*
         name: Cache-Control
-        value: no-cache</code></pre>
-<p><code>scripts/build.sh</code> copies the site into <code>dist/</code> and gives every deploy its own asset folder, <code>v/&lt;version&gt;</code>, where the version is the first seven characters of <code>RENDER_GIT_COMMIT</code>, or <code>dev</code> when that isn't set. It rewrites the <code>assets/</code> and <code>lib/</code> references in <code>index.html</code>, <code>app.html</code> and <code>docs.html</code> to point into that folder, so a browser or CDN can never mix files from two deploys. Unversioned copies of <code>assets/</code> stay at the root for external links such as <code>og:image</code>.</p>
+        value: no-cache
+    routes: # clean URLs for the Unclaimed Board and domain profiles
+      - type: rewrite
+        source: /board
+        destination: /board.html
+      - type: rewrite
+        source: /d/*
+        destination: /domain.html</code></pre>
+<p><code>scripts/build.sh</code> copies the site into <code>dist/</code> and gives every deploy its own asset folder, <code>v/&lt;version&gt;</code>, where the version is the first seven characters of <code>RENDER_GIT_COMMIT</code>, or <code>dev</code> when that isn't set. It rewrites the <code>assets/</code> and <code>lib/</code> references in <code>index.html</code>, <code>app.html</code>, <code>docs.html</code>, <code>board.html</code> and <code>domain.html</code> to point into that folder, so a browser or CDN can never mix files from two deploys. Unversioned copies of <code>assets/</code> stay at the root for external links such as <code>og:image</code>, and <code>/lib/wallet262.js</code>, <code>/bin/type262.mjs</code> and <code>/mcp/type262-mcp.mjs</code> are published at stable paths for downloads.</p>
 <pre class="dx-code" data-lang="bash"><code>sh scripts/build.sh   # prints "built version dev"
 cd dist &amp;&amp; python -m http.server 5262 --bind 127.0.0.1</code></pre>
-<p>Any other static host works too, including Vercel, Netlify and Cloudflare Pages. Publish the repository folder as it is, or publish <code>dist/</code> after running the build to get versioned assets.</p>
+<p>Any other static host works too, including Vercel, Netlify and Cloudflare Pages. Publish the repository folder as it is, or publish <code>dist/</code> after running the build to get versioned assets. The board and the profiles need the same two rewrites, <code>/board</code> to <code>/board.html</code> and <code>/d/*</code> to <code>/domain.html</code>, because the pages link to <code>board</code> and <code>d/&lt;domain&gt;</code>. On Netlify and Cloudflare Pages, put them in a <code>_redirects</code> file in the folder you publish:</p>
+<pre class="dx-code" data-lang="txt"><code>/board  /board.html   200
+/d/*    /domain.html  200</code></pre>
+<p>On Vercel, add the same pair to <code>vercel.json</code>:</p>
+<pre class="dx-code" data-lang="json"><code>{
+  "rewrites": [
+    { "source": "/board", "destination": "/board.html" },
+    { "source": "/d/:domain", "destination": "/domain.html" }
+  ]
+}</code></pre>
 
 <h3 id="self-hosting-config">Configure the app</h3>
 <p><code>assets/config.js</code> is the app's only configuration. It is an ES module, and the app reads these exports from it:</p>
 <div class="dx-scroll"><table class="dx-table"><thead><tr><th>Export</th><th>Default</th><th>Meaning</th></tr></thead><tbody>
 <tr><td><code>ESCROW_ADDRESS</code></td><td>none</td><td>The <code>DomainEscrow</code> address. Without it, the Escrow tab reports that the escrow isn't deployed.</td></tr>
 <tr><td><code>LAUNCHER_ADDRESS</code></td><td>none</td><td>The <code>DomainLauncher</code> address. Without it, the Launch tab reports that the launcher isn't deployed and disables launching.</td></tr>
+<tr><td><code>FROM_BLOCK</code></td><td><code>93920186</code></td><td>The first block the board and the profiles read escrow and launcher events from: the first block of your deployment.</td></tr>
 <tr><td><code>RPC_URL</code></td><td><code>https://rpc.mainnet.chain.robinhood.com</code></td><td>The JSON-RPC endpoint the app reads from, and the RPC it gives your wallet when it adds Robinhood Chain.</td></tr>
 <tr><td><code>UPLOAD_URL</code></td><td><code>https://type262-upload.onrender.com</code></td><td>The worker: image and metadata uploads for the Launch form, and the Solana vault endpoints under <code>/solana/</code>.</td></tr>
 <tr><td><code>WORKER_URL</code></td><td><code>UPLOAD_URL</code></td><td>The worker for the Solana vault endpoints, when it runs apart from the upload service.</td></tr>
@@ -1964,7 +2116,7 @@ cd dist &amp;&amp; python -m http.server 5262 --bind 127.0.0.1</code></pre>
 <tr><td><code>SOLANA_RPC_URL</code></td><td><code>https://solana-rpc.publicnode.com</code>, then <code>https://api.mainnet-beta.solana.com</code></td><td>The Solana RPC the app reads from and sends transactions through. Set it to use one endpoint, such as a keyed provider or a local validator.</td></tr>
 <tr><td><code>SOLANA_RPC_FALLBACK</code></td><td><code>https://type262-upload.onrender.com/rpc/solana</code></td><td>Read-only Solana RPC the app uses when it can't reach the public ones. After a failure it serves reads for a minute. Transactions are always sent through <code>SOLANA_RPC_URL</code> or the public RPCs.</td></tr>
 </tbody></table></div>
-<div class="dx-note"><code>scripts/post-deploy.mjs</code> rewrites the whole file with only <code>ESCROW_ADDRESS</code> and <code>LAUNCHER_ADDRESS</code>. If you set any other export, such as <code>RPC_URL</code>, <code>UPLOAD_URL</code> or the <code>SOLANA_</code> settings, add it back after running it.</div>
+<div class="dx-note"><code>scripts/post-deploy.mjs</code> rewrites the whole file with only <code>ESCROW_ADDRESS</code>, <code>LAUNCHER_ADDRESS</code> and <code>FROM_BLOCK</code>. If you set any other export, such as <code>RPC_URL</code>, <code>UPLOAD_URL</code> or the <code>SOLANA_</code> settings, add it back after running it.</div>
 
 <h3 id="self-hosting-upload">The worker and uploads</h3>
 <p><code>upload/server.mjs</code> is the worker: one Node service with no dependencies, deployed on Render as <code>type262-upload</code>. It answers the Solana vault endpoints (see <a href="#solana-worker">Worker API</a>), pins launch images and coin metadata to IPFS, and serves the read-only RPC fallbacks. Its keys, the vault master secret and the Pinata key, stay on the server, set in the host's dashboard and never committed.</p>
@@ -2078,17 +2230,21 @@ cast send $ESCROW "withdrawFees(address)" 0x5fc5360D0400a0Fd4f2af552ADD042D716F1
 
       <section class="dx-section" id="testing" data-group="Operate">
         <div class="dx-section-head"><span class="dx-kicker">Operate</span><h2>Testing</h2><p class="dx-lead">Run the JavaScript tests, the end-to-end runs on a local validator, the on-chain program's LiteSVM suites, and the Foundry suite with its Robinhood Chain fork simulations.</p></div>
-<p>TYPE/262 has three groups of tests. <code>npm test</code> and the Solana client tests run offline JavaScript tests for the SDK, the app's encoders, the worker and the Solana clients. On Solana, the app's screens run end to end in a browser against a local validator, and the on-chain program is tested in LiteSVM with real DNSSEC proofs and the mainnet pump.fun programs, and end to end on a local validator. Foundry tests cover the Robinhood Chain contracts, including simulations on a Robinhood Chain fork against real USDG and the real pons v2 contracts, and a real DNSSEC proof checked against the IANA root keys. None of them sends anything to a public network, and every key and secret they use is generated for the run.</p>
+<p>TYPE/262 has three groups of tests. <code>npm test</code> and the Solana client tests run the JavaScript tests for the SDK, the app's encoders, the board's chain reader, the worker, the MCP server and the Solana clients. On Solana, the app's screens run end to end in a browser against a local validator, and the on-chain program is tested in LiteSVM with real DNSSEC proofs and the mainnet pump.fun programs, and end to end on a local validator. Foundry tests cover the Robinhood Chain contracts, including simulations on a Robinhood Chain fork against real USDG and the real pons v2 contracts, and a real DNSSEC proof checked against the IANA root keys. None of them sends a transaction to a public network, and every key and secret they use is generated for the run.</p>
 
 <h3 id="testing-js">JavaScript tests</h3>
 <pre class="dx-code" data-lang="bash"><code>npm install
 npm test</code></pre>
 <div class="dx-scroll"><table class="dx-table"><thead><tr><th>File</th><th>What it checks</th></tr></thead><tbody>
-<tr><td><code>test/wallet262.test.mjs</code></td><td>13 SDK tests: <code>WALLET</code> RDATA encoding and parsing (and rejection of malformed RDATA), the <code>_wallet</code> TXT fallback forms, domain normalization for URLs, emails and IDNs, address kinds, USDG transfer calldata, the EIP-681 link on Robinhood Chain, <code>parseUnits</code> precision, x402 <code>payTo</code> extraction, and <code>verifyPayTo</code> against mocked DNS.</td></tr>
+<tr><td><code>test/wallet262.test.mjs</code></td><td>The SDK tests: <code>WALLET</code> RDATA encoding and parsing (and rejection of malformed RDATA), the <code>_wallet</code> TXT fallback forms, domain normalization for URLs, emails and IDNs, address kinds, USDG transfer calldata, the EIP-681 link on Robinhood Chain, <code>parseUnits</code> precision, x402 <code>payTo</code> extraction, and, against mocked DNS, the <code>resolveWalletsUp</code> walk-up rules, <code>nxdomain</code> and <code>verified</code> across resolvers, CNAME answers, and every <code>verifyPayTo</code> reason.</td></tr>
 <tr><td><code>test/abi.test.mjs</code></td><td>The app's hand-written ABI code in <code>assets/abi.js</code> agrees with viem byte for byte: <code>launch</code>, <code>collect</code> and paged <code>launchesOf</code> calldata, and decoding of <code>recent</code>, <code>launchOf</code> and strings.</td></tr>
 <tr><td><code>test/upload.test.mjs</code></td><td>Starts <code>upload/server.mjs</code> against a mock Pinata and checks the upload behaviours: health, pinning, CORS and the origin allowlist, content checks that refuse non-images and SVG, the 5 MB limit, a missing file field, and the rate limit.</td></tr>
+<tr><td><code>test/vault.test.mjs</code></td><td>The vault rules in <code>upload/vault.mjs</code>: key derivation, canonical domains, the fee, what DNS must say, which addresses can be paid, what counts as a deposit, and memos.</td></tr>
+<tr><td><code>test/vault-worker.test.mjs</code></td><td>The vault worker in <code>upload/worker.mjs</code> against a mocked Solana RPC and stub DNS: every transaction it sends, the lock, gas checks, refund rules, retries and priority fees.</td></tr>
+<tr><td><code>test/chain-data.test.mjs</code></td><td>The board and profile event decoders in <code>assets/chain-data.js</code> match viem, then one read-only call to the live escrow.</td></tr>
+<tr><td><code>test/mcp.test.mjs</code></td><td>The bundled MCP server over stdio: the protocol, every tool, dry runs, spend limits and the repeat guard, key and URL scrubbing, and payment decisions against a mock DNS-over-HTTPS resolver. <code>npm run test:mcp:fork</code> adds real payments on a local anvil fork.</td></tr>
 </tbody></table></div>
-<p>None of these tests need the network. DNS is mocked, and the upload test runs its own mock Pinata and RPC upstreams.</p>
+<p><code>chain-data</code> and <code>mcp</code> make read-only calls to live DNS-over-HTTPS and the Robinhood Chain RPC. The rest run offline: DNS is mocked, and the upload test runs its own mock Pinata and RPC upstreams.</p>
 <p>The Solana client has its own tests, run directly:</p>
 <pre class="dx-code" data-lang="bash"><code>node test/solana.test.mjs          # base58, PDAs, token accounts, byte-exact transactions against mainnet ones
 node test/solana-vault.test.mjs    # the vault client: pump.fun instructions, launches, the worker API, vault history
@@ -2238,7 +2394,7 @@ FORK_RPC=https://rpc.mainnet.chain.robinhood.com forge test --evm-version osaka 
 <h3 id="security-resolvers">Resolver trust and on-chain verification</h3>
 <p>Two different guarantees apply, depending on what you do:</p>
 <div class="dx-scroll"><table class="dx-table"><thead><tr><th>Feature</th><th>How the record is checked</th></tr></thead><tbody>
-<tr><td>Resolve, Pay, Verify (x402 <code>payTo</code>), the SDK and the CLI</td><td>Off-chain, through Cloudflare and Google DNS-over-HTTPS. You trust the resolvers' DNSSEC validation. <code>verified</code> is true only when records exist, every resolver that answered agrees, and every record is DNSSEC-authenticated. <code>verifyPayTo</code> reports <code>strong</code> when the address matches, the resolvers agree and the matching record is DNSSEC-authenticated.</td></tr>
+<tr><td>Resolve, Pay, Verify (x402 <code>payTo</code>), the SDK and the CLI</td><td>Off-chain, through Cloudflare and Google DNS-over-HTTPS. You trust the resolvers' DNSSEC validation. <code>verified</code> is true only when records exist, every resolver answered, they agree, and every record is DNSSEC-authenticated on every resolver. <code>verifyPayTo</code> reports <code>strong</code> when the address matches, every resolver answered and agrees, and every resolver returned the address DNSSEC-authenticated.</td></tr>
 <tr><td>Solana vault claims, including launch fees</td><td>Off-chain, by the worker: Cloudflare and Google must both answer, return the same record and report it DNSSEC-authenticated.</td></tr>
 <tr><td>Robinhood Chain escrow claims, including launch fees</td><td>On-chain, from the root keys: <code>DnssecVerifier</code> has ENS's oracle check the whole chain. No resolver is trusted.</td></tr>
 </tbody></table></div>
@@ -2285,9 +2441,11 @@ FORK_RPC=https://rpc.mainnet.chain.robinhood.com forge test --evm-version osaka 
 <div class="dx-scroll"><table class="dx-table"><thead><tr><th>Path</th><th>What it is</th></tr></thead><tbody>
 <tr><td><code>index.html</code></td><td>Landing page, with a live resolver and a live adoption scan</td></tr>
 <tr><td><code>app.html</code></td><td>The app: Resolve, Pay, Escrow, Publish, Verify, Badge and Launch</td></tr>
+<tr><td><code>board.html</code>, <code>domain.html</code></td><td>The Unclaimed Board and domain profiles, with <code>assets/pages.js</code> and <code>assets/chain-data.js</code></td></tr>
 <tr><td><code>docs.html</code></td><td>This documentation, with <code>assets/docs.js</code> and <code>assets/docs.css</code></td></tr>
 <tr><td><code>lib/wallet262.js</code></td><td>The zero-dependency SDK and the package's main export</td></tr>
 <tr><td><code>bin/type262.mjs</code></td><td>The <code>type262</code> CLI</td></tr>
+<tr><td><code>mcp/src/server.mjs</code>, <code>mcp/type262-mcp.mjs</code></td><td>The MCP server for AI agents, and its single-file bundle built by <code>npm run mcp:build</code></td></tr>
 <tr><td><code>assets/app.js</code></td><td>App behaviour</td></tr>
 <tr><td><code>assets/abi.js</code></td><td>The app's minimal ABI encoder and decoder</td></tr>
 <tr><td><code>assets/solana.js</code></td><td>The app's Solana client: base58, PDAs, transactions, RPC and Wallet Standard wallets</td></tr>
@@ -2296,7 +2454,7 @@ FORK_RPC=https://rpc.mainnet.chain.robinhood.com forge test --evm-version osaka 
 <tr><td><code>assets/solana-type262.js</code></td><td>The on-chain program's instructions and account readers</td></tr>
 <tr><td><code>assets/solana-escrow.js</code>, <code>assets/solana-launch.js</code></td><td>The Escrow and Launch screens on Solana</td></tr>
 <tr><td><code>assets/dnssec.js</code></td><td>Builds DNSSEC proofs in the browser for Robinhood Chain claims</td></tr>
-<tr><td><code>assets/config.js</code></td><td>Deployed addresses and endpoints; <code>scripts/post-deploy.mjs</code> writes the Robinhood Chain ones</td></tr>
+<tr><td><code>assets/config.js</code></td><td>Deployed addresses, endpoints and the board's first block; <code>scripts/post-deploy.mjs</code> writes the Robinhood Chain ones</td></tr>
 <tr><td><code>assets/vendor/</code></td><td>A pinned copy of <code>@ensdomains/dnsprovejs</code> 1.0.1</td></tr>
 <tr><td><code>assets/</code> (other files)</td><td>UI helpers, effects, the landing page script, styles and artwork</td></tr>
 <tr><td><code>upload/server.mjs</code>, <code>upload/worker.mjs</code>, <code>upload/vault.mjs</code></td><td>The worker: Solana vault addresses, claims, collects and refunds (<code>worker.mjs</code>, with the rules in <code>vault.mjs</code>); image and metadata uploads for the Launch form; and the read-only RPC fallbacks</td></tr>
@@ -2323,7 +2481,7 @@ npm run dev   # serves http://127.0.0.1:5262 with Python 3</code></pre>
 <h3 id="contributing-changes">Propose a change</h3>
 <ol class="dx-steps">
 <li><strong>Agree on the approach.</strong> For anything larger than a small fix, discuss it with the maintainers before you write it.</li>
-<li><strong>Make the change with a test.</strong> SDK changes belong in <code>test/wallet262.test.mjs</code>, new app calls in <code>test/abi.test.mjs</code>, worker changes next to <code>test/upload.test.mjs</code>, Solana client changes in the <code>test/solana*.test.mjs</code> files, on-chain program changes in <code>solana/tests-rs/tests/</code>, and contract changes in <code>contracts/test/</code>.</li>
+<li><strong>Make the change with a test.</strong> SDK changes belong in <code>test/wallet262.test.mjs</code>, new app calls in <code>test/abi.test.mjs</code>, board decoders in <code>test/chain-data.test.mjs</code>, MCP tools in <code>test/mcp.test.mjs</code>, worker changes next to <code>test/upload.test.mjs</code>, Solana client changes in the <code>test/solana*.test.mjs</code> files, on-chain program changes in <code>solana/tests-rs/tests/</code>, and contract changes in <code>contracts/test/</code>.</li>
 <li><strong>Run the suites.</strong> Run <code>npm test</code>; <code>cargo test</code> in <code>solana/tests-rs</code> and the precompile tests for program changes; and <code>npm run test:contracts</code> for contract changes. If you touch claims, refunds, launches or proof flows, also run the end-to-end runs on a local validator or the fork simulations for that chain.</li>
 <li><strong>Open a pull request.</strong> Say what changed, why, and how you tested it.</li>
 </ol>

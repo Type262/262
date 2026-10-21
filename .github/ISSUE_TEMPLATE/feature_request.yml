@@ -16,9 +16,11 @@ body:
       options:
         - App (app.html)
         - Landing page (index.html)
+        - The Unclaimed Board or domain profiles
         - Docs
         - SDK (lib/wallet262.js)
         - CLI (bin/type262.mjs)
+        - MCP server (mcp/)
         - Upload service
         - Contracts
         - WALLET record support in other software

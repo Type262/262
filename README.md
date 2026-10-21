@@ -18,6 +18,7 @@ Publish one record, and any person or AI agent can <b>resolve</b> your domain, <
 <a href="#launch-a-coin-on-pumpfun"><img alt="pump.fun launchpad" src="https://img.shields.io/badge/pump.fun-launchpad-C8FF1E?style=flat-square&labelColor=0b0b0b"></a>
 <a href="#domain-vaults"><img alt="Domain vaults on Solana" src="https://img.shields.io/badge/domain-vaults-C8FF1E?style=flat-square&labelColor=0b0b0b"></a>
 <a href="#robinhood-chain"><img alt="Robinhood Chain 4663" src="https://img.shields.io/badge/Robinhood%20Chain-4663-C8FF1E?style=flat-square&labelColor=0b0b0b"></a>
+<a href="#give-your-agent-a-wallet"><img alt="MCP server" src="https://img.shields.io/badge/MCP-server%20for%20agents-8B5CFF?style=flat-square&labelColor=0b0b0b"></a>
 <a href="#verify-an-x402-payto"><img alt="x402 payTo checks" src="https://img.shields.io/badge/x402-payTo%20checks-8B5CFF?style=flat-square&labelColor=0b0b0b"></a>
 <a href="https://x.com/type_262"><img alt="Follow @type_262 on X" src="https://img.shields.io/badge/-%40type__262-C8FF1E?style=flat-square&logo=x&logoColor=white&labelColor=0b0b0b"></a>
 </p>
@@ -30,6 +31,10 @@ Publish one record, and any person or AI agent can <b>resolve</b> your domain, <
 <a href="https://type262.onrender.com/app.html#launch/new"><b>Launch a coin</b></a>
 &nbsp;·&nbsp;
 <a href="https://type262.onrender.com/docs.html"><b>Docs</b></a>
+&nbsp;·&nbsp;
+<a href="https://type262.onrender.com/board"><b>Unclaimed Board</b></a>
+&nbsp;·&nbsp;
+<a href="#give-your-agent-a-wallet"><b>MCP for agents</b></a>
 &nbsp;·&nbsp;
 <a href="#deployments"><b>Addresses and contracts</b></a>
 &nbsp;·&nbsp;
@@ -49,7 +54,7 @@ TYPE/262 is the layer that makes it useful:
 - **Builders and fans** launch a pump.fun coin for any app, web game or website. Its creator fees go to the domain, the one identity nobody can spoof, and only the domain's real owner can claim them.
 - **Site owners** add one DNS record and their domain becomes payable. No account, no checkout, no custody.
 - **Wallets and apps** pay `yoursite.com` instead of `9WzD…AWWM`, and DNSSEC tells them the answer is authentic.
-- **AI agents** check that an x402 `payTo` address is published by the domain they are talking to before they pay it. One line of code, answered by DNS.
+- **AI agents** check that an x402 `payTo` address is published by the domain they are talking to before they pay it, or use the MCP server to pay any domain by name on Robinhood Chain within spend limits.
 - **Anyone** can send money to any website today, even one that has never heard of TYPE/262. It waits in the domain's own vault on Solana until the owner publishes a DNSSEC-signed record naming their wallet.
 
 ## What's inside
@@ -125,6 +130,20 @@ Everything also runs on Robinhood Chain: `DomainEscrow` with ENS's DNSSEC oracle
 
 </td>
 </tr>
+<tr>
+<td valign="top">
+
+#### The Unclaimed Board
+A live leaderboard of money waiting for websites on Robinhood Chain, read straight from the chain, plus a public profile for every domain at `/d/<domain>`.
+
+</td>
+<td valign="top">
+
+#### MCP server for AI agents
+One self-contained file that gives Claude, Cursor or any MCP client five tools to resolve, verify and pay domains on Robinhood Chain in USDG or ETH, with per-payment and daily limits the model cannot override.
+
+</td>
+</tr>
 </table>
 
 ## A look around
@@ -139,7 +158,7 @@ Everything also runs on Robinhood Chain: `DomainEscrow` with ENS's DNSSEC oracle
 </tr>
 <tr>
 <td width="50%" valign="top"><a href="https://type262.onrender.com/app.html#escrow"><img src=".github/assets/screen-escrow.png" alt="Sending a website money through escrow"></a><p align="center"><sub><b>Escrow.</b> Pay any website before it publishes.</sub></p></td>
-<td width="50%" valign="top"><a href="https://type262.onrender.com/docs.html"><img src=".github/assets/screen-docs.png" alt="The TYPE/262 docs"></a><p align="center"><sub><b>The docs.</b> Records, SDK, CLI, agents, vaults and the worker API, the contracts.</sub></p></td>
+<td width="50%" valign="top"><a href="https://type262.onrender.com/board"><img src=".github/assets/screen-board.png" alt="The Unclaimed Board"></a><p align="center"><sub><b>The Unclaimed Board.</b> Money waiting for the internet.</sub></p></td>
 </tr>
 </table>
 
@@ -185,7 +204,7 @@ console.log(paymentUri(to, { amount: '25', splToken: USDC }))
 // solana:9WzDXwBbmkg8ZTbNMqUxvQRAyrZzDsGYdLVL9zYtAWWM?amount=25&spl-token=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
 ```
 
-`verified` is true when records were found, every resolver that answered agrees and every record is DNSSEC-authenticated; `r.resolvers` shows each resolver's status. The SDK accepts domains, URLs and email addresses (`bob@shop.com` resolves `shop.com`), and also runs in Node 18+. To send from a browser wallet instead, the [docs](https://type262.onrender.com/docs.html#payments) show the app's Solana client and the Robinhood Chain transfer.
+`verified` is true when records were found, every resolver answered, they all agree and every record is DNSSEC-authenticated on every resolver; `r.resolvers` shows each resolver's status. The SDK accepts domains, URLs and email addresses (`bob@shop.com` resolves `shop.com`), and also runs in Node 18+. To send from a browser wallet instead, the [docs](https://type262.onrender.com/docs.html#payments) show the app's Solana client and the Robinhood Chain transfer.
 
 ### Verify an x402 payTo
 
@@ -198,7 +217,7 @@ if (res.status === 402) {
     const check = await verifyPayTo('https://api.yoursite.com/report', payTo)
     if (!check.strong) throw new Error(`Refusing to pay ${payTo}: ${check.reason}`)
   }
-  // every payTo is published by yoursite.com, DNSSEC-signed, and the resolvers agree: pay
+  // every payTo is published by yoursite.com, and every resolver returned it DNSSEC-signed: pay
 }
 ```
 
@@ -213,6 +232,40 @@ node type262/bin/type262.mjs verify https://api.yoursite.com 9WzD…  # does thi
 node type262/bin/type262.mjs encode yoursite.com SOL 9WzD…          # zone lines to publish
 node type262/bin/type262.mjs link yoursite.com 5 USDG               # payment link on Robinhood Chain
 ```
+
+### Give your agent a wallet
+
+The MCP server lets an agent pay any domain by name on Robinhood Chain, in USDG or ETH, within limits you set.
+
+```bash
+curl -fsSL https://type262.onrender.com/mcp/type262-mcp.mjs -o ~/type262-mcp.mjs
+```
+
+Add it to Claude Desktop (`claude_desktop_config.json`), Cursor or any MCP client:
+
+```json
+{
+  "mcpServers": {
+    "type262": {
+      "command": "node",
+      "args": ["/Users/you/type262-mcp.mjs"],
+      "env": {
+        "TYPE262_PRIVATE_KEY": "0x…",
+        "TYPE262_MAX_USDG": "25",
+        "TYPE262_DAILY_USDG": "100"
+      }
+    }
+  }
+}
+```
+
+Or with Claude Code:
+
+```bash
+claude mcp add type262 -e TYPE262_PRIVATE_KEY=0x… -- node ~/type262-mcp.mjs
+```
+
+Then ask your agent to *"send yoursite.com 5 USDG"*. Without a key, resolving, verifying, escrow balances and every dry run still work, and `wallet_status` explains how to add one. See [AI agents](#ai-agents) for how it decides.
 
 ## On Solana
 
@@ -330,10 +383,28 @@ trades ──▶ pons fee escrow ──collect(domain)──▶ DomainFeeForward
 
 ## How it works
 
-- **Resolution** queries two independent DNS-over-HTTPS resolvers and compares their answers. A record counts as verified only when the resolvers that answered agree and DNSSEC authenticated it, and each resolver's status is reported. It reads the `WALLET` record (type 262) and the `_wallet` TXT fallback in the same round trip.
+- **Resolution** queries two independent DNS-over-HTTPS resolvers and compares their answers. A record counts as verified only when every resolver answered, they all agree, and every one of them DNSSEC-authenticated it; each resolver's status is reported. It reads the `WALLET` record (type 262) and the `_wallet` TXT fallback in the same round trip, and counts only answers owned by the name itself, never a CNAME target's.
 - **Payments** go straight from the payer's wallet to the address the domain publishes: SOL or USDC on Solana, USDG or ETH on Robinhood Chain. There is no TYPE/262 server in the payment path.
 - **Claims** pay only the wallet a domain's DNSSEC-signed record names. On Solana, the worker pays a vault out once Cloudflare and Google agree on that record and both validated it. On Robinhood Chain, ENS's oracle checks the DNSSEC signatures on-chain, from the root keys down, with no server involved.
-- **The site** is plain static files, so it can be hosted anywhere. One small Node service, the worker, runs Solana vault claims, collects and refunds, and pins launch images and coin metadata to IPFS.
+- **The site** is plain static files, so it can be hosted anywhere. One small Node service, the worker, runs Solana vault claims, collects and refunds, and pins launch images and coin metadata to IPFS. The board and the domain profiles read contract events and balances directly from Robinhood Chain in your browser.
+
+## AI agents
+
+The MCP server pays on Robinhood Chain, in USDG or ETH. A domain whose DNSSEC-signed EVM address every resolver agrees on is paid directly. A domain that publishes no EVM address (only a Solana one, for example), or only an unsigned one, is paid into `DomainEscrow` on Robinhood Chain, and its owner claims it with an EVM record.
+
+<p align="center">
+  <img src=".github/assets/agent-flow.svg" alt="How pay_domain decides between paying directly, escrow and refusing" width="100%">
+</p>
+
+| Tool | What it does |
+|---|---|
+| `resolve_domain` | The wallets a domain publishes, whether the resolvers agree and DNSSEC signed them, what `pay_domain` would do, and what already waits in `DomainEscrow` on Robinhood Chain |
+| `verify_payto` | Checks one address, or every `payTo` in a 402 body, against the domain you are talking to: `safe`, `unsigned` or `no_match` |
+| `pay_domain` | Pays a domain by name in USDG or ETH. `dry_run: true` returns the full plan and sends nothing; the same asset and amount to the same recipient within 10 minutes needs `repeat: true`, even under another name or URL |
+| `escrow_status` | USDG and ETH waiting in `DomainEscrow` for a domain |
+| `wallet_status` | The agent wallet's address, balances, limits and what it spent today |
+
+Spend limits live in the server's environment, not in the prompt: by default 25 USDG per payment and 100 per UTC day, 0.01 ETH per payment and 0.05 per day. Payments run one at a time in each server process, and a lock file shared by every process keeps the daily limit across them. A payment the client cancels before it starts is never sent. The key is read once and never logged, and every successful result carries a one-line summary the agent can repeat to you (refusals carry a one-line error). Full reference: [docs › MCP server](https://type262.onrender.com/docs.html#mcp).
 
 ## Deployments
 
@@ -344,8 +415,7 @@ Solana mainnet. Vaults are ordinary addresses and launches use pump.fun's own pr
 | | |
 |---|---|
 | Worker | `https://type262-upload.onrender.com`, see [Worker API](https://type262.onrender.com/docs.html#solana-worker) |
-| Gas wallet | [`7ko5ykhPaGE4Tb6XoCqTj5hQNGwBRRRvqnHPnxeTSJGB`](https://solscan.io/account/7ko5ykhPaGE4Tb6XoCqTj5hQNGwBRRRvqnHPnxeTSJGB) |
-| Fee wallet | [`3sde4YJpX2oYMSWaozHareWrXn6MASLxhQgfuCKJNPoK`](https://solscan.io/account/3sde4YJpX2oYMSWaozHareWrXn6MASLxhQgfuCKJNPoK) |
+| Gas and fee wallet | [`3sde4YJpX2oYMSWaozHareWrXn6MASLxhQgfuCKJNPoK`](https://solscan.io/account/3sde4YJpX2oYMSWaozHareWrXn6MASLxhQgfuCKJNPoK) |
 | Claim fee, refund delay | 0.5%, 180 days after each deposit |
 | USDC | `EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v` (6 decimals) |
 
@@ -376,9 +446,11 @@ The full record, including the signature algorithms and digests, is in [`deploym
 ```text
 .
 ├── index.html · app.html · docs.html   the site: landing, app and docs (static, no build step)
+├── board.html · domain.html            The Unclaimed Board and domain profiles
 ├── assets/                             site scripts, styles and art; solana*.js are the Solana clients
 ├── lib/wallet262.js                    zero-dependency SDK for browsers and Node 18+
 ├── bin/type262.mjs                     CLI
+├── mcp/                                MCP server for AI agents: source and single-file bundle
 ├── upload/                             the worker (server.mjs, worker.mjs, vault.mjs): Solana vaults, claims,
 │                                       collects and refunds; image and coin-metadata uploads; RPC fallbacks
 ├── solana/                             Anchor workspace: the type262 program (built and tested, not deployed),
@@ -390,7 +462,7 @@ The full record, including the signature algorithms and digests, is in [`deploym
 ├── contracts/                          Foundry: escrow, verifier, launcher, forwarder on Robinhood Chain
 ├── deployments/                        addresses and transactions of the Robinhood Chain deployment
 ├── scripts/                            site build and post-deploy scripts
-└── test/                               SDK, ABI, upload and Solana client tests
+└── test/                               SDK, ABI, chain-data, upload, MCP and Solana client tests
 ```
 
 ## Development
@@ -403,7 +475,9 @@ cd 262
 npm ci
 
 npm run dev                         # serves the site at http://127.0.0.1:5262
-npm test                            # SDK, ABI and worker tests
+npm test                            # SDK, ABI, chain-data, worker and MCP tests
+npm run test:mcp:fork               # MCP payments end to end on a local Robinhood Chain fork
+npm run mcp:build                   # rebuild mcp/type262-mcp.mjs
 node test/solana.test.mjs           # Solana client (12 tests)
 node test/solana-vault.test.mjs     # the vault client: pump.fun instructions, launches, the worker API (offline)
 sh scripts/build.sh                 # the static build Render serves, in dist/

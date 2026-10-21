@@ -1,6 +1,6 @@
 {
   "name": "type262",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Resolve, verify and publish DNS WALLET (RRTYPE 262) records. Every domain is a wallet.",
   "homepage": "https://type262.onrender.com",
   "repository": {
@@ -14,20 +14,24 @@
   "type": "module",
   "exports": "./lib/wallet262.js",
   "bin": {
-    "type262": "bin/type262.mjs"
+    "type262": "bin/type262.mjs",
+    "type262-mcp": "mcp/type262-mcp.mjs"
   },
   "files": [
     "lib",
-    "bin"
+    "bin",
+    "mcp/type262-mcp.mjs"
   ],
   "engines": {
     "node": ">=18"
   },
   "scripts": {
     "dev": "python -m http.server 5262 --bind 127.0.0.1",
-    "test": "node test/wallet262.test.mjs && node test/abi.test.mjs && node test/upload.test.mjs && node test/vault.test.mjs && node test/vault-worker.test.mjs",
+    "test": "node test/wallet262.test.mjs && node test/abi.test.mjs && node test/chain-data.test.mjs && node test/upload.test.mjs && node test/vault.test.mjs && node test/vault-worker.test.mjs && node test/mcp.test.mjs",
     "test:contracts": "cd contracts && forge test",
-    "upload:dev": "node upload/server.mjs"
+    "test:mcp:fork": "node test/mcp.test.mjs --fork",
+    "upload:dev": "node upload/server.mjs",
+    "mcp:build": "node mcp/build.mjs"
   },
   "keywords": [
     "dns",
@@ -38,6 +42,9 @@
     "usdg",
     "dnssec",
     "dns-wallet",
+    "mcp",
+    "model-context-protocol",
+    "ai-agents",
     "escrow",
     "ens",
     "web3"

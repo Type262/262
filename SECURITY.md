@@ -11,7 +11,8 @@ This page covers what is in scope, how to report privately, what happens next, a
 | Smart contracts | `contracts/src/`: `DomainEscrow`, `DnssecVerifier`, `DomainLauncher`, `DomainFeeForwarder` on Robinhood Chain, and the live deployment below |
 | Solana program | `solana/programs/type262/`: the escrow, the on-chain DNSSEC verifier and the pump.fun launcher, built and tested, not deployed |
 | SDK and CLI | `lib/wallet262.js`, `bin/type262.mjs` |
-| Web app and pages | `index.html`, `app.html`, `docs.html` and `assets/`, including in-browser proof building in `assets/dnssec.js` and `assets/solana-proof.js`, and the Solana clients in `assets/solana.js` and `assets/solana-type262.js` |
+| MCP server | `mcp/src/server.mjs` and the bundle `mcp/type262-mcp.mjs` |
+| Web app and pages | `index.html`, `app.html`, `board.html`, `domain.html`, `docs.html` and `assets/`, including in-browser proof building in `assets/dnssec.js` and `assets/solana-proof.js`, and the Solana clients in `assets/solana.js` and `assets/solana-type262.js` |
 | Upload endpoints | `upload/server.mjs`: image and metadata pinning, and the RPC fallbacks |
 | Deploy and build scripts | `contracts/script/`, `scripts/` |
 
@@ -30,7 +31,7 @@ Solana runs no TYPE/262 program: vaults are ordinary addresses, held by the work
 | | |
 |---|---|
 | Worker | `https://type262-upload.onrender.com` (`type262-upload` in `render.yaml`) |
-| Gas wallet | [`7ko5ykhPaGE4Tb6XoCqTj5hQNGwBRRRvqnHPnxeTSJGB`](https://solscan.io/account/7ko5ykhPaGE4Tb6XoCqTj5hQNGwBRRRvqnHPnxeTSJGB) |
+| Gas wallet | [`3sde4YJpX2oYMSWaozHareWrXn6MASLxhQgfuCKJNPoK`](https://solscan.io/account/3sde4YJpX2oYMSWaozHareWrXn6MASLxhQgfuCKJNPoK) |
 | Fee wallet | [`3sde4YJpX2oYMSWaozHareWrXn6MASLxhQgfuCKJNPoK`](https://solscan.io/account/3sde4YJpX2oYMSWaozHareWrXn6MASLxhQgfuCKJNPoK) |
 
 The settings, endpoints and checks are listed in [Worker API](https://type262.onrender.com/docs.html#solana-worker).

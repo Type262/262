@@ -2,7 +2,7 @@ blank_issues_enabled: false
 contact_links:
   - name: Documentation
     url: https://type262.onrender.com/docs.html
-    about: Quickstart, the WALLET record, SDK, CLI, x402 checks, escrow, launchpad and contract reference.
+    about: Quickstart, the WALLET record, SDK, CLI, MCP server, escrow, launchpad and contract reference.
   - name: Report a security vulnerability
     url: https://github.com/Type262/262/security/advisories/new
     about: Report security issues privately to the maintainers, never in a public issue.

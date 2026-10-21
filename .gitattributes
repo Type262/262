@@ -17,5 +17,7 @@
 *.webm  binary
 *.pdf   binary
 
-# assets/vendor/ is a pinned copy of dnsprovejs: collapsed in diffs and left out of the language statistics.
+# The MCP bundle is built by npm run mcp:build; assets/vendor/ is a pinned copy of dnsprovejs.
+# Both are collapsed in diffs and left out of the language statistics.
+mcp/type262-mcp.mjs linguist-generated
 assets/vendor/**    linguist-generated linguist-vendored

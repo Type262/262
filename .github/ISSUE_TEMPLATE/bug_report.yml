@@ -18,9 +18,11 @@ body:
       options:
         - App (app.html)
         - Landing page (index.html)
+        - The Unclaimed Board or a domain profile (/board, /d/<domain>)
         - Docs (docs.html)
         - SDK (lib/wallet262.js)
         - CLI (bin/type262.mjs)
+        - MCP server (mcp/)
         - Upload service (upload/server.mjs)
         - Contracts (contracts/)
         - Build, scripts or CI
@@ -74,7 +76,7 @@ body:
     id: environment
     attributes:
       label: Environment
-      description: Browser and wallet for the app, or Node.js version and OS for the SDK and CLI. Add the commit if you run from source.
+      description: Browser and wallet for the app, or Node.js version and OS for the SDK, CLI and MCP server. Add the commit if you run from source.
       placeholder: |
         Browser / wallet: Brave 1.x with MetaMask 12.x
         Node.js: 22.x

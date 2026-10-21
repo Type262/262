@@ -14,5 +14,6 @@
 
 - [ ] `npm test` passes
 - [ ] Contract changes: `forge test` and the fork tests pass (see [CONTRIBUTING.md](https://github.com/Type262/262/blob/main/CONTRIBUTING.md#tests))
+- [ ] `npm run mcp:build` re-run and the bundle committed, if `mcp/src/` or `lib/wallet262.js` changed
 - [ ] Docs updated: `docs.html` where behaviour, commands or addresses changed, and `CHANGELOG.md` under Unreleased
 - [ ] No secrets: no private keys, seed phrases, API keys or `.env` files
