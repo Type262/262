@@ -119,7 +119,7 @@ const metaDomains = new Map() // metadata link -> Promise<domain or ''>
 export function metadataDomain(uri) {
   if (!/^https:\/\/\S+$/.test(String(uri || ''))) return Promise.resolve('')
   if (!metaDomains.has(uri)) {
-    metaDomains.set(uri, fetch(uri, { signal: AbortSignal.timeout(15_000) }).then(r => r.json())
+    metaDomains.set(uri, V.fetchJson(uri, 15_000)
       // a link that can't be read now is tried again in 5 minutes, not on every pass
       .then(j => domainOf(j && j.type262 && j.type262.domain)).catch(() => { setTimeout(() => metaDomains.delete(uri), 300_000); return '' }))
   }

@@ -140,6 +140,36 @@ async function call(path, { body, timeout = 30_000, late } = {}) {
   return j
 }
 
+// ---------- IPFS ----------
+// Gateways for IPFS content: Pinata first, which serves what the upload service pins at once, then Filebase. ipfs.io
+// and dweb.link now refuse most direct requests (they are moving to a service-worker gateway), so a link to them is
+// read through these instead; the link itself, on-chain or in metadata, stays as it is.
+export const IPFS_GATEWAYS = ['https://gateway.pinata.cloud/ipfs/', 'https://ipfs.filebase.io/ipfs/']
+const GATEWAY_LINK = /^https:\/\/(?:ipfs\.io|dweb\.link|gateway\.pinata\.cloud|ipfs\.filebase\.io|cloudflare-ipfs\.com)\/ipfs\/([A-Za-z0-9/._-]+)$/
+/** The content path (cid, or cid/path) of an ipfs:// link or a public gateway link, or ''. */
+export function ipfsPath(u) {
+  u = String(u || '').trim()
+  if (u.startsWith('ipfs://')) {
+    const p = u.slice(7).replace(/^ipfs\//, '')
+    return /^[A-Za-z0-9/._-]+$/.test(p) ? p : ''
+  }
+  const m = GATEWAY_LINK.exec(u)
+  return m ? m[1] : ''
+}
+/** The JSON at a link; IPFS content through IPFS_GATEWAYS in turn. */
+export async function fetchJson(u, timeout = 8000) {
+  const path = ipfsPath(u)
+  let last = new Error('Not a link')
+  for (const url of path ? IPFS_GATEWAYS.map(g => g + path) : /^https:\/\//.test(u) ? [u] : []) {
+    try {
+      const r = await fetch(url, { signal: AbortSignal.timeout(timeout) })
+      if (!r.ok) throw new Error(`${url.split('/')[2]} answered ${r.status}`)
+      return await r.json()
+    } catch (err) { last = err }
+  }
+  throw last
+}
+
 const vaults = new Map()
 /**
  * { domain, vault, usdcAccount } for a domain, from GET /solana/vault. The vault can only come from the worker (it
@@ -242,14 +272,40 @@ export function rentExempt(size) {
 /** getProgramAccounts through the read-only fallback first: public RPCs refuse it on pump.fun's program. */
 export async function programAccounts(params) {
   try {
-    const res = await fetch(FALLBACK_RPC, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getProgramAccounts', params }), signal: AbortSignal.timeout(75_000) })
+    return await fallbackCall('getProgramAccounts', params)
+  } catch (err) {
+    // Some of the fallback's nodes scan the whole program for a filtered query and give up past 5M accounts; its
+    // paginated getProgramAccountsV2 answers the same query.
+    if (err.rpc && /getProgramAccountsV2|too many accounts/i.test(err.message)) return programAccountsV2(params)
+    if (err.rpc) throw err
+    return sol.rpc('getProgramAccounts', params)
+  }
+}
+
+async function fallbackCall(method, params) {
+  try {
+    const res = await fetch(FALLBACK_RPC, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }), signal: AbortSignal.timeout(75_000) })
     const j = await res.json()
     if (j.error) throw Object.assign(new Error(j.error.message || 'RPC error'), { rpc: true })
     return j.result
   } catch (err) {
-    if (err.rpc) throw err
-    return sol.rpc('getProgramAccounts', params)
+    if (!err.rpc) err.rpc = false
+    throw err
   }
+}
+
+/** getProgramAccountsV2 page by page (up to 20 pages of 10,000), as getProgramAccounts' list. */
+async function programAccountsV2([program, config = {}]) {
+  const out = []
+  let paginationKey = null
+  for (let page = 0; page < 20; page++) {
+    const r = await fallbackCall('getProgramAccountsV2', [program, { ...config, limit: 10_000, ...(paginationKey ? { paginationKey } : {}) }])
+    const res = r && r.value ? r.value : r
+    out.push(...((res && res.accounts) || []))
+    paginationKey = res && typeof res.paginationKey === 'string' ? res.paginationKey : null
+    if (!paginationKey) return out
+  }
+  throw new Error('Too many pages of pump.fun accounts to read right now. Try again in a moment.')
 }
 
 const TOKEN_PROGRAMS = new Set([TOKEN_PROGRAM, TOKEN_2022])
@@ -522,6 +578,8 @@ export async function ataIdempotent({ payer, owner, mint, tokenProgram = TOKEN_P
 
 export const computeUnitLimit = units => ({ programId: COMPUTE_BUDGET, keys: [], data: cat([u8(2), u32(units)]) })
 export const computeUnitPrice = microLamports => ({ programId: COMPUTE_BUDGET, keys: [], data: cat([u8(3), u64(microLamports)]) })
+/** SetLoadedAccountsDataSizeLimit: the account data (programs included) a transaction may load, in bytes. */
+export const loadedDataLimit = bytes => ({ programId: COMPUTE_BUDGET, keys: [], data: cat([u8(4), u32(bytes)]) })
 
 // ---------- pump.fun: accounts ----------
 
@@ -625,12 +683,47 @@ export function quoteOpeningBuy(settings, lamports) {
 // ---------- launch ----------
 
 /** Compute and priority fee of a launch (create_v2 alone measured near 99k CU, with the first buy up to about 176k). */
-export const LAUNCH = { createUnits: 150_000, buyUnits: 150_000, bothUnits: 250_000, microLamports: 100_000n, slippageBps: 500n }
+// loadedData: a launch loads about 12.9 MB of accounts, most of it pump.fun's own program (measured on mainnet).
+export const LAUNCH = { createUnits: 150_000, buyUnits: 150_000, bothUnits: 250_000, microLamports: 100_000n, slippageBps: 500n, loadedData: 32 * 1024 * 1024 }
+// A deposit into a vault: SOL used 11,660 units and 75 KB, USDC 25,208 units and 289 KB (with its token account).
+export const DEPOSIT = { solUnits: 30_000, usdcUnits: 80_000, microLamports: 100_000n, loadedData: 1024 * 1024 }
+/** The compute budget a deposit sets, as Phantom asks: an explicit limit, a priority fee and a loaded-data limit. */
+export const depositBudget = units => [computeUnitLimit(units), computeUnitPrice(DEPOSIT.microLamports), loadedDataLimit(DEPOSIT.loadedData)]
 
 /** Bytes of the legacy transaction these instructions make, signatures included. */
 export function legacySize(payer, instructions) {
   const message = sol.serializeMessage(sol.compileMessage({ payer, recentBlockhash: SYSTEM_PROGRAM, instructions }))
   return message.length + 1 + 64 * message[0]
+}
+
+/** Bytes of the v0 transaction these instructions make over `tables`, signatures included. */
+export function v0Size(payer, instructions, tables) {
+  const message = sol.compileV0({ payer, recentBlockhash: SYSTEM_PROGRAM, instructions, tables })
+  return message.length + 1 + 64 * message[1]
+}
+
+// The launch lookup table: the accounts every launch names, so a v0 launch carries each in one byte instead of 32,
+// with room for its compute budget and the board's reference next to the opening buy. Created once by
+// solana/scripts/launch-table.mjs; a lookup table's entries can only be appended to, never changed. Accounts not in
+// it (a new buyback recipient, say) still work: they ride in the transaction itself.
+export const LAUNCH_TABLE = config.SOLANA_LAUNCH_TABLE || '4wM2VSmovRHZtEQ9oenQZn2v7rSE9XRUJjFbCfEfkyMr'
+export const BUYBACK_RECIPIENTS = [
+  '5YxQFdt3Tr9zJLvkFccqXVUwhdTWJQc1fFg2YPbxvxeD', '9M4giFFMxmFGXtc3feFzRai56WbBqehoSeRE5GK7gf7',
+  'GXPFM2caqTtQYC2cJ5yJRi9VDkpsYZXzYdwYpGnLmtDL', '3BpXnfJaUTiwXnJNe7Ej1rcbzqTTQUvLShZaWazebsVR',
+  '5cjcW9wExnJJiqgLjq7DEG75Pm6JBgE1hNv4B2vHXUW6', 'EHAAiTxcdDwQ3U4bU6YcMsQGaekdzLS3B5SmYo46kJtL',
+  '5eHhjP8JaYkz83CWwvGU2uMUXefd3AazWGx4gpcuEEYD', 'A7hAgCzFw14fejgCp387JUJRMNyz4j89JKnhtKU8piqW',
+]
+export const LAUNCH_TABLE_ADDRESSES = [
+  PUMP.global, PUMP.mintAuthority, SYSTEM_PROGRAM, TOKEN_2022, TOKEN_PROGRAM, PUMP.mayhem, PUMP.mayhemGlobalParams,
+  PUMP.mayhemSolVault, PUMP.eventAuthority, PUMP.feeConfig, WSOL, BOARD_REFERENCE, ...BUYBACK_RECIPIENTS,
+]
+
+let tableP = null
+/** The launch lookup table as { key, addresses }, read once a page; null when none is set or it can't be read. */
+export function launchTable() {
+  if (!LAUNCH_TABLE) return Promise.resolve(null)
+  tableP ||= sol.readLookupTable(LAUNCH_TABLE).catch(() => { tableP = null; return null })
+  return tableP
 }
 
 const pickBuyback = list => {
@@ -648,9 +741,11 @@ const pickBuyback = list => {
  * token-account instruction when the opening buy rides along (33 bytes, 1,227 at most in all, which leaves no room for
  * the compute budget instructions: such a launch goes without them), on a zero-lamport transfer (launchTag) otherwise.
  * The board finds the domain in the coin's metadata.
- * Returns { mint, mintKeypair, tokens, single, size, txs: [{ kind: 'launch' | 'create' | 'buy', instructions, extraSigners }] }.
+ * With `tables` (the launch lookup table, for a wallet that signs v0), a launch with an opening buy is one v0
+ * transaction that keeps the compute budget and the reference: about 900 bytes. Without them, the legacy layouts.
+ * Returns { mint, mintKeypair, tokens, single, size, version?, txs: [{ kind: 'launch' | 'create' | 'buy', instructions, extraSigners, lookupTables? }] }.
  */
-export async function launchTxs({ payer, vault, name, symbol, uri, buyLamports = 0n, mintKeypair, settings, board = false }) {
+export async function launchTxs({ payer, vault, name, symbol, uri, buyLamports = 0n, mintKeypair, settings, board = false, tables = [] }) {
   if (!sol.isAddress(vault)) throw new Error('No vault address for this domain yet.')
   if (!String(name || '').trim() || !String(symbol || '').trim() || !String(uri || '').trim()) throw new Error('A coin needs a name, a ticker and its metadata.')
   settings ||= await pumpSettings()
@@ -674,6 +769,11 @@ export async function launchTxs({ payer, vault, name, symbol, uri, buyLamports =
   // them (the runtime then allows 200k compute units per instruction, more than enough, and the wallet sets the
   // priority fee).
   const buying = await buyIxs(tokens, board)
+  if (tables.length) {
+    const instructions = [computeUnitLimit(LAUNCH.bothUnits), price, loadedDataLimit(LAUNCH.loadedData), create, ...buying]
+    const size = v0Size(payer, instructions, tables)
+    if (size <= LEGACY_LIMIT) return { mint, mintKeypair, tokens, single: true, size, version: 0, txs: [{ kind: 'launch', instructions, extraSigners: [mintKeypair], lookupTables: tables }] }
+  }
   for (const instructions of [[computeUnitLimit(LAUNCH.bothUnits), price, create, ...buying], [create, ...buying]]) {
     const size = legacySize(payer, instructions)
     if (size <= LEGACY_LIMIT) return { mint, mintKeypair, tokens, single: true, size, txs: [{ kind: 'launch', instructions, extraSigners: [mintKeypair] }] }
@@ -834,7 +934,7 @@ export async function addSignatures(tx, signers = []) {
 export const transactionId = tx => { const { sigsAt } = signersOf(tx); return base58Encode(tx.subarray(sigsAt, sigsAt + 64)) }
 
 /**
- * Sends [{ instructions, extraSigners }] in order from the connected wallet (solana.js state), each confirmed
+ * Sends [{ instructions, extraSigners, lookupTables? }] in order from the connected wallet (solana.js state), each confirmed
  * before the next. With extra signers the wallet signs first (it may add instructions of its own) and they sign
  * what it returns. `onStep` hears { index, status: 'signing' | 'sending' | 'confirming' | 'confirmed', signature }.
  * Returns the signatures; a failure throws with `index`, `signature` and the `signatures` that landed before it.
@@ -849,10 +949,14 @@ export async function sendAll(txs, onStep = () => {}, state = sol.state) {
     let signature
     try {
       onStep({ index, status: 'signing' })
+      if (tx.lookupTables && tx.lookupTables.length && !sol.supportsV0(state)) throw new Error('This wallet cannot sign version 0 transactions.')
       const { blockhash, lastValidBlockHeight } = await sol.getLatestBlockhash()
-      const message = sol.serializeMessage(sol.compileMessage({ payer: account.address, recentBlockhash: blockhash, instructions: tx.instructions }))
+      const message = tx.lookupTables && tx.lookupTables.length
+        ? sol.compileV0({ payer: account.address, recentBlockhash: blockhash, instructions: tx.instructions, tables: tx.lookupTables })
+        : sol.serializeMessage(sol.compileMessage({ payer: account.address, recentBlockhash: blockhash, instructions: tx.instructions }))
       const unsigned = sol.unsignedTransaction(message)
       const extra = tx.extraSigners || []
+      await preflight(unsigned)
       if (sign && (extra.length || !signSend)) {
         const [out] = await sign.signTransaction({ account, transaction: unsigned, chain: sol.CHAIN })
         const signed = await addSignatures(Uint8Array.from(out.signedTransaction), extra)
@@ -872,6 +976,22 @@ export async function sendAll(txs, onStep = () => {}, state = sol.state) {
     onStep({ index, status: 'confirmed', signature })
   }
   return done
+}
+
+/**
+ * Simulates an unsigned transaction (sigVerify off) before the wallet sees it, and stops on a failure: a transaction
+ * that would fail costs a pointless approval, and wallets such as Phantom warn on what they can't simulate. A
+ * simulation that can't be run at all (the RPC is down) doesn't block the send.
+ */
+async function preflight(unsigned) {
+  let value
+  try {
+    ({ value } = await sol.rpc('simulateTransaction', [sol.base64Encode(unsigned), { encoding: 'base64', sigVerify: false, commitment: 'confirmed' }]))
+  } catch { return }
+  if (value && value.err) {
+    const logs = (value.logs || []).filter(l => /error|failed|insufficient/i.test(l)).slice(-2).join(' ')
+    throw new Error(`This transaction would fail on Solana, so it wasn't sent: ${JSON.stringify(value.err)}${logs ? `. ${logs}` : ''}`)
+  }
 }
 
 // pump.fun errors a launch or a collect can meet, in plain words (codes from its IDL).

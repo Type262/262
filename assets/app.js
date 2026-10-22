@@ -845,8 +845,12 @@ function ago(ts) {
 }
 const IPFS = ['https://ipfs.filebase.io/ipfs/', 'https://gateway.pinata.cloud/ipfs/']
 const cidPath = u => u.slice(7).replace(/^ipfs\//, '')
+// Images this page just pinned, by their ipfs:// link, shown from the file itself: a fresh pin takes a while to reach
+// the public gateways, and until then the gateway link shows nothing.
+const uploaded = new Map()
 const imgUrl = (u, gateway = 0) => {
   u = String(u || '').trim()
+  if (gateway === 0 && uploaded.has(u)) return uploaded.get(u)
   if (u.startsWith('ipfs://')) return /^[A-Za-z0-9/._-]+$/.test(cidPath(u)) ? IPFS[gateway] + cidPath(u) : ''
   return /^https:\/\/[^\s"'<>]+$/.test(u) ? u : ''
 }
@@ -1201,6 +1205,7 @@ async function uploadImage(file) {
   if (!IMAGE_TYPES.includes(file.type)) return fail('Use a PNG, JPEG or WebP image.')
   if (!file.size || file.size > 5 * 1024 * 1024) return fail('Images must be 5 MB or smaller.')
   const local = URL.createObjectURL(file)
+  let kept = false
   $('#ln-thumb').style.backgroundImage = `url("${local}")`
   uploading = true
   renderCreate()
@@ -1212,6 +1217,8 @@ async function uploadImage(file) {
     const res = await fetch(`${UPLOAD_URL}/image`, { method: 'POST', body: form, signal: AbortSignal.timeout(90_000) })
     const j = await res.json().catch(() => ({}))
     if (!res.ok || typeof j.uri !== 'string' || !/^ipfs:\/\/[A-Za-z0-9]+$/.test(j.uri)) throw new Error(j.error || 'The upload did not complete.')
+    uploaded.set(j.uri, local) // shown from the file until IPFS gateways serve it
+    kept = true
     fld('logo').value = j.uri
     stat.textContent = '✓ Uploaded to IPFS.'
     stat.classList.add('ok')
@@ -1222,7 +1229,7 @@ async function uploadImage(file) {
   } finally {
     clearTimeout(slow)
     uploading = false
-    URL.revokeObjectURL(local)
+    if (!kept) URL.revokeObjectURL(local)
     renderCreate()
   }
 }

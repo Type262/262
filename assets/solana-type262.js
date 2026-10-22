@@ -8,7 +8,7 @@ import * as config from './config.js'
 import {
   ATA_PROGRAM, CHAIN, SYSTEM_PROGRAM, TOKEN_PROGRAM, USDC, base58Encode, base64Decode, base64Encode, compileMessage,
   createAssociatedTokenAccountIdempotent, findProgramAddress, pubkeyBytes, rpc as solanaRpc, serializeMessage, state,
-  systemTransfer,
+  systemTransfer, compileV0,
 } from './solana.js'
 import {
   COMPUTE_BUDGET_PROGRAM, LEGACY_TX_LIMIT, TYPE_TXT, TYPE_WALLET, anchorEncoder, canonicalDomain, decodeRrsetAccount,
@@ -867,6 +867,8 @@ export async function lookupTableTx({ payer, recentSlot, addresses = LAUNCH_LOOK
 
 // ---------- keys and transactions ----------
 
+export { compileV0 } // in solana.js, shared with the vault client's launches
+
 /** A fresh Ed25519 keypair from WebCrypto, for a new coin's mint: { publicKey, sign(message) }. Never leaves the page. */
 export async function keypair() {
   const k = await crypto.subtle.generateKey({ name: 'Ed25519' }, false, ['sign', 'verify'])
@@ -890,55 +892,6 @@ function readShortvec(b, at) {
     n |= (x & 0x7f) << (7 * i)
     if (!(x & 0x80)) return [n, at + i + 1]
   }
-}
-
-/**
- * A v0 message: like a legacy one, but accounts found in `tables` ({ key, addresses }) are sent as one-byte
- * indexes into them. Signers and invoked programs always stay in the message itself.
- */
-export function compileV0({ payer, recentBlockhash, instructions, tables = [] }) {
-  const metas = new Map()
-  const touch = (k, signer, writable, invoked) => {
-    pubkeyBytes(k)
-    const m = metas.get(k)
-    if (m) { m.signer ||= signer; m.writable ||= writable; m.invoked ||= invoked } else metas.set(k, { signer, writable, invoked })
-  }
-  touch(payer, true, true, false)
-  for (const ix of instructions) {
-    touch(ix.programId, false, false, true)
-    for (const k of ix.keys) touch(k.pubkey, k.isSigner, k.isWritable, false)
-  }
-  const lookups = tables.map(t => ({ key: t.key, writable: [], readonly: [] }))
-  const loaded = new Set()
-  for (const [k, m] of metas) {
-    if (m.signer || m.invoked || k === payer) continue
-    for (const [i, t] of tables.entries()) {
-      const at = t.addresses.indexOf(k)
-      if (at < 0 || at > 255) continue
-      ;(m.writable ? lookups[i].writable : lookups[i].readonly).push([at, k])
-      loaded.add(k)
-      break
-    }
-  }
-  const group = (s, wr) => [...metas].filter(([k, m]) => k !== payer && !loaded.has(k) && m.signer === s && m.writable === wr).map(([k]) => k)
-  const signedRo = group(true, false)
-  const unsignedRo = group(false, false)
-  const statics = [payer, ...group(true, true), ...signedRo, ...group(false, true), ...unsignedRo]
-  // Indexes run over the static keys, then every table's writable entries, then every table's read-only ones.
-  const order = [...statics, ...lookups.flatMap(l => l.writable.map(([, k]) => k)), ...lookups.flatMap(l => l.readonly.map(([, k]) => k))]
-  const index = new Map(order.map((k, i) => [k, i]))
-  const used = lookups.filter(l => l.writable.length || l.readonly.length)
-  const out = [0x80, 1 + group(true, true).length + signedRo.length, signedRo.length, unsignedRo.length, ...shortvec(statics.length)]
-  for (const k of statics) out.push(...pubkeyBytes(k))
-  out.push(...pubkeyBytes(recentBlockhash), ...shortvec(instructions.length))
-  for (const ix of instructions) {
-    out.push(index.get(ix.programId), ...shortvec(ix.keys.length), ...ix.keys.map(k => index.get(k.pubkey)), ...shortvec(ix.data.length), ...ix.data)
-  }
-  out.push(...shortvec(used.length))
-  for (const l of used) {
-    out.push(...pubkeyBytes(l.key), ...shortvec(l.writable.length), ...l.writable.map(([at]) => at), ...shortvec(l.readonly.length), ...l.readonly.map(([at]) => at))
-  }
-  return Uint8Array.from(out)
 }
 
 /**

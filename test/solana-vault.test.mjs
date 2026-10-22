@@ -581,6 +581,158 @@ test('sendAll: the wallet signs first, the mint co-signs, both signatures verify
   } finally { restore() }
 })
 
+test('launch: with the lookup table, one v0 transaction keeps the opening buy, the compute budget and the reference', async () => {
+  const settings = SETTINGS.mainnet || SETTINGS
+  const uri = 'https://ipfs.io/ipfs/bafkreigh2akiscaildcqabsyg3dfr6chu3fgpregiymsck7e7aqa4s52zy'
+  assert.equal(V.LAUNCH_TABLE_ADDRESSES.length, 20)
+  assert.equal(new Set(V.LAUNCH_TABLE_ADDRESSES).size, 20, 'no duplicates')
+  assert.ok(V.LAUNCH_TABLE_ADDRESSES.includes(V.BOARD_REFERENCE))
+  for (const b of settings.global.buybackFeeRecipients || []) assert.ok(V.BUYBACK_RECIPIENTS.includes(b), `buyback recipient ${b} is in the table`)
+  const table = { key: fresh(), addresses: V.LAUNCH_TABLE_ADDRESSES }
+  const sizes = []
+  for (const [name, symbol] of [['Your Site', 'SITE'], ['x'.repeat(32), 'Y'.repeat(10)]]) {
+    const payer = fresh(), vault = fresh(), mintKeypair = throwaway()
+    const plan = await V.launchTxs({ payer, vault, name, symbol, uri, buyLamports: 1_500_000_000n, mintKeypair, settings, board: true, tables: [table] })
+    assert.deepEqual([plan.version, plan.single, plan.txs.length], [0, true, 1])
+    const [tx] = plan.txs
+    assert.deepEqual(tx.lookupTables, [table])
+    const ixs = tx.instructions
+    assert.equal(hex(ixs[0].data), hex(V.computeUnitLimit(V.LAUNCH.bothUnits).data), 'the compute limit is back')
+    assert.equal(hex(ixs[1].data), hex(V.computeUnitPrice(V.LAUNCH.microLamports).data), 'and the priority fee')
+    assert.equal(hex(ixs[2].data), hex(V.loadedDataLimit(V.LAUNCH.loadedData).data), 'and an explicit loaded-data limit')
+    const ataIx = ixs.find(ix => ix.programId === sol.ATA_PROGRAM)
+    assert.equal(ataIx.keys.at(-1).pubkey, V.BOARD_REFERENCE, 'the reference rides on the buyer\'s token account')
+    // the message: v0, the table named once, every looked-up account out of the static keys
+    const message = sol.compileV0({ payer, recentBlockhash: fresh(), instructions: ixs, tables: [table] })
+    assert.equal(message[0], 0x80)
+    const statics = message[4]
+    const keys = Array.from({ length: statics }, (_, i) => sol.base58Encode(message.subarray(5 + 32 * i, 5 + 32 * i + 32)))
+    for (const k of keys) assert.ok(!V.LAUNCH_TABLE_ADDRESSES.includes(k) || k === sol.SYSTEM_PROGRAM && ixs.some(ix => ix.programId === k), `${k} is looked up, not inline`)
+    assert.ok(Buffer.from(message).includes(Buffer.from(sol.pubkeyBytes(table.key))), 'the table is named')
+    assert.equal(plan.size, V.v0Size(payer, ixs, [table]))
+    assert.ok(plan.size <= V.LEGACY_LIMIT)
+    sizes.push(`${name.length}/${symbol.length}: ${plan.size} bytes`)
+  }
+  // a table that doesn't help (wrong addresses) leaves the legacy layouts
+  const legacy = await V.launchTxs({ payer: fresh(), vault: fresh(), name: 'Your Site', symbol: 'SITE', uri, buyLamports: 1_500_000_000n, mintKeypair: throwaway(), settings, board: true, tables: [{ key: fresh(), addresses: [fresh()] }] })
+  assert.equal(legacy.version, undefined)
+  assert.ok(!legacy.txs[0].lookupTables)
+  console.log(`     (v0 over the launch table: ${sizes.join('; ')})`)
+})
+
+test('sendAll: a v0 launch, the wallet signs first, the mint co-signs, both verify over the v0 message', async () => {
+  const settings = SETTINGS.mainnet || SETTINGS
+  const user = throwaway(), mint = throwaway()
+  const sent = []
+  const account = { address: user.publicKey, chains: ['solana:mainnet'] }
+  const wallet = { features: { 'solana:signTransaction': { supportedTransactionVersions: ['legacy', 0], signTransaction: async ({ transaction }) => [{ signedTransaction: await V.addSignatures(transaction, [user]) }] } } }
+  assert.equal(sol.supportsV0({ wallet, account }), true)
+  assert.equal(sol.supportsV0({ wallet: { features: { 'solana:signTransaction': { supportedTransactionVersions: ['legacy'] } } }, account }), false)
+  assert.equal(sol.supportsV0({ wallet: null, account: null }), false)
+  mock({
+    rpc: (method, params) => {
+      if (method === 'getLatestBlockhash') return { context: { slot: 1 }, value: { blockhash: fresh(), lastValidBlockHeight: 100 } }
+      if (method === 'sendTransaction') { sent.push(Uint8Array.from(Buffer.from(params[0], 'base64'))); return 'sig' }
+      if (method === 'getSignatureStatuses') return { context: { slot: 1 }, value: [{ confirmationStatus: 'confirmed', err: null }] }
+      throw new Error(`unexpected ${method}`)
+    },
+  })
+  try {
+    const table = { key: fresh(), addresses: V.LAUNCH_TABLE_ADDRESSES }
+    const plan = await V.launchTxs({ payer: user.publicKey, vault: fresh(), name: 'Your Site', symbol: 'SITE', uri: 'https://a.example/m.json', buyLamports: 100_000_000n, mintKeypair: mint, settings, board: true, tables: [table] })
+    assert.equal(plan.version, 0)
+    const [signature] = await V.sendAll(plan.txs, () => {}, { wallet, account })
+    const tx = sent[0]
+    const { signers, sigsAt, msgAt } = V.signersOf(tx)
+    assert.equal(tx[msgAt], 0x80, 'sent as v0')
+    assert.deepEqual(signers, [user.publicKey, mint.publicKey])
+    const message = tx.subarray(msgAt)
+    assert.ok(user.verify(message, tx.subarray(sigsAt, sigsAt + 64)))
+    assert.ok(mint.verify(message, tx.subarray(sigsAt + 64, sigsAt + 128)))
+    assert.equal(signature, V.transactionId(tx))
+    assert.ok(tx.length <= V.LEGACY_LIMIT)
+    // a wallet that only signs legacy never gets it
+    const legacyOnly = { features: { 'solana:signTransaction': { supportedTransactionVersions: ['legacy'], signTransaction: async () => { throw new Error('asked to sign') } } } }
+    await assert.rejects(V.sendAll(plan.txs, () => {}, { wallet: legacyOnly, account }), /version 0/)
+    assert.equal(sent.length, 1)
+  } finally { restore() }
+})
+
+test('launchTable: the table\'s addresses from Solana; a deactivated or missing table is no table', async () => {
+  const table = (deactivation, addresses) => {
+    const b = Buffer.alloc(56 + 32 * addresses.length)
+    b.writeUInt32LE(1, 0); b.writeBigUInt64LE(deactivation, 4); b[21] = 1
+    addresses.forEach((a, i) => Buffer.from(sol.pubkeyBytes(a)).copy(b, 56 + 32 * i))
+    return b
+  }
+  let answer = null
+  mock({ rpc: method => { if (method === 'getAccountInfo') return { context: { slot: 1 }, value: answer }; throw new Error(`unexpected ${method}`) } })
+  try {
+    answer = account(table(123n, V.LAUNCH_TABLE_ADDRESSES), sol.LOOKUP_TABLE_PROGRAM)
+    await assert.rejects(sol.readLookupTable(V.LAUNCH_TABLE), /deactivated/)
+    assert.equal(await V.launchTable(), null)
+    answer = null
+    assert.equal(await V.launchTable(), null)
+    answer = account(table(2n ** 64n - 1n, V.LAUNCH_TABLE_ADDRESSES), sol.SYSTEM_PROGRAM)
+    await assert.rejects(sol.readLookupTable(V.LAUNCH_TABLE), /No address lookup table/)
+    answer = account(table(2n ** 64n - 1n, V.LAUNCH_TABLE_ADDRESSES), sol.LOOKUP_TABLE_PROGRAM)
+    assert.deepEqual(await sol.readLookupTable(V.LAUNCH_TABLE), { key: V.LAUNCH_TABLE, addresses: V.LAUNCH_TABLE_ADDRESSES })
+  } finally { restore() }
+})
+
+test('budget: SetLoadedAccountsDataSizeLimit is instruction 4 with a u32; a deposit sets limit, price and data limit', () => {
+  const ix = V.loadedDataLimit(32 * 1024 * 1024)
+  assert.equal(ix.programId, V.COMPUTE_BUDGET)
+  assert.deepEqual([...ix.data], [4, 0, 0, 0, 2])
+  const b = V.depositBudget(V.DEPOSIT.usdcUnits)
+  assert.deepEqual(b.map(x => x.data[0]), [2, 3, 4])
+  assert.equal(Buffer.from(b[0].data).readUInt32LE(1), V.DEPOSIT.usdcUnits)
+})
+
+test('sendAll: a transaction that would fail in simulation stops before the wallet is asked', async () => {
+  const user = throwaway()
+  const account = { address: user.publicKey, chains: ['solana:mainnet'] }
+  let asked = 0
+  const wallet = { features: { 'solana:signAndSendTransaction': { signAndSendTransaction: async () => { asked++; return [{ signature: new Uint8Array(64) }] } } } }
+  let simulateErr = { InstructionError: [2, { Custom: 1 }] }
+  mock({
+    rpc: (method, params) => {
+      if (method === 'getLatestBlockhash') return { context: { slot: 1 }, value: { blockhash: fresh(), lastValidBlockHeight: 100 } }
+      if (method === 'simulateTransaction') {
+        assert.equal(params[1].sigVerify, false)
+        return { context: { slot: 1 }, value: { err: simulateErr, logs: ['Program log: Error: insufficient lamports'] } }
+      }
+      if (method === 'getSignatureStatuses') return { context: { slot: 1 }, value: [{ confirmationStatus: 'confirmed', err: null }] }
+      throw new Error(`unexpected ${method}`)
+    },
+  })
+  try {
+    await assert.rejects(V.sendAll([{ instructions: [sol.systemTransfer(user.publicKey, fresh(), 1n)] }], () => {}, { wallet, account }), /would fail on Solana.*insufficient lamports/)
+    assert.equal(asked, 0, 'the wallet never saw it')
+    simulateErr = null
+    await V.sendAll([{ instructions: [sol.systemTransfer(user.publicKey, fresh(), 1n)] }], () => {}, { wallet, account })
+    assert.equal(asked, 1, 'a clean simulation goes on to the wallet')
+  } finally { restore() }
+})
+
+test('coins: when the fallback refuses getProgramAccounts as too large, getProgramAccountsV2 pages answer it', async () => {
+  const calls = []
+  const accounts = [{ pubkey: fresh(), account: { data: ['', 'base64'] } }, { pubkey: fresh(), account: { data: ['', 'base64'] } }]
+  mock({
+    rpc: (method, params) => {
+      calls.push([method, params[1].paginationKey || null, params[1].limit])
+      if (method === 'getProgramAccounts') throw new Error('Too many accounts requested (5000001 rows), Please use getProgramAccountsV2 with pagination to handle large datasets.')
+      if (method === 'getProgramAccountsV2') return params[1].paginationKey ? { accounts: [accounts[1]], paginationKey: null } : { accounts: [accounts[0]], paginationKey: 'next' }
+      throw new Error(`unexpected ${method}`)
+    },
+  })
+  try {
+    const out = await V.programAccounts([V.PUMP.program, { encoding: 'base64', filters: [{ memcmp: { offset: 0, bytes: 'x' } }] }])
+    assert.deepEqual(out, accounts)
+    assert.deepEqual(calls, [['getProgramAccounts', null, undefined], ['getProgramAccountsV2', null, 10000], ['getProgramAccountsV2', 'next', 10000]])
+  } finally { restore() }
+})
+
 test('programError reads pump errors from simulation messages and statuses', () => {
   assert.deepEqual(V.programError({ message: 'Transaction simulation failed: Error processing Instruction 4: custom program error: 0x1772' }).code, 6002)
   assert.equal(V.programError({ message: 'Transaction failed on Solana: {"InstructionError":[4,{"Custom":6002}]}' }).instruction, 4)

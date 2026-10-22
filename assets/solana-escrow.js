@@ -78,16 +78,20 @@ function workerStep(el, label, from = 0) {
   }
 }
 
-const IPFS = ['https://ipfs.io/ipfs/', 'https://gateway.pinata.cloud/ipfs/']
-const cidPath = u => u.slice(7).replace(/^ipfs\//, '')
+// Images this page just pinned, by their ipfs:// link, shown from the file itself: a fresh pin takes a while to reach
+// the public gateways, and until then the gateway link shows nothing.
+export const uploaded = new Map()
 export const imgUrl = (u, gateway = 0) => {
   u = String(u || '').trim()
-  if (u.startsWith('ipfs://')) return /^[A-Za-z0-9/._-]+$/.test(cidPath(u)) ? IPFS[gateway] + cidPath(u) : ''
+  if (gateway === 0 && uploaded.has(u)) return uploaded.get(u)
+  const path = V.ipfsPath(u) // ipfs:// or a public gateway's link: through our gateways
+  if (path) return V.IPFS_GATEWAYS[gateway] + path
+  if (u.startsWith('ipfs://')) return ''
   return /^https:\/\/[^\s"'<>]+$/.test(u) ? u : ''
 }
 // On a failed load, try the second IPFS gateway once, then fall back to the emblem.
 export const logoTag = (u, cls = '') => {
-  const src = imgUrl(u), alt = String(u || '').trim().startsWith('ipfs://') ? imgUrl(u, 1) : ''
+  const src = imgUrl(u), alt = V.ipfsPath(u) ? imgUrl(u, 1) : ''
   return `<img class="ln-logo${cls}" alt=""${src ? ` src="${esc(src)}"` : ''}${alt ? ` data-alt="${esc(alt)}"` : ''} loading="lazy" onerror="if(this.dataset.alt){this.src=this.dataset.alt;this.removeAttribute('data-alt')}else this.removeAttribute('src')">`
 }
 export const sol2 = lamports => {
@@ -118,10 +122,11 @@ const images = new Map()
 function loadImages(el, items) {
   for (const t of items) {
     if (!/^https:\/\//.test(t.uri || '')) continue
-    if (!images.has(t.uri)) images.set(t.uri, fetch(t.uri, { signal: AbortSignal.timeout(8000) }).then(r => r.json()).then(j => imgUrl(j && j.image)).catch(() => ''))
+    if (!images.has(t.uri)) images.set(t.uri, V.fetchJson(t.uri).then(j => imgUrl(j && j.image)).catch(() => ''))
     images.get(t.uri).then(src => {
       const img = $(`[data-mint="${t.mint}"] .ln-logo`, el)
-      if (src && img && !img.getAttribute('src')) img.src = src
+      // the card is on screen by now: a lazy image given its src this late may never start loading
+      if (src && img && !img.getAttribute('src')) { img.loading = 'eager'; img.src = src }
     })
   }
 }
@@ -491,7 +496,7 @@ function render(domain, s) {
         if (lamports < units + SOL_FEE) throw new Error(`Not enough SOL: this wallet has ${fmtUnits(lamports, 9)}.`)
         if (units < sol.MIN_ACCOUNT_LAMPORTS && s.bal.lamports === 0n) throw new Error(`The vault is new on Solana, so its first SOL deposit must be at least ${fmtUnits(sol.MIN_ACCOUNT_LAMPORTS, 9)} SOL.`)
         // The reference and the memo put the deposit on the board (solana-vault.js BOARD_REFERENCE).
-        instructions = [V.withReference(sol.systemTransfer(payer, s.vault, units)), V.memoIx(V.boardMemo('deposit', domain))]
+        instructions = [...V.depositBudget(V.DEPOSIT.solUnits), V.withReference(sol.systemTransfer(payer, s.vault, units)), V.memoIx(V.boardMemo('deposit', domain))]
       } else {
         await sol.verifyMint(sol.USDC)
         const src = await sol.associatedTokenAddress(payer, sol.USDC.mint)
@@ -500,6 +505,7 @@ function render(domain, s) {
         const rent = opened ? 0n : sol.TOKEN_ACCOUNT_RENT
         if (lamports < SOL_FEE + rent) throw new Error(opened ? 'You need a little SOL for the network fee.' : `You need about ${fmtUnits(SOL_FEE + rent, 9)} SOL: the network fee, and rent for the vault's USDC account, which this first USDC deposit opens.`)
         instructions = [
+          ...V.depositBudget(V.DEPOSIT.usdcUnits),
           // Idempotent: opens the vault's USDC account if this is its first USDC, does nothing otherwise.
           sol.createAssociatedTokenAccountIdempotent({ payer, ata: s.usdcAccount, owner: s.vault, mint: sol.USDC.mint }),
           V.withReference(sol.transferChecked({ source: src, mint: sol.USDC.mint, destination: s.usdcAccount, owner: payer, amount: units, decimals: 6 })),

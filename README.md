@@ -432,6 +432,7 @@ Solana mainnet. Vaults are ordinary addresses and launches use pump.fun's own pr
 | Gas and fee wallet | [`3sde4YJpX2oYMSWaozHareWrXn6MASLxhQgfuCKJNPoK`](https://solscan.io/account/3sde4YJpX2oYMSWaozHareWrXn6MASLxhQgfuCKJNPoK) |
 | Claim fee, refund delay | 0.5%, 180 days after each deposit |
 | USDC | `EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v` (6 decimals) |
+| Launch lookup table | [`4wM2VSmovRHZtEQ9oenQZn2v7rSE9XRUJjFbCfEfkyMr`](https://solscan.io/account/4wM2VSmovRHZtEQ9oenQZn2v7rSE9XRUJjFbCfEfkyMr), 20 accounts pump.fun launches name |
 
 `GET /solana/status` returns these settings live, with the gas wallet's balance.
 

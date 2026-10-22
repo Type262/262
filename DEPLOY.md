@@ -18,6 +18,7 @@ This runbook covers both, Solana first:
 | Fee wallet | [`3sde4YJpX2oYMSWaozHareWrXn6MASLxhQgfuCKJNPoK`](https://solscan.io/account/3sde4YJpX2oYMSWaozHareWrXn6MASLxhQgfuCKJNPoK) |
 | USDC | `EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v` (6 decimals) |
 | pump.fun programs | pump `6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P`, PumpSwap `pAMMBay6oceH9fJKBRHGP5D4bD4sWpmSwMn52FMfXEA` |
+| Launch lookup table | [`4wM2VSmovRHZtEQ9oenQZn2v7rSE9XRUJjFbCfEfkyMr`](https://solscan.io/account/4wM2VSmovRHZtEQ9oenQZn2v7rSE9XRUJjFbCfEfkyMr) (20 addresses, authority the gas wallet) |
 
 Fee 0.5%, refunds after 180 days. Solana runs no TYPE/262 program: vaults are ordinary addresses held by the worker, and launches use pump.fun's own programs. The worker keeps no database; it reads every deposit, claim and refund from the chain.
 
@@ -88,7 +89,18 @@ Before each transaction the worker checks the gas wallet's balance. When it runs
 
 The app uses `https://type262-upload.onrender.com` by default. For your own worker, set `UPLOAD_URL` in `assets/config.js`, or `WORKER_URL` when the vault endpoints run apart from the uploads. `scripts/post-deploy.mjs` rewrites `assets/config.js` with only the Robinhood Chain exports, so add these back after running it.
 
-### 6. Smoke test with real money (small)
+### 6. The launch lookup table (once)
+
+Launches with an opening buy are v0 transactions over a lookup table of the accounts launches name, so they keep a priority fee and the board's reference. The live one is in the table above. For your own, run this with a funded keypair; it pays about 0.0042 SOL of rent, which comes back if the table is ever closed:
+
+```bash
+KEYPAIR=path/to/keypair.json SOLANA_RPC=https://your-rpc node solana/scripts/launch-table.mjs --dry-run   # simulate first
+KEYPAIR=path/to/keypair.json SOLANA_RPC=https://your-rpc node solana/scripts/launch-table.mjs
+```
+
+Then set `SOLANA_LAUNCH_TABLE` in `assets/config.js` to the address it prints. Without a table, launches still work as legacy transactions.
+
+### 7. Smoke test with real money (small)
 
 1. On a domain you own, turn on **DNSSEC** at your DNS host. On Cloudflare it's one click, then add the DS record at your registrar if Cloudflare isn't the registrar.
 2. Add the `_wallet` TXT record from the app's **Publish** tab, on Solana: `_wallet.yourdomain.com TXT "SOL <your Solana address>"`.

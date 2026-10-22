@@ -16,12 +16,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Every Solana transaction the app sends is simulated first and stops before the wallet asks for approval if it would fail. Launches and vault deposits set an explicit compute limit, priority fee and loaded-data limit, as Phantom asks of dApps whose transactions it simulates.
+- A launch with an opening buy is a v0 transaction over the launch lookup table (`4wM2VSmovRHZtEQ9oenQZn2v7rSE9XRUJjFbCfEfkyMr`), which holds 20 accounts that launches name. It keeps its priority fee and the board reference: about 880 bytes, under Solana's 1,232. Wallets that only sign legacy transactions get the legacy launch. `solana/scripts/launch-table.mjs` creates a table.
 - The README, its diagrams and screenshots, the social preview, `DEPLOY.md` and the package metadata lead with Solana, and present Robinhood Chain as also supported. New diagrams show the Solana architecture and the domain vault flow; the Robinhood Chain contract diagram moves into its own section.
 - The worker accepts requests from `https://type262.com` and `https://www.type262.com`, as well as the onrender.com address.
 - The app's side rail drops its Docs entry, which the top bar already has.
 
 ### Fixed
 
+- Coin pictures and metadata load again: ipfs.io and dweb.link now refuse most direct requests, so the app reads IPFS content through Pinata's gateway, then Filebase. Links stay as they are on-chain and in metadata, and the board reads launches' domains the same way.
+- The launch forms keep showing an image right after it is uploaded. A fresh IPFS pin can take a while to reach the public gateways, and until then the thumbnail went blank and the preview fell back to the default emblem.
+- The Coins and fees view reads a domain's pump.fun coins again when the RPC refuses the query as too large: it pages through getProgramAccountsV2, which the worker's RPC relay now allows.
 - The app's side rail scrolls when the window is too short for every entry, so none of them is cut off.
 - On phones, a profile's top supporters keep their rank, address and amount on one line.
 - `type262 link` refuses an asset it doesn't know. It used to build an ETH link for anything other than USDG, so `link yoursite.com 5 USDC` asked for 5 ETH.

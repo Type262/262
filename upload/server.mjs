@@ -204,7 +204,7 @@ const SOL_SMALL_RESPONSE = 256 * 1024 // getProgramAccounts without a dataSlice
 const SOL_METHODS = new Set(['getAccountInfo', 'getMultipleAccounts', 'getBalance', 'getTokenAccountBalance', 'getTokenAccountsByOwner',
   'getLatestBlockhash', 'getSignatureStatuses', 'getTransaction', 'getSlot', 'getBlockTime', 'getMinimumBalanceForRentExemption',
   'getFeeForMessage', 'simulateTransaction', 'getProgramAccounts', 'getRecentPrioritizationFees', 'isBlockhashValid', 'getHealth',
-  'getVersion', 'getSignaturesForAddress', 'sendTransaction'])
+  'getVersion', 'getSignaturesForAddress', 'sendTransaction', 'getProgramAccountsV2'])
 
 // Checks on the methods that carry a transaction or could return a whole program's accounts.
 function solanaCheck(c) {
@@ -212,10 +212,13 @@ function solanaCheck(c) {
   if ((c.method === 'sendTransaction' || c.method === 'simulateTransaction') && (typeof p[0] !== 'string' || !p[0] || p[0].length > 2048)) {
     return `${c.method} takes one encoded transaction.`
   }
-  if (c.method === 'getProgramAccounts') {
+  if (c.method === 'getProgramAccounts' || c.method === 'getProgramAccountsV2') {
     const cfg = p[1] && typeof p[1] === 'object' ? p[1] : {}
     const filters = Array.isArray(cfg.filters) ? cfg.filters : []
-    if (!filters.length || filters.length > 4 || !filters.some(f => f && f.memcmp)) return 'getProgramAccounts needs filters, with at least one memcmp.'
+    if (!filters.length || filters.length > 4 || !filters.some(f => f && f.memcmp)) return `${c.method} needs filters, with at least one memcmp.`
+    if (c.method === 'getProgramAccountsV2' && (cfg.changedSinceSlot !== undefined || (cfg.limit !== undefined && !(Number.isInteger(cfg.limit) && cfg.limit >= 1 && cfg.limit <= 10_000)))) {
+      return 'getProgramAccountsV2 takes a limit of 1 to 10,000 and a paginationKey.'
+    }
     const ds = cfg.dataSlice
     if (ds !== undefined && !(ds && Number.isInteger(ds.offset) && ds.offset >= 0 && Number.isInteger(ds.length) && ds.length >= 0 && ds.length <= 1024)) {
       return 'dataSlice must be { offset, length } with a length of at most 1024 bytes.'
@@ -224,7 +227,7 @@ function solanaCheck(c) {
   return ''
 }
 // Without a dataSlice, getProgramAccounts has to come back small.
-const solanaCap = calls => (calls.some(c => c.method === 'getProgramAccounts' && !c.params[1].dataSlice) ? SOL_SMALL_RESPONSE : SOL_MAX_RESPONSE)
+const solanaCap = calls => (calls.some(c => (c.method === 'getProgramAccounts' || c.method === 'getProgramAccountsV2') && !c.params[1].dataSlice) ? SOL_SMALL_RESPONSE : SOL_MAX_RESPONSE)
 
 // Move on to the next upstream only when this one is unavailable, never on an ordinary error such as a revert.
 const DOWN = /not enabled|unauthori|api key|forbidden|rate limit|too many requests|capacity|unavailable|dedicated node/i

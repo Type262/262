@@ -7,7 +7,7 @@ import { $, $$, esc, short, copy } from './ui.js'
 import * as config from './config.js'
 import * as sol from './solana.js'
 import * as V from './solana-vault.js'
-import { fmtUnits, solRecord, friendly, stepList, sendSteps, card, logoTag, imgUrl, tokens, coinsPanel, forgetCoins } from './solana-escrow.js'
+import { fmtUnits, solRecord, friendly, stepList, sendSteps, card, logoTag, imgUrl, uploaded, tokens, coinsPanel, forgetCoins } from './solana-escrow.js'
 
 const UPLOAD_URL = config.UPLOAD_URL || 'https://type262-upload.onrender.com'
 const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp']
@@ -278,6 +278,7 @@ async function uploadImage(file) {
   if (!IMAGE_TYPES.includes(file.type)) return fail('Use a PNG, JPEG or WebP image.')
   if (!file.size || file.size > 5 * 1024 * 1024) return fail('Images must be 5 MB or smaller.')
   const local = URL.createObjectURL(file)
+  let kept = false
   thumb.style.backgroundImage = `url("${local}")`
   uploading = true
   renderCreate()
@@ -289,6 +290,8 @@ async function uploadImage(file) {
     const res = await fetch(`${UPLOAD_URL}/image`, { method: 'POST', body, signal: AbortSignal.timeout(90_000) })
     const j = await res.json().catch(() => ({}))
     if (!res.ok || typeof j.uri !== 'string' || !/^ipfs:\/\/[A-Za-z0-9]+$/.test(j.uri)) throw new Error(j.error || 'The upload did not complete.')
+    uploaded.set(j.uri, local) // shown from the file until IPFS gateways serve it
+    kept = true
     fld('logo').value = j.uri
     stat.textContent = '✓ Uploaded to IPFS.'
     stat.classList.add('ok')
@@ -299,7 +302,7 @@ async function uploadImage(file) {
   } finally {
     clearTimeout(slow)
     uploading = false
-    URL.revokeObjectURL(local)
+    if (!kept) URL.revokeObjectURL(local)
     renderCreate()
   }
 }
@@ -357,7 +360,10 @@ async function launch() {
     } catch (err) { pin(0, 'fail'); throw err }
     pin(0, 'done', null, 'Pinned')
     // The new mint's keypair is in the create's extraSigners: it co-signs after the wallet, then stays in this page.
-    plan = await V.launchTxs({ payer, vault: info.vault, name, symbol, uri, buyLamports: buy, settings, board: true })
+    // A wallet that signs v0 gets the launch lookup table, so the opening buy, the priority fee and the board's reference
+    // fit in one transaction.
+    const tables = sol.supportsV0() ? [await V.launchTable()].filter(Boolean) : []
+    plan = await V.launchTxs({ payer, vault: info.vault, name, symbol, uri, buyLamports: buy, settings, board: true, tables })
     coin = { mint: plan.mint, domain, vault: info.vault, name, symbol, logo }
     const buyLine = `Opening buy: ${fmtUnits(buy, 9)} SOL of $${symbol}`
     const LABEL = { launch: `Launch $${symbol} on pump.fun${buy ? `, with a ${fmtUnits(buy, 9)} SOL opening buy` : ''}`, create: `Launch $${symbol} on pump.fun`, buy: buyLine }

@@ -1,4 +1,5 @@
-// Solana for the browser: base58, PDAs, legacy transactions, JSON-RPC and Wallet Standard wallets.
+// Solana for the browser: base58, PDAs, legacy and v0 transactions, address lookup tables, JSON-RPC and Wallet
+// Standard wallets.
 // No dependencies. sha256 is the browser's WebCrypto; the ed25519 on-curve check that PDAs need is a few
 // lines of BigInt (the same test the runtime's curve25519-dalek decompress makes), checked against mainnet
 // accounts in test/solana.test.mjs.
@@ -188,12 +189,77 @@ export function serializeMessage(m) {
   return Uint8Array.from(out)
 }
 
-/** An unsigned transaction: empty signature slots, then the message. Wallets fill the signatures in. */
+/** An unsigned transaction: empty signature slots, then the message (legacy or v0). Wallets fill the signatures in. */
 export function unsignedTransaction(messageBytes) {
-  const n = messageBytes[0]
+  const n = messageBytes[messageBytes[0] & 0x80 ? 1 : 0] // a v0 message starts with its version byte
   const tx = concat([Uint8Array.from(shortvec(n)), new Uint8Array(64 * n), messageBytes])
   if (tx.length > 1232) throw new Error('Transaction too large')
   return tx
+}
+
+// ---------- v0 transactions and address lookup tables ----------
+
+export const LOOKUP_TABLE_PROGRAM = 'AddressLookupTab1e1111111111111111111111111'
+
+/**
+ * A v0 message: like a legacy one, but accounts found in `tables` ({ key, addresses }) are sent as one-byte
+ * indexes into them. Signers and invoked programs always stay in the message itself.
+ */
+export function compileV0({ payer, recentBlockhash, instructions, tables = [] }) {
+  const metas = new Map()
+  const touch = (k, signer, writable, invoked) => {
+    pubkeyBytes(k)
+    const m = metas.get(k)
+    if (m) { m.signer ||= signer; m.writable ||= writable; m.invoked ||= invoked } else metas.set(k, { signer, writable, invoked })
+  }
+  touch(payer, true, true, false)
+  for (const ix of instructions) {
+    touch(ix.programId, false, false, true)
+    for (const k of ix.keys) touch(k.pubkey, k.isSigner, k.isWritable, false)
+  }
+  const lookups = tables.map(t => ({ key: t.key, writable: [], readonly: [] }))
+  const loaded = new Set()
+  for (const [k, m] of metas) {
+    if (m.signer || m.invoked || k === payer) continue
+    for (const [i, t] of tables.entries()) {
+      const at = t.addresses.indexOf(k)
+      if (at < 0 || at > 255) continue
+      ;(m.writable ? lookups[i].writable : lookups[i].readonly).push([at, k])
+      loaded.add(k)
+      break
+    }
+  }
+  const group = (s, wr) => [...metas].filter(([k, m]) => k !== payer && !loaded.has(k) && m.signer === s && m.writable === wr).map(([k]) => k)
+  const signedRo = group(true, false)
+  const unsignedRo = group(false, false)
+  const statics = [payer, ...group(true, true), ...signedRo, ...group(false, true), ...unsignedRo]
+  // Indexes run over the static keys, then every table's writable entries, then every table's read-only ones.
+  const order = [...statics, ...lookups.flatMap(l => l.writable.map(([, k]) => k)), ...lookups.flatMap(l => l.readonly.map(([, k]) => k))]
+  const index = new Map(order.map((k, i) => [k, i]))
+  const used = lookups.filter(l => l.writable.length || l.readonly.length)
+  const out = [0x80, 1 + group(true, true).length + signedRo.length, signedRo.length, unsignedRo.length, ...shortvec(statics.length)]
+  for (const k of statics) out.push(...pubkeyBytes(k))
+  out.push(...pubkeyBytes(recentBlockhash), ...shortvec(instructions.length))
+  for (const ix of instructions) {
+    out.push(index.get(ix.programId), ...shortvec(ix.keys.length), ...ix.keys.map(k => index.get(k.pubkey)), ...shortvec(ix.data.length), ...ix.data)
+  }
+  out.push(...shortvec(used.length))
+  for (const l of used) {
+    out.push(...pubkeyBytes(l.key), ...shortvec(l.writable.length), ...l.writable.map(([at]) => at), ...shortvec(l.readonly.length), ...l.readonly.map(([at]) => at))
+  }
+  return Uint8Array.from(out)
+}
+
+/** An address lookup table's addresses: { key, addresses }. Throws for a deactivated table, which stops resolving lookups. */
+export async function readLookupTable(address) {
+  const a = await rpc('getAccountInfo', [address, { encoding: 'base64', commitment: 'confirmed' }]).then(r => r.value)
+  if (!a || a.owner !== LOOKUP_TABLE_PROGRAM) throw new Error(`No address lookup table at ${address}`)
+  const data = fromB64(a.data[0])
+  // bytes 4-12: the deactivation slot, u64 max while the table is active
+  if (data.length < 56 || data.subarray(4, 12).some(b => b !== 0xff)) throw new Error(`The address lookup table at ${address} is deactivated`)
+  const addresses = []
+  for (let at = 56; at + 32 <= data.length; at += 32) addresses.push(base58Encode(data.subarray(at, at + 32)))
+  return { key: address, addresses }
 }
 
 // ---------- JSON-RPC ----------
@@ -361,6 +427,14 @@ export async function disconnect() {
   try { localStorage.removeItem(WALLET_KEY) } catch {}
   emit()
   try { if (w && w.features['standard:disconnect']) await w.features['standard:disconnect'].disconnect() } catch {}
+}
+
+/** Whether the connected wallet signs v0 transactions, the ones that use address lookup tables. */
+export function supportsV0(s = state) {
+  const f = s.wallet && s.wallet.features
+  const feature = f && (f['solana:signTransaction'] || f['solana:signAndSendTransaction'])
+  const versions = feature && feature.supportedTransactionVersions
+  return Array.isArray(versions) && versions.some(v => v === 0 || v === '0')
 }
 
 /** Has the connected wallet sign and send a transaction. Returns the signature (base58). */

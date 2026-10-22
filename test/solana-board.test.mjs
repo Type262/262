@@ -106,6 +106,28 @@ Object.assign(tests, {
   },
 })
 
+Object.assign(tests, {
+  'ipfs: links to public gateways and ipfs:// are read through our gateways, in order': async () => {
+    assert.equal(V.ipfsPath('ipfs://bafyabc/meta.json'), 'bafyabc/meta.json')
+    assert.equal(V.ipfsPath('https://ipfs.io/ipfs/bafyabc'), 'bafyabc')
+    assert.equal(V.ipfsPath('https://dweb.link/ipfs/bafyabc'), 'bafyabc')
+    assert.equal(V.ipfsPath('https://example.com/ipfs/bafyabc'), '')
+    assert.equal(V.ipfsPath('ipfs://not a cid'), '')
+    const real = globalThis.fetch, seen = []
+    globalThis.fetch = async url => {
+      seen.push(String(url))
+      return String(url).startsWith(V.IPFS_GATEWAYS[0]) ? { ok: false, status: 429, json: async () => ({}) } : { ok: true, status: 200, json: async () => ({ type262: { domain: 'x.com' } }) }
+    }
+    try {
+      assert.deepEqual(await V.fetchJson('https://ipfs.io/ipfs/bafyabc'), { type262: { domain: 'x.com' } })
+      assert.deepEqual(seen, [`${V.IPFS_GATEWAYS[0]}bafyabc`, `${V.IPFS_GATEWAYS[1]}bafyabc`], 'ipfs.io itself is never asked')
+      seen.length = 0
+      await V.fetchJson('https://example.com/meta.json')
+      assert.deepEqual(seen, ['https://example.com/meta.json'], 'other links are read as they are')
+    } finally { globalThis.fetch = real }
+  },
+})
+
 // ---------- the board, against a mocked chain ----------
 
 const realFetch = globalThis.fetch
