@@ -9,6 +9,14 @@ const ZERO = R.ZERO
 const MAX_RH_TIMES = 50 // Robinhood Chain events given a time, newest first; the feed shows 14
 const rhUsd = (token, amount, ethPrice) => (token === ZERO ? (Number(amount) / 1e18) * ethPrice : Number(amount) / 1e6)
 const last = { solana: null, robinhood: null } // each chain's last good read on this page
+// Test domains from building the board: their deposits stay on chain, and the board and landing page leave them out.
+const HIDDEN = new Set(['gemprotocol.io', 'gempprotocol.io'])
+const shown = e => !HIDDEN.has(e.domain)
+const hide = c => ({
+  ...c,
+  list: c.list.filter(shown),
+  activity: Array.isArray(c.activity) ? c.activity.filter(shown) : Object.fromEntries(Object.entries(c.activity).map(([k, v]) => [k, Array.isArray(v) ? v.filter(shown) : v])),
+})
 
 /**
  * { list: [{ domain, usd, sol, rh, supporters, launches, claims, first, last }] sorted by dollars waiting,
@@ -21,8 +29,8 @@ export async function boardData() {
   if (s.status === 'fulfilled') last.solana = s.value
   if (r.status === 'fulfilled') last.robinhood = r.value
   if (!last.solana && !last.robinhood) throw s.reason
-  const sol = last.solana || { list: [], activity: [], price: 0 }
-  const rh = last.robinhood || { list: [], activity: { deposits: [], claims: [], refunds: [], launches: [] }, price: 0 }
+  const sol = hide(last.solana || { list: [], activity: [], price: 0 })
+  const rh = hide(last.robinhood || { list: [], activity: { deposits: [], claims: [], refunds: [], launches: [] }, price: 0 })
   const errors = { solana: last.solana ? null : s.reason, robinhood: last.robinhood ? null : r.reason }
 
   // Robinhood Chain counts in blocks: turn the ones shown into times. Only the newest events need one (older ones can't
