@@ -3,6 +3,6 @@ export const TOKEN = {
   mint: 'BjVsSDQoNbxswtPLtpAr5QXZTEXQsfEQTAz7A7iipump',
   name: 'TYPE262',
   symbol: '262',
-  image: 'ipfs://bafkreigc3f7tmcmngo22hkwjiqm7eypyoxtzwmdbkyexwzlyluvkugsoge',
+  logo: new URL('./art/token-262.webp', import.meta.url).href, // served with the app, next to this module
   dev: '9QKi39EkFTM1x64TPG3H4mcMDkG85oWUttPdvzNjtvJP',
 }

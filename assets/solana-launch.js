@@ -454,7 +454,7 @@ function tokenCard(c, price) {
   // a graduated coin trades on PumpSwap: its curve no longer prices it
   const mcap = !c ? '…' : c.complete ? 'On PumpSwap' : price ? `${usd((Number(c.mcap) / 1e9) * price)} <small>${solAmount(c.mcap)} SOL</small>` : `${solAmount(c.mcap)} <small>SOL</small>`
   return `<div class="ln-box tk-feature">
-    <div class="tk-top">${logoTag(TOKEN.image, ' tk-logo')}
+    <div class="tk-top"><img class="ln-logo tk-logo" src="${esc(TOKEN.logo)}" alt="">
       <div class="tk-name"><span class="label">The TYPE/262 token</span><strong>${esc(TOKEN.name)} <span class="accent">$${esc(TOKEN.symbol)}</span></strong></div>
       <span class="tag good">Official</span></div>
     <div class="ln-feegrid">

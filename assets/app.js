@@ -63,8 +63,7 @@ $$('#net [data-chain]').forEach(b => b.addEventListener('click', () => setNetwor
 // The TYPE/262 token in the header: its card heads Launch → Explore, on Solana. A plain click stays in the page; a
 // new tab or a shared link gets Solana from the link's ?net=solana.
 const chip = $('#tk-chip')
-$('img', chip).src = solEscrow.imgUrl(TOKEN.image)
-$('img', chip).addEventListener('error', e => { const alt = solEscrow.imgUrl(TOKEN.image, 1); if (e.target.src !== alt) e.target.src = alt }, { once: true })
+$('img', chip).src = TOKEN.logo
 chip.addEventListener('click', e => {
   if (e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
   e.preventDefault()
