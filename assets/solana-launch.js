@@ -8,7 +8,8 @@ import * as config from './config.js'
 import * as sol from './solana.js'
 import * as V from './solana-vault.js'
 import { fmtUnits, solRecord, friendly, stepList, sendSteps, card, logoTag, imgUrl, uploaded, tokens, coinsPanel, forgetCoins, loadImages, coinLinks } from './solana-escrow.js'
-import { launchedCoins } from './solana-board.js'
+import { launchedCoins, solPrice } from './solana-board.js'
+import { TOKEN } from './token.js'
 
 const UPLOAD_URL = config.UPLOAD_URL || 'https://type262-upload.onrender.com'
 const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp']
@@ -136,6 +137,7 @@ export function mount(el, c) {
     </div>
 
     <div class="ln-pane" id="sl-explore">
+      <div id="sl-token"></div>
       <div class="ln-tools ln-xhead">
         <div><h4>Launched on TYPE/262</h4><span id="sl-xsub">Every coin launched here, newest first. Each one's creator fees go to its domain's vault.</span></div>
         <button class="btn sm" type="button" data-xrefresh>Refresh</button>
@@ -173,6 +175,7 @@ export function mount(el, c) {
   drop.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if (f) uploadImage(f) })
 
   $('[data-xrefresh]', el).addEventListener('click', () => loadExplore(true))
+  $('#sl-token', el).addEventListener('click', e => { const b = e.target.closest('[data-tkcopy]'); if (b) copy(TOKEN.mint, b) })
   $('#sl-xlist', el).addEventListener('click', e => { if (e.target.closest('[data-xretry]')) loadExplore(true) })
   $('[data-form=sl-find]', el).addEventListener('submit', e => {
     e.preventDefault()
@@ -442,9 +445,45 @@ function done(c) {
 // ---------- explore: every coin launched through TYPE/262 ----------
 
 const explore = { at: 0, seq: 0 }
+const usd = n => new Intl.NumberFormat('en', { style: 'currency', currency: 'USD', notation: 'compact', maximumFractionDigits: 1 }).format(n)
+const solAmount = lamports => (Number(lamports) / 1e9).toLocaleString('en', { maximumFractionDigits: 1 })
+
+/** The TYPE/262 token at the top of Explore: who it is at once, its market and curve once they are read. */
+function tokenCard(c, price) {
+  const progress = c ? Math.max(0, Math.min(1, c.progress || 0)) : 0
+  // a graduated coin trades on PumpSwap: its curve no longer prices it
+  const mcap = !c ? '…' : c.complete ? 'On PumpSwap' : price ? `${usd((Number(c.mcap) / 1e9) * price)} <small>${solAmount(c.mcap)} SOL</small>` : `${solAmount(c.mcap)} <small>SOL</small>`
+  return `<div class="ln-box tk-feature">
+    <div class="tk-top">${logoTag(TOKEN.image, ' tk-logo')}
+      <div class="tk-name"><span class="label">The TYPE/262 token</span><strong>${esc(TOKEN.name)} <span class="accent">$${esc(TOKEN.symbol)}</span></strong></div>
+      <span class="tag good">Official</span></div>
+    <div class="ln-feegrid">
+      <div><span class="label">Market cap</span><div class="v">${mcap}</div></div>
+      <div><span class="label">Bonding curve</span><div class="v">${!c ? '…' : c.complete ? 'Graduated' : `${Math.floor(progress * 100)}%`}</div></div>
+      <div><span class="label">Contract</span><div class="v tk-addr"><a class="mono" href="https://solscan.io/token/${esc(TOKEN.mint)}" target="_blank" rel="noopener">${esc(short(TOKEN.mint))}</a><button class="btn sm" type="button" data-tkcopy>Copy</button></div></div>
+      <div><span class="label">Dev wallet</span><div class="v tk-addr"><a class="mono" href="https://solscan.io/account/${esc(TOKEN.dev)}" target="_blank" rel="noopener">${esc(short(TOKEN.dev))} ↗</a></div></div>
+    </div>
+    <div class="bar"><i style="width:${(progress * 100).toFixed(1)}%"></i></div>
+    <div class="ln-actions">
+      <a class="btn primary sm" href="https://pump.fun/coin/${esc(TOKEN.mint)}" target="_blank" rel="noopener">Trade on pump.fun ↗</a>
+      <a class="btn sm" href="https://solscan.io/token/${esc(TOKEN.mint)}" target="_blank" rel="noopener">Solscan ↗</a>
+    </div>
+  </div>`
+}
+let tokenSeq = 0
+async function loadToken() {
+  const el = $('#sl-token', root)
+  const seq = ++tokenSeq
+  if (!el.children.length) el.innerHTML = tokenCard(null, 0)
+  const [coins, price] = await Promise.all([V.coinsByMint([TOKEN.mint]).catch(() => null), solPrice().catch(() => 0)])
+  // a read that fails keeps what the card already shows
+  if (seq === tokenSeq && coins && coins[0]) el.innerHTML = tokenCard(coins[0], price)
+}
+
 async function loadExplore(force = false) {
   explore.at = Date.now()
   const seq = ++explore.seq
+  loadToken()
   const el = $('#sl-xlist', root)
   // a refresh keeps the cards up until the new read is in
   if (force || !$('.ln-grid', el)) el.innerHTML = '<div class="ln-empty"><span class="spin"></span><span>Reading the coins launched through TYPE/262…</span></div>'

@@ -10,6 +10,7 @@ import { toast, ambient } from './fx.js'
 import * as sol from './solana.js'
 import * as solEscrow from './solana-escrow.js'
 import * as solLaunch from './solana-launch.js'
+import { TOKEN } from './token.js'
 
 ambient(48)
 const { ESCROW_ADDRESS = '', LAUNCHER_ADDRESS = '' } = config
@@ -59,6 +60,18 @@ function syncNetwork() {
   syncConnect()
 }
 $$('#net [data-chain]').forEach(b => b.addEventListener('click', () => setNetwork(b.dataset.chain)))
+// The TYPE/262 token in the header: its card heads Launch → Explore, on Solana. A plain click stays in the page; a
+// new tab or a shared link gets Solana from the link's ?net=solana.
+const chip = $('#tk-chip')
+$('img', chip).src = solEscrow.imgUrl(TOKEN.image)
+$('img', chip).addEventListener('error', e => { const alt = solEscrow.imgUrl(TOKEN.image, 1); if (e.target.src !== alt) e.target.src = alt }, { once: true })
+chip.addEventListener('click', e => {
+  if (e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+  e.preventDefault()
+  setNetwork('solana')
+  if (location.hash !== '#launch/explore') location.hash = '#launch/explore'
+  else scrollTo(0, 0) // already there: back up to the card, as route() does on a new view
+})
 document.addEventListener('click', e => { const b = e.target.closest('[data-chain-go]'); if (b) setNetwork(b.dataset.chainGo) })
 
 const SOL_ICON = '<img src="assets/chains/solana.svg" alt="" width="20" height="20">'

@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The app's vault deposits and coin launches carry a board reference (`5GQzZAjkdEfEU5CNL9KakKjZeWC1bFUdYKMXtajtZX8H`, a read-only account nothing can sign for), so one `getSignaturesForAddress` finds them with no indexer. Deposits also carry the memo `TYPE/262 deposit <domain>`; a launch keeps its single transaction, and its domain goes in the coin's metadata as `type262.domain`. The board checks every entry on-chain: a deposit counts only if it reached that domain's vault, a launch only if the coin's creator is that vault.
 - `POST /metadata` takes the launch's `domain`.
 - Launch, Explore: every coin launched through TYPE/262, newest first, with its image, market cap, progress to graduation, the domain its creator fees go to, and links to pump.fun and Solscan. Each one is checked on-chain the same way as on the board.
+- The TYPE/262 token, TYPE262 ($262, `BjVsSDQoNbxswtPLtpAr5QXZTEXQsfEQTAz7A7iipump`): a $262 button in the app's header, and a card at the top of Launch, Explore, with its live market cap, bonding curve, contract and dev wallet, and a link to trade it on pump.fun.
 - `type262 link` makes Solana Pay links: SOL by default, or USDC with `link <domain> <amount> USDC`. `USDG` and `ETH` still make EIP-681 links on Robinhood Chain.
 
 ### Changed

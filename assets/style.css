@@ -453,6 +453,26 @@ a.tag:hover, button.tag:hover { background: var(--fg); color: var(--bg); border-
 .ln-tools .seg { flex: none; max-width: 100%; overflow-x: auto; }
 .ln-tools .field { height: 2.875rem; }
 .ln-xhead { justify-content: space-between; align-items: flex-end; }
+#sl-token { margin-bottom: 2rem; }
+.ln-box.tk-feature { gap: 1.25rem; padding: 1.5rem; } /* its edge and glass are in theme.css */
+.tk-top { display: flex; align-items: center; gap: 1rem; }
+.tk-top .tag { margin-left: auto; }
+.ln-logo.tk-logo { width: 4rem; height: 4rem; }
+.tk-name { display: grid; gap: 0.375rem; min-width: 0; }
+.tk-name strong { font: 600 1.5rem/1.1 var(--font); letter-spacing: -.02em; }
+.tk-feature .ln-feegrid .v small { font: 400 0.8125rem/1 var(--mono); color: var(--dim); }
+.tk-addr { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.tk-addr a { font-size: 0.875rem; font-weight: 400; color: var(--fg); }
+.tk-addr .btn { height: 1.75rem; padding: 0 0.625rem; font-size: 0.75rem; }
+.btn.tk-chip { gap: 0.5rem; padding: 0 0.75rem 0 0.375rem; }
+.tk-chip img { width: 1.375rem; height: 1.375rem; border-radius: 50%; object-fit: cover; background: var(--bg-3); }
+@media (max-width: 560px) { .tk-top .tag { display: none; } .tk-name strong { font-size: 1.25rem; } }
+/* The app header gives up labels as it narrows, so the network switch and the wallet button always fit. */
+@media (max-width: 1180px) { .app-page .net .net-n { display: none; } .app-page .net > button { padding: 0 0.5rem; } }
+@media (max-width: 860px) { .app-page .hud .end .btn.icon, .app-page .tk-chip span { display: none; } .app-page .btn.tk-chip { padding: 0 0.3125rem; } }
+@media (max-width: 680px) { .app-page .hud .end .hide-sm { display: none; } }
+@media (max-width: 560px) { .app-page .hud .container { column-gap: 0.75rem; } }
+@media (max-width: 359px) { .app-page .tk-chip { display: none; } }
 .ln-xhead > div { display: grid; gap: 0.375rem; flex: 1 1 18rem; min-width: 0; }
 .ln-xhead h4 { margin: 0; }
 .ln-xhead span { color: var(--dim); font-size: 0.875rem; }

@@ -148,6 +148,7 @@ body { background: var(--bg); }
 a.ln-card:hover { --edge: linear-gradient(135deg, var(--acid), rgba(200, 255, 30, .1) 45%, var(--violet)); box-shadow: 0 1.5rem 4rem rgba(0, 0, 0, .45), 0 0 3rem rgba(200, 255, 30, .08); }
 .seg > .on { background: var(--acid); color: var(--on-acid); box-shadow: 0 0 1.25rem rgba(200, 255, 30, .3); }
 .ln-feebox { --edge: linear-gradient(135deg, rgba(200, 255, 30, .55), rgba(255, 255, 255, .06) 45%, rgba(139, 92, 255, .5)); }
+.tk-feature { --glass: rgba(16, 19, 8, .9); --edge: linear-gradient(135deg, var(--acid), rgba(200, 255, 30, .15) 40%, rgba(139, 92, 255, .6)); box-shadow: 0 0 3rem rgba(200, 255, 30, .07); }
 .ln-logo, .ln-thumb { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .06); }
 
 .pb-nets button { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
