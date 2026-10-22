@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The Unclaimed Board and the domain profiles show Solana, first: every domain with money waiting in its vault or a pump.fun coin launched for it, its balances, supporters, claims and activity, next to escrow and pons coins on Robinhood Chain. Totals and rankings are in dollars across both chains, and the landing page's live board follows.
 - The app's vault deposits and coin launches carry a board reference (`5GQzZAjkdEfEU5CNL9KakKjZeWC1bFUdYKMXtajtZX8H`, a read-only account nothing can sign for), so one `getSignaturesForAddress` finds them with no indexer. Deposits also carry the memo `TYPE/262 deposit <domain>`; a launch keeps its single transaction, and its domain goes in the coin's metadata as `type262.domain`. The board checks every entry on-chain: a deposit counts only if it reached that domain's vault, a launch only if the coin's creator is that vault.
 - `POST /metadata` takes the launch's `domain`.
+- Launch, Explore: every coin launched through TYPE/262, newest first, with its image, market cap, progress to graduation, the domain its creator fees go to, and links to pump.fun and Solscan. Each one is checked on-chain the same way as on the board.
 - `type262 link` makes Solana Pay links: SOL by default, or USDC with `link <domain> <amount> USDC`. `USDG` and `ETH` still make EIP-681 links on Robinhood Chain.
 
 ### Changed

@@ -229,7 +229,7 @@ const sig = (signature, slot, memo = null) => ({ signature, slot, blockTime: slo
  * Mocks the worker (vaults, status), Solana RPC, the price feed and metadata links; returns what was asked for.
  * `refuse` lists RPC methods that answer with an error.
  */
-function mockChain({ vaultFor = () => undefined, gas = '', sigs = {}, txs = {}, balances = {}, curves = {}, meta = {}, worker = true, refuse = [] }) {
+function mockChain({ vaultFor = () => undefined, gas = '', sigs = {}, txs = {}, balances = {}, accounts = {}, curves = {}, meta = {}, worker = true, refuse = [] }) {
   const calls = { vaults: 0, methods: {}, txs: {} }
   globalThis.fetch = async (url, init = {}) => {
     url = String(url)
@@ -246,7 +246,7 @@ function mockChain({ vaultFor = () => undefined, gas = '', sigs = {}, txs = {}, 
     const [first] = body.params
     calls.methods[body.method] = (calls.methods[body.method] || 0) + 1
     if (refuse.includes(body.method)) return respond({ jsonrpc: '2.0', id: 1, error: { code: -32601, message: `${body.method} is not available` } })
-    const account = a => (balances[a] ? { owner: SYSTEM, lamports: balances[a].lamports, data: [balances[a].data || '', 'base64'], executable: false } : null)
+    const account = a => accounts[a] || (balances[a] ? { owner: SYSTEM, lamports: balances[a].lamports, data: [balances[a].data || '', 'base64'], executable: false } : null)
     const result = (() => {
       switch (body.method) {
         case 'getSignaturesForAddress': return sigs[first] || []
@@ -525,6 +525,78 @@ Object.assign(tests, {
       const kept = list.find(e => e.domain === 'kept.com')
       assert.ok(kept, 'its domains stay on the board')
       assert.equal(kept.sol.waiting.sol, 1_000_000_000n)
+    } finally {
+      globalThis.fetch = realFetch
+    }
+  },
+})
+
+// ---------- the explorer ----------
+
+/** A bonding curve's account: reserves for a 30 SOL market cap, half sold, or graduated. */
+const curveState = (creator, complete = false) => {
+  const b = Buffer.alloc(166)
+  b.set(V.DISC.bondingCurve, 0)
+  b.writeBigUInt64LE(1_000_000_000_000_000n, 8) // virtual token reserves
+  b.writeBigUInt64LE(30_000_000_000n, 16) // virtual SOL reserves
+  b.writeBigUInt64LE(complete ? 0n : 396_550_000_000_000n, 24) // real token reserves: half of the 793.1M for sale
+  b.writeBigUInt64LE(1_000_000_000_000_000n, 40) // supply
+  b[48] = complete ? 1 : 0
+  b.set(sol.pubkeyBytes(creator), 49)
+  b.set(sol.pubkeyBytes(V.WSOL), 83)
+  return { owner: V.PUMP.program, lamports: 1, data: [b.toString('base64'), 'base64'], executable: false }
+}
+
+Object.assign(tests, {
+  "explore: the coins launched here, newest first, with market cap and progress; a coin whose creator is not the named domain's vault is left out": async () => {
+    later()
+    const VAULT_E = addr('explore vault')
+    const uri = n => `https://ipfs.example/explore-${n}.json`
+    const mint = n => addr(`mint ${uri(n)}`)
+    mockChain({
+      vaultFor: d => (d === 'explore.com' ? VAULT_E : undefined),
+      sigs: { [V.BOARD_REFERENCE]: [sig('E_NEW', 30), sig('E_SPOOF', 20), sig('E_DEP', 15, '[27] TYPE/262 deposit explore.com'), sig('E_OLD', 10)] },
+      txs: {
+        E_NEW: await launchTx(VAULT_E, uri('new')),
+        E_SPOOF: await launchTx(addr('someone else'), uri('spoof')), // its metadata names explore.com, but the fees go elsewhere
+        E_OLD: await launchTx(VAULT_E, uri('old')),
+      },
+      meta: Object.fromEntries(['new', 'spoof', 'old'].map(n => [uri(n), { type262: { domain: 'explore.com' } }])),
+      accounts: {
+        [await V.pumpPda.bondingCurve(mint('new'))]: curveState(VAULT_E),
+        [await V.pumpPda.bondingCurve(mint('old'))]: curveState(VAULT_E, true),
+      },
+    })
+    try {
+      const { coins, capped } = await B.launchedCoins()
+      assert.deepEqual(coins.map(c => c.mint), [mint('new'), mint('old')], 'newest first, the spoof and the deposit left out')
+      const [n, o] = coins
+      assert.equal(n.domain, 'explore.com')
+      assert.equal(n.time, 300)
+      assert.equal(n.signature, 'E_NEW')
+      assert.equal(n.name, 'Coin', 'the name from the launch when the mint carries none')
+      assert.equal(n.uri, uri('new'), 'and the metadata link, for the image')
+      assert.equal(n.mcap, 30_000_000_000n)
+      assert.equal(n.progress, 0.5)
+      assert.equal(n.complete, false)
+      assert.equal(o.complete, true)
+      assert.equal(o.progress, 1)
+      assert.equal(capped, false)
+      assert.equal(await B.launchedCoins(), await B.launchedCoins(), 'kept for 30 s')
+    } finally {
+      globalThis.fetch = realFetch
+    }
+  },
+  "explore: when the worker can't be reached, the launches are an error, not an empty list": async () => {
+    later()
+    mockChain({
+      worker: false,
+      sigs: { [V.BOARD_REFERENCE]: [sig('F_LAUNCH', 10)] },
+      txs: { F_LAUNCH: await launchTx(addr('down vault'), 'https://ipfs.example/explore-down.json') },
+      meta: { 'https://ipfs.example/explore-down.json': { type262: { domain: 'explore-down.com' } } },
+    })
+    try {
+      await assert.rejects(B.launchedCoins(), /worker/)
     } finally {
       globalThis.fetch = realFetch
     }

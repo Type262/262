@@ -119,7 +119,7 @@ export function card(t, i = 0, actions = '') {
 
 // The image lives in the metadata JSON; read it after the cards are up so a slow gateway never holds them back.
 const images = new Map()
-function loadImages(el, items) {
+export function loadImages(el, items) {
   for (const t of items) {
     if (!/^https:\/\//.test(t.uri || '')) continue
     if (!images.has(t.uri)) images.set(t.uri, V.fetchJson(t.uri).then(j => imgUrl(j && j.image)).catch(() => ''))
@@ -142,7 +142,7 @@ const readCoins = (vault, force) => {
 }
 export const forgetCoins = vault => coinCache.delete(vault)
 
-const coinLinks = mint => `<div class="ln-actions">
+export const coinLinks = mint => `<div class="ln-actions">
   <a class="btn sm" href="https://pump.fun/coin/${esc(mint)}" target="_blank" rel="noopener">pump.fun ↗</a>
   <a class="btn sm" href="https://solscan.io/token/${esc(mint)}" target="_blank" rel="noopener">Solscan ↗</a></div>`
 

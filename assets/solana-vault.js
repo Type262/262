@@ -793,6 +793,8 @@ export async function launchTxs({ payer, vault, name, symbol, uri, buyLamports =
 
 const isSolQuote = c => c.quoteMint === WSOL || c.quoteMint === SYSTEM_PROGRAM
 const INITIAL_FOR_SALE = 793_100_000_000_000n
+/** A curve's market cap (lamports, in its quote) and its way to graduation, 0 to 1. */
+const curveStats = c => ({ mcap: marketCap(c), progress: c.complete ? 1 : Math.max(0, Number(10_000n - (c.realTokenReserves * 10_000n) / INITIAL_FOR_SALE) / 10_000) })
 
 /** A curve keeps no mint; its token account does. Each candidate is checked against the curve's address. */
 async function mintOfCurve(curve) {
@@ -822,11 +824,25 @@ export async function findCoins(vault, { limit = 40 } = {}) {
   const names = await tokenNames(coins.map(c => c.mint)).catch(() => new Map())
   for (const c of coins) {
     Object.assign(c, names.get(c.mint) || { name: '', symbol: '', uri: '' })
-    c.mcap = marketCap(c)
-    c.progress = c.complete ? 1 : Math.max(0, Number(10_000n - (c.realTokenReserves * 10_000n) / INITIAL_FOR_SALE) / 10_000)
+    Object.assign(c, curveStats(c))
     if (!isSolQuote(c)) c.creatorFee = 0n // fees in another quote token are left to pump.fun's own tools
   }
   return coins.sort((a, b) => (b.mcap > a.mcap ? 1 : b.mcap < a.mcap ? -1 : 0))
+}
+
+/**
+ * pump.fun coins by mint, in the order given: [{ mint, curve, name, symbol, uri, mcap, progress, ...the curve }]. A
+ * mint with no pump.fun curve is left out. One read for the curves and one for the names.
+ */
+export async function coinsByMint(mints) {
+  const curves = await Promise.all(mints.map(m => pumpPda.bondingCurve(m)))
+  const [accounts, names] = await Promise.all([getAccounts(curves), tokenNames(mints).catch(() => new Map())])
+  return mints.flatMap((mint, i) => {
+    const a = accounts[i]
+    if (!a || a.owner !== PUMP.program) return []
+    const c = { mint, curve: curves[i], ...decodeCurve(a.data), ...(names.get(mint) || { name: '', symbol: '', uri: '' }) }
+    return [Object.assign(c, curveStats(c))]
+  })
 }
 
 const tokenAmountOf = data => (data && data.length >= 72 ? view(data).getBigUint64(64, true) : 0n)

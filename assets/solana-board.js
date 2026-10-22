@@ -155,7 +155,7 @@ async function verifiedLaunches(others, lost = () => {}) {
     const domain = domains[i]
     if (!domain) return null
     const v = await V.getVault(domain).catch(err => { lost(err); return null })
-    return v && v.vault === x.c.creator ? { chain: 'solana', kind: 'launch', domain, signature: x.signature, time: x.time, mint: x.c.mint, name: x.c.name, symbol: x.c.symbol } : null
+    return v && v.vault === x.c.creator ? { chain: 'solana', kind: 'launch', domain, signature: x.signature, time: x.time, mint: x.c.mint, name: x.c.name, symbol: x.c.symbol, uri: x.c.uri } : null
   })
   return checked.filter(Boolean)
 }
@@ -193,6 +193,35 @@ function curvesOf(vault) {
     return { n: curves.length, fees: solQuoted.reduce((n, c) => n + c.creatorFee, 0n) }
   }).catch(err => { curveReads.delete(vault); throw err })
   curveReads.set(vault, { at: Date.now(), p })
+  return p
+}
+
+// ---------- the explorer ----------
+
+let launchRead = null // { at, p }
+/**
+ * The coins launched through TYPE/262 that check out (each one's creator is the vault of the domain its metadata
+ * names), newest first, with their curves read live: { coins: [{ domain, mint, name, symbol, uri, time, signature,
+ * mcap, progress, complete, ...the curve }], capped }. `capped` says older launches were left out. Kept for 30 s.
+ */
+export function launchedCoins({ force = false } = {}) {
+  if (!force && launchRead && Date.now() - launchRead.at < 30_000) return launchRead.p
+  const p = (async () => {
+    const idx = await index()
+    let lost = null
+    const launches = await verifiedLaunches(idx.others, err => { lost = err })
+    // no launch checks out because the worker can't be reached: an error, not an empty list
+    if (lost && !launches.length) throw lost
+    const unique = launches.filter((l, i) => launches.findIndex(x => x.mint === l.mint) === i)
+    const curves = new Map((await V.coinsByMint(unique.map(l => l.mint))).map(c => [c.mint, c]))
+    const coins = unique.map(l => {
+      const c = curves.get(l.mint) || {}
+      return { ...c, ...l, name: c.name || l.name, symbol: c.symbol || l.symbol, uri: c.uri || l.uri }
+    })
+    return { coins, capped: idx.others.length > MAX_LAUNCH_TXS }
+  })()
+  launchRead = { at: Date.now(), p }
+  p.catch(() => { if (launchRead && launchRead.p === p) launchRead = null })
   return p
 }
 

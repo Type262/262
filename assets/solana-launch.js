@@ -7,7 +7,8 @@ import { $, $$, esc, short, copy } from './ui.js'
 import * as config from './config.js'
 import * as sol from './solana.js'
 import * as V from './solana-vault.js'
-import { fmtUnits, solRecord, friendly, stepList, sendSteps, card, logoTag, imgUrl, uploaded, tokens, coinsPanel, forgetCoins } from './solana-escrow.js'
+import { fmtUnits, solRecord, friendly, stepList, sendSteps, card, logoTag, imgUrl, uploaded, tokens, coinsPanel, forgetCoins, loadImages, coinLinks } from './solana-escrow.js'
+import { launchedCoins } from './solana-board.js'
 
 const UPLOAD_URL = config.UPLOAD_URL || 'https://type262-upload.onrender.com'
 const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp']
@@ -72,6 +73,7 @@ export function mount(el, c) {
   el.innerHTML = `
     <div class="seg ln-switch">
       <a href="#launch/new" data-sv="new">Launch a coin</a>
+      <a href="#launch/explore" data-sv="explore">Explore</a>
       <a href="#launch/coins" data-sv="coins">Coins and fees</a>
     </div>
 
@@ -133,6 +135,14 @@ export function mount(el, c) {
       </aside>
     </div>
 
+    <div class="ln-pane" id="sl-explore">
+      <div class="ln-tools ln-xhead">
+        <div><h4>Launched on TYPE/262</h4><span id="sl-xsub">Every coin launched here, newest first. Each one's creator fees go to its domain's vault.</span></div>
+        <button class="btn sm" type="button" data-xrefresh>Refresh</button>
+      </div>
+      <div id="sl-xlist" aria-live="polite"></div>
+    </div>
+
     <div class="ln-pane" id="sl-coins">
       <div class="ln-tools">
         <form class="field sm" data-form="sl-find" autocomplete="off">
@@ -162,6 +172,8 @@ export function mount(el, c) {
   ;['dragleave', 'drop'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove('over') }))
   drop.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if (f) uploadImage(f) })
 
+  $('[data-xrefresh]', el).addEventListener('click', () => loadExplore(true))
+  $('#sl-xlist', el).addEventListener('click', e => { if (e.target.closest('[data-xretry]')) loadExplore(true) })
   $('[data-form=sl-find]', el).addEventListener('submit', e => {
     e.preventDefault()
     const raw = e.target.elements.d.value.trim()
@@ -177,17 +189,19 @@ export function mount(el, c) {
 
 /**
  * #launch and #launch/new: the form (the domain from another tool fills in when the field is empty);
- * #launch/new/<domain>: the form for that domain; #launch/<domain> and #launch/coins: a domain's coins and fees.
+ * #launch/new/<domain>: the form for that domain; #launch/explore: every coin launched through TYPE/262;
+ * #launch/<domain> and #launch/coins: a domain's coins and fees.
  */
 export function route(arg, c) {
   if (c) ctx = c
   const raw = hashArg()
   let sub = 'new', d = ''
   if (raw.startsWith('new/')) d = norm(raw.slice(4))
-  else if (raw === 'coins') sub = 'coins'
+  else if (raw === 'coins' || raw === 'explore') sub = raw
   else if (raw && raw !== 'new') { sub = 'coins'; d = norm(raw) }
   $$('.ln-pane', root).forEach(p => p.classList.toggle('on', p.id === `sl-${sub}`))
   $$('.ln-switch a', root).forEach(a => a.classList.toggle('on', a.dataset.sv === sub))
+  if (sub === 'explore') { if (Date.now() - explore.at > 30_000) loadExplore(); return }
   const last = norm(ctx.lastDomain ? ctx.lastDomain() : arg)
   if (sub === 'new') {
     if (!warmed) { warmed = true; fetch(`${UPLOAD_URL}/health`).catch(() => {}) } // the free upload host sleeps
@@ -423,6 +437,34 @@ function done(c) {
   forgetCoins(c.vault)
   if (coins.domain === c.domain) coins.loaded = false
   scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+// ---------- explore: every coin launched through TYPE/262 ----------
+
+const explore = { at: 0, seq: 0 }
+async function loadExplore(force = false) {
+  explore.at = Date.now()
+  const seq = ++explore.seq
+  const el = $('#sl-xlist', root)
+  // a refresh keeps the cards up until the new read is in
+  if (force || !$('.ln-grid', el)) el.innerHTML = '<div class="ln-empty"><span class="spin"></span><span>Reading the coins launched through TYPE/262…</span></div>'
+  let coins, capped
+  try { ({ coins, capped } = await launchedCoins({ force })) } catch (err) {
+    if (seq !== explore.seq) return
+    explore.at = 0
+    el.innerHTML = `<div class="ln-empty"><strong>Couldn't read the launches right now.</strong><span class="mono">${esc(friendly(err))}</span><button class="btn sm" type="button" data-xretry>Try again</button></div>`
+    return
+  }
+  if (seq !== explore.seq) return
+  $('#sl-xsub', root).textContent = coins.length
+    ? `${coins.length}${capped ? ' most recent' : ''} coin${coins.length === 1 ? '' : 's'} launched here, newest first. Each one's creator fees go to its domain's vault.`
+    : "Every coin launched here, newest first. Each one's creator fees go to its domain's vault."
+  if (!coins.length) {
+    el.innerHTML = `<div class="ln-empty"><strong>No coins launched yet.</strong><span>Launch a coin for any domain, and the creator fee of every trade goes to that domain's vault.</span><a class="btn primary sm" href="#launch/new">Launch a coin</a></div>`
+    return
+  }
+  el.innerHTML = `<div class="ln-grid">${coins.map((t, i) => card({ ...t, launchedAt: t.time }, i, coinLinks(t.mint))).join('')}</div>`
+  loadImages(el, coins)
 }
 
 // ---------- a domain's coins and fees ----------

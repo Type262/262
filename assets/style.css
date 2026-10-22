@@ -452,6 +452,10 @@ a.tag:hover, button.tag:hover { background: var(--fg); color: var(--bg); border-
 .ln-tools .field { flex: 1 1 18rem; min-width: 0; }
 .ln-tools .seg { flex: none; max-width: 100%; overflow-x: auto; }
 .ln-tools .field { height: 2.875rem; }
+.ln-xhead { justify-content: space-between; align-items: flex-end; }
+.ln-xhead > div { display: grid; gap: 0.375rem; flex: 1 1 18rem; min-width: 0; }
+.ln-xhead h4 { margin: 0; }
+.ln-xhead span { color: var(--dim); font-size: 0.875rem; }
 #ln-fees:not(:empty) { margin-bottom: 1.5rem; }
 .ln-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(16.5rem, 1fr)); gap: 1rem; }
 .ln-card { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.125rem; padding: 1.25rem; border: 1px solid var(--line-2); background: var(--bg-2); animation: rise .6s var(--out) both; transition: transform .35s var(--out), box-shadow .35s var(--out); }
