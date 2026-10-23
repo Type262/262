@@ -7,7 +7,9 @@
 //   and dollars add up; copies of the worker's claim and refund memos count for nothing (board and profile); a worker
 //   that is down is an error, not an empty board, even with only launches in the index; each transaction is read
 //   once, a vault's coins in one read, PumpSwap's creator vault counts with the fees, and memos can't make it ask the
-//   worker for more than 150 vaults; a profile whose coins couldn't be read says so;
+//   worker for more than 150 vaults; a profile whose coins couldn't be read says so; a transaction that funds several
+//   vaults counts each domain for what reached its own vault only, and a refund for the vault it paid out of; the
+//   newest 150 deposit transactions are read, a batch taking one of them however many domains it funded;
 // - both chains: a Robinhood Chain block time that couldn't be read is asked again, only the newest events are given
 //   a time, a domain with money on Robinhood Chain alone shows while Solana is down, and a refresh that fails on one
 //   chain keeps that chain's last good read.
@@ -297,6 +299,47 @@ Object.assign(tests, {
       globalThis.fetch = realFetch
     }
   },
+  'board: one transaction funding several vaults counts each domain for what reached its vault; a memo naming a vault that got nothing counts for nothing': async () => {
+    later()
+    const V1 = addr('batch vault 1'), V2 = addr('batch vault 2'), V3 = addr('batch vault 3'), GAS = addr('gas batch')
+    const v2Usdc = await sol.associatedTokenAddress(V2, USDC), aliceUsdc = addr('alice usdc')
+    const vaults = { 'one.example': V1, 'two.example': V2, 'spoofed.example': V3 }
+    const memo = '[24] TYPE/262 deposit one.example; [24] TYPE/262 deposit two.example; [24] TYPE/262 deposit two.example; [28] TYPE/262 deposit spoofed.example'
+    mockChain({
+      vaultFor: d => vaults[d], gas: GAS,
+      sigs: {
+        [V.BOARD_REFERENCE]: [sig('M_BATCH', 20, memo), sig('M_SINGLE', 10, '[24] TYPE/262 deposit one.example')],
+        [GAS]: [sig('M_REFUND', 30, '[28] type262:refund:M_BATCH')],
+      },
+      txs: {
+        // SOL into one.example's vault and USDC into two.example's, with a memo each, and a third memo for a vault that got nothing
+        M_BATCH: tx([
+          solIx(ALICE, V1, 1_000_000_000), memoIx('TYPE/262 deposit one.example'),
+          usdcIx(aliceUsdc, v2Usdc, 7_000000, { multisigAuthority: ALICE, signers: [V.BOARD_REFERENCE] }), memoIx('TYPE/262 deposit two.example'),
+          memoIx('TYPE/262 deposit two.example'), memoIx('TYPE/262 deposit spoofed.example'),
+        ]),
+        M_SINGLE: tx([solIx(addr('bob'), V1, 500_000_000), memoIx('TYPE/262 deposit one.example')]),
+        // one.example's part of the batch, refunded out of its vault
+        M_REFUND: tx([memoIx('type262:refund:M_BATCH'), solIx(V1, ALICE, 1_000_000_000)]),
+      },
+      balances: { [V1]: { lamports: 500_000_000 }, [v2Usdc]: { lamports: 2_039_280, data: tokenAccount(7_000000) } },
+    })
+    try {
+      const idx = await B.index()
+      assert.deepEqual(idx.deposits.map(e => `${e.signature}:${e.domain}`), ['M_BATCH:one.example', 'M_BATCH:two.example', 'M_BATCH:spoofed.example', 'M_SINGLE:one.example'], 'an entry per domain, a repeated memo once')
+      assert.deepEqual(idx.others, [])
+      const { list, activity } = await B.solanaDomains()
+      assert.deepEqual(list.map(e => e.domain).sort(), ['one.example', 'two.example'], 'spoofed.example got nothing')
+      const one = list.find(e => e.domain === 'one.example'), two = list.find(e => e.domain === 'two.example')
+      assert.deepEqual([one.deposits, one.supporters.size, one.waiting.sol], [2, 2, 500_000_000n])
+      assert.deepEqual([two.deposits, two.supporters.size, two.waiting.usdc], [1, 1, 7_000000n])
+      const deposits = activity.filter(e => e.kind === 'deposit').map(e => [e.signature, e.domain, e.mint, e.amount])
+      assert.deepEqual(deposits, [['M_BATCH', 'one.example', 'SOL', 1_000_000_000n], ['M_BATCH', 'two.example', USDC, 7_000000n], ['M_SINGLE', 'one.example', 'SOL', 500_000_000n]])
+      assert.deepEqual(activity.filter(e => e.kind === 'refund').map(e => [e.signature, e.domain, e.amount, e.from]), [['M_REFUND', 'one.example', 1_000_000_000n, ALICE]], 'the refund is of the vault it paid out of')
+    } finally {
+      globalThis.fetch = realFetch
+    }
+  },
   'board: when the worker can\'t be reached the Solana side fails, instead of showing an empty board': async () => {
     later()
     mockChain({ worker: false, sigs: { [V.BOARD_REFERENCE]: [sig('B_DEP', 10, '[25] TYPE/262 deposit down.com')] } })
@@ -374,6 +417,33 @@ Object.assign(tests, {
       assert.equal(d.usd, 1.038 * 100)
       assert.equal(calls.methods.getProgramAccounts, 1)
       assert.equal(calls.methods.getTokenAccountsByOwner, undefined, 'no reads per coin')
+    } finally {
+      globalThis.fetch = realFetch
+    }
+  },
+  'board: the newest 150 deposit transactions are read; a 25-domain batch takes one of them, not 25': async () => {
+    later()
+    const batch = Array.from({ length: 25 }, (_, i) => `batch${i}.example`)
+    const vaults = Object.fromEntries([...batch, 'single.example'].map(d => [d, addr(`window vault ${d}`)]))
+    // the batch is the newest transaction, then 160 single deposits into one vault
+    const memo = batch.map(d => `[${17 + d.length}] TYPE/262 deposit ${d}`).join('; ')
+    const singles = Array.from({ length: 160 }, (_, i) => sig(`W_SINGLE${i}`, 999 - i, '[31] TYPE/262 deposit single.example'))
+    const calls = mockChain({
+      vaultFor: d => vaults[d],
+      sigs: { [V.BOARD_REFERENCE]: [sig('W_BATCH', 1000, memo), ...singles] },
+      txs: {
+        W_BATCH: tx(batch.flatMap(d => [solIx(ALICE, vaults[d], 1_000_000), memoIx(`TYPE/262 deposit ${d}`)])),
+        ...Object.fromEntries(singles.map((s, i) => [s.signature, tx([solIx(addr(`single sender ${i}`), vaults['single.example'], 1_000_000), memoIx('TYPE/262 deposit single.example')])])),
+      },
+      balances: { [vaults['single.example']]: { lamports: 160_000_000 } },
+    })
+    try {
+      const { list } = await B.solanaDomains()
+      const single = list.find(e => e.domain === 'single.example')
+      assert.deepEqual([single.deposits, single.supporters.size], [149, 149], 'the batch and the 149 newest single deposits: 150 transactions')
+      assert.ok(batch.every(d => list.find(e => e.domain === d).deposits === 1), 'every domain of the batch counts')
+      assert.equal(Object.keys(calls.txs).length, 150, 'no more transactions read than before')
+      assert.equal(calls.txs.W_BATCH, 1, 'the batch is read once')
     } finally {
       globalThis.fetch = realFetch
     }

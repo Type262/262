@@ -1,6 +1,6 @@
 // End-to-end test of the bundled MCP server (mcp/type262-mcp.mjs), spoken to over stdio.
 //   node test/mcp.test.mjs          protocol, live DNS, dry runs, limits, key handling, mock DoH (no transactions)
-//   FORK=1 node test/mcp.test.mjs   + real payments on a local anvil fork of Robinhood Chain (needs Foundry;
+//   FORK=1 node test/mcp.test.mjs   + real payments on local anvil forks of Robinhood Chain and Base (needs Foundry;
 //                                    npm run test:mcp:fork passes --fork instead, which works on every shell)
 import assert from 'node:assert/strict'
 import http from 'node:http'
@@ -91,7 +91,8 @@ function server(env = {}) {
 // Mock DNS-over-HTTPS: /a and /b are two resolvers. addr is what both answer (null: no record), b overrides
 // /b's answer, fail makes /b return HTTP 500, nx makes /b say NXDOMAIN, status: 2 is SERVFAIL on both, adB
 // overrides /b's AD flag, cname makes the name an alias (the answer carries the target's record, as real
-// resolvers send it). Names not listed are NXDOMAIN.
+// resolvers send it), records lists [code, address] pairs both answer in place of one ETH addr. Names not
+// listed are NXDOMAIN.
 const RECIPIENT = privateKeyToAccount(throwaway()).address
 const OTHER = privateKeyToAccount(throwaway()).address
 const ZONE = {
@@ -115,6 +116,10 @@ const ZONE = {
   'api.servfail.type262.test': { status: 2 }, // SERVFAIL on both, as a DNSSEC-bogus host gets
   'adsplit.type262.test': { addr: RECIPIENT, ad: true, adB: false },
   'alias.type262.test': { cname: 'signed.type262.test' },
+  // Base picks by coin code: USDC, then ETH, then EVM, then any code that names no other chain.
+  'two.type262.test': { records: [['USDG', OTHER], ['ETH', RECIPIENT]], ad: true },
+  'usdgonly.type262.test': { records: [['USDG', OTHER], ['ARB', OTHER]], ad: true },
+  'generic.type262.test': { records: [['POL', OTHER], ['DAI', RECIPIENT]], ad: true },
 }
 const doh = http.createServer((req, res) => {
   const u = new URL(req.url, 'http://x')
@@ -125,11 +130,12 @@ const doh = http.createServer((req, res) => {
   const body = { Status: !z || (z.nx && b) ? 3 : z.status || 0, AD: true }
   const t = z && ZONE[name] && body.Status === 0 && (z.cname ? ZONE[z.cname] : z)
   const addr = t && (b && t.b ? t.b : t.addr)
-  if (addr && u.searchParams.get('type') === '262') {
+  const recs = t ? t.records || (addr ? [['ETH', addr]] : []) : []
+  if (recs.length && u.searchParams.get('type') === '262') {
     body.AD = b && 'adB' in t ? t.adB : t.ad
     body.Answer = [
       ...(z.cname ? [{ name, type: 5, TTL: 300, data: z.cname + '.' }] : []),
-      { name: z.cname || name, type: 262, TTL: 300, data: encodeWalletRdata('ETH', addr).generic },
+      ...recs.map(([code, a]) => ({ name: z.cname || name, type: 262, TTL: 300, data: encodeWalletRdata(code, a).generic })),
     ]
   }
   res.writeHead(200, { 'content-type': 'application/dns-json' })
@@ -167,7 +173,8 @@ try {
   ok(tools.length === 5 && ['resolve_domain', 'verify_payto', 'pay_domain', 'escrow_status', 'wallet_status'].every(n => tools.some(t => t.name === n)), 'tools/list has the 5 tools')
   ok(tools.every(t => t.description.length > 80 && t.inputSchema.type === 'object' && t.inputSchema.additionalProperties === false), 'every tool has a description and a strict object schema')
   const pay = tools.find(t => t.name === 'pay_domain')
-  ok(pay.inputSchema.required.join() === 'domain,amount' && pay.inputSchema.properties.asset.enum.join() === 'USDG,ETH' && pay.annotations.destructiveHint, 'pay_domain schema')
+  ok(pay.inputSchema.required.join() === 'domain,amount' && pay.inputSchema.properties.asset.enum.join() === 'USDG,ETH,USDC' && pay.annotations.destructiveHint, 'pay_domain schema')
+  ok(pay.inputSchema.properties.chain.enum.join() === 'robinhood,base' && /no escrow/.test(pay.description) && /directly on Base/.test(init.result.instructions), 'pay_domain takes chain: robinhood or base, and says Base has no escrow')
   ok(pay.inputSchema.properties.repeat.type === 'boolean' && /10 minutes/.test(pay.inputSchema.properties.repeat.description) && /repeat: true/.test(pay.description), 'pay_domain takes repeat and documents the 10-minute guard')
   ok(/cannot turn it back on/.test(pay.inputSchema.properties.allow_escrow.description), 'allow_escrow is documented as unable to override TYPE262_ALLOW_ESCROW=false')
 
@@ -216,12 +223,38 @@ try {
   ok(nokey.isError && /TYPE262_PRIVATE_KEY/.test(sc(nokey).error), 'pay_domain without a key is refused')
   const ws0 = await s.call('wallet_status')
   ok(ws0.isError && sc(ws0).configured === false && /TYPE262_PRIVATE_KEY/.test(sc(ws0).how_to_set) && sc(ws0).limits.USDG.daily === '100 USDG', 'wallet_status without a key says how to set it')
+  ok(sc(ws0).limits.BASE_USDC.per_payment === '25 USDC' && sc(ws0).limits.BASE_USDC.daily === '100 USDC' && sc(ws0).limits.BASE_ETH.per_payment === '0.01 ETH' && sc(ws0).limits.BASE_ETH.daily === '0.05 ETH', 'Base has its own limits, by default the same as Robinhood Chain\'s')
+
+  // ---------- Base: arguments and limits, before anything is sent ----------
+  const overBase = await s.call('pay_domain', { domain: 'example.com', amount: '30', asset: 'USDC', chain: 'base', dry_run: true })
+  ok(overBase.isError && /25 USDC \(TYPE262_MAX_BASE_USDC/.test(sc(overBase).error), 'over TYPE262_MAX_BASE_USDC is refused')
+  for (const asset of ['USDC', 'usdc']) {
+    const bare = await s.call('pay_domain', { domain: 'example.com', amount: '1', asset })
+    ok(bare.isError && sc(bare).error === 'USDC is paid on Base: pass chain "base". pay_domain does not pay on Solana, and on Robinhood Chain it pays USDG or ETH.',
+      `asset ${asset} without a chain is refused, never paid on Base (it may mean Solana USDC)`)
+  }
+  const overBaseEth = await s.call('pay_domain', { domain: 'example.com', amount: '0.02', asset: 'ETH', chain: 'base' })
+  ok(overBaseEth.isError && /TYPE262_MAX_BASE_ETH/.test(sc(overBaseEth).error), 'over TYPE262_MAX_BASE_ETH is refused')
+  const usdgBase = await s.call('pay_domain', { domain: 'example.com', amount: '1', asset: 'USDG', chain: 'base', dry_run: true })
+  ok(usdgBase.isError && sc(usdgBase).error === 'On Base, asset must be "USDC" or "ETH".', 'USDG on Base is refused')
+  const usdcRh = await s.call('pay_domain', { domain: 'example.com', amount: '1', asset: 'USDC', chain: 'robinhood', dry_run: true })
+  ok(usdcRh.isError && /^USDC is paid on Base/.test(sc(usdcRh).error), 'USDC on Robinhood Chain is refused')
+  const otherChain = await s.call('pay_domain', { domain: 'example.com', amount: '1', chain: 'polygon', dry_run: true })
+  ok(otherChain.isError && sc(otherChain).error === 'chain must be "robinhood" or "base".', 'an unknown chain is refused')
+  const noRecordBase = await s.call('pay_domain', { domain: 'example.com', amount: '1', chain: 'base', dry_run: true })
+  ok(noRecordBase.isError && /^Not paying on Base: example\.com publishes no WALLET record\..*there is no escrow on Base/.test(sc(noRecordBase).error) && !/escrow:/.test(JSON.stringify(sc(noRecordBase))),
+    'Base: a domain with no record is refused, never put in escrow (live DNS)')
   await s.stop()
 
   writeFileSync(join(tmp, 'spent.json'), JSON.stringify({ [day]: { USDG: '99' } }))
   const sd = server({ TYPE262_SPEND_FILE: join(tmp, 'spent.json') })
   const daily = await sd.call('pay_domain', { domain: 'example.com', amount: '2', dry_run: true })
   ok(daily.isError && /TYPE262_DAILY_USDG/.test(sc(daily).error) && sc(daily).limits.spent_today === '99 USDG', 'daily limit counts what was spent today')
+  const dailyApart = await sd.call('pay_domain', { domain: 'example.com', amount: '2', asset: 'USDC', chain: 'base', dry_run: true })
+  ok(dailyApart.isError && /^Not paying on Base/.test(sc(dailyApart).error), 'USDG spent on Robinhood Chain does not count against Base\'s USDC limit')
+  writeFileSync(join(tmp, 'spent.json'), JSON.stringify({ [day]: { USDG: '1', BASE_USDC: '99' } }))
+  const dailyBase = await sd.call('pay_domain', { domain: 'example.com', amount: '2', asset: 'USDC', chain: 'base', dry_run: true })
+  ok(dailyBase.isError && /TYPE262_DAILY_BASE_USDC/.test(sc(dailyBase).error) && sc(dailyBase).limits.spent_today === '99 USDC', 'Base\'s daily limit counts what was spent on Base today')
   writeFileSync(join(tmp, 'spent.json'), '{oops')
   ok(/spend log/.test(sc(await sd.call('pay_domain', { domain: 'example.com', amount: '1', dry_run: true })).error), 'a corrupt spend log blocks payments')
 
@@ -237,6 +270,13 @@ try {
   ok(!(await sd.call('pay_domain', { domain: 'example.com', amount: '0.002', asset: 'ETH', dry_run: true })).isError, 'a different asset is not a repeat')
   recent(11 * 60_000)
   ok(!(await sd.call('pay_domain', { domain: 'example.com', amount: '2', dry_run: true })).isError, 'after 10 minutes it is not a repeat')
+  recent(60_000, { asset: 'ETH', amount: '0.002' })
+  const otherChainEth = await sd.call('pay_domain', { domain: 'example.com', amount: '0.002', asset: 'ETH', chain: 'base', dry_run: true })
+  ok(otherChainEth.isError && /^Not paying on Base/.test(sc(otherChainEth).error), 'the same ETH payment on another chain is not a repeat')
+  recent(60_000, { asset: 'ETH', amount: '0.002', chain: 'base' })
+  const baseAgain = await sd.call('pay_domain', { domain: 'example.com', amount: '0.002', asset: 'ETH', chain: 'base', dry_run: true })
+  ok(baseAgain.isError && /identical payment \(0\.002 ETH on Base to example\.com\)/.test(sc(baseAgain).error), 'the same payment on Base within 10 minutes is a repeat')
+  ok(!(await sd.call('pay_domain', { domain: 'example.com', amount: '0.002', asset: 'ETH', dry_run: true })).isError, '...and not one on Robinhood Chain')
   await sd.stop()
 
   // ---------- the repeat guard also matches the recipient, under another name or URL ----------
@@ -283,6 +323,54 @@ try {
   const vs = sc(await sm.call('verify_payto', { target: 'https://shop.signed.type262.test/buy', x402_body: { accepts: [{ payTo: RECIPIENT.toLowerCase() }, { payTo: OTHER }] } }))
   ok(vs.results[0].verdict === 'safe' && vs.results[1].verdict === 'no_match' && vs.domain === 'signed.type262.test', 'verify_payto: safe vs no_match')
   ok(sc(await sm.call('verify_payto', { target: 'unsigned.type262.test', pay_to: RECIPIENT })).results[0].verdict === 'unsigned', 'verify_payto: unsigned')
+
+  // ---------- Base: direct payments only ----------
+  const bDirect = sc(await sm.call('pay_domain', { domain: 'signed.type262.test', amount: '1', chain: 'base', dry_run: true }))
+  ok(bDirect.mode === 'direct' && bDirect.to === RECIPIENT && bDirect.asset === 'USDC' && bDirect.chain.id === 8453 && bDirect.chain.name === 'Base' &&
+    bDirect.steps.join() === `transfer 1 USDC to ${RECIPIENT}` && bDirect.checks.record.dnssec_all_resolvers === true && / on Base \(DNSSEC-verified/.test(bDirect.summary), 'Base: a signed record every resolver returns is paid directly, in USDC by default')
+  const bareUsdc = await sm.call('pay_domain', { domain: 'signed.type262.test', amount: '1', asset: 'usdc', dry_run: true })
+  ok(bareUsdc.isError && /^USDC is paid on Base: pass chain "base"/.test(sc(bareUsdc).error), 'Base: asset USDC alone is refused, even for a domain Base would pay')
+  const bEth = sc(await sm.call('pay_domain', { domain: 'https://api.signed.type262.test/pay', amount: '0.001', asset: 'ETH', chain: 'base', dry_run: true }))
+  ok(bEth.mode === 'direct' && bEth.domain === 'signed.type262.test' && bEth.requested === 'api.signed.type262.test' && bEth.steps.join() === `send 0.001 ETH to ${RECIPIENT}`, 'Base: ETH, through the signed parent')
+  for (const [domain, why] of [
+    ['unsigned.type262.test', /^Not paying on Base: unsigned\.type262\.test's wallet record is not DNSSEC-signed\./],
+    ['empty.type262.test', /^Not paying on Base: empty\.type262\.test publishes no WALLET record\./],
+    ['fail.type262.test', /^Not paying on Base: not every DNS resolver answered \(doh2 failed\)/],
+    ['adsplit.type262.test', /^Not paying on Base: adsplit\.type262\.test's wallet record is not DNSSEC-signed\./],
+    ['alias.type262.test', /^Not paying on Base: alias\.type262\.test publishes no WALLET record\./],
+    ['api.servfail.type262.test', /^Not paying on Base: not every DNS resolver answered \(doh1 returned SERVFAIL, doh2 returned SERVFAIL\)/],
+    ['alice.platform.type262.test', /^Not paying on Base: alice\.platform\.type262\.test publishes no WALLET record and platform\.type262\.test's wallet record is not DNSSEC-signed\./],
+  ]) {
+    const x = await sm.call('pay_domain', { domain, amount: '1', chain: 'base', dry_run: true })
+    ok(x.isError && why.test(sc(x).error) && /there is no escrow on Base/.test(sc(x).error) && sc(x).dns, `Base refuses what Robinhood Chain would put in escrow: ${domain}`)
+  }
+  for (const domain of ['split.type262.test', 'gone.type262.test']) {
+    const x = await sm.call('pay_domain', { domain, amount: '1', chain: 'base', dry_run: true })
+    ok(x.isError && /disagree|NXDOMAIN/.test(sc(x).error) && !/Not paying on Base/.test(sc(x).error), `Base refuses like Robinhood Chain: ${domain}`)
+  }
+  // One recipient per domain on Base, by coin code: a USDG line is never paid there while an ETH line exists.
+  const twoUsdc = sc(await sm.call('pay_domain', { domain: 'two.type262.test', amount: '1', chain: 'base', dry_run: true }))
+  const twoEth = sc(await sm.call('pay_domain', { domain: 'two.type262.test', amount: '0.001', asset: 'ETH', chain: 'base', dry_run: true }))
+  ok(twoUsdc.mode === 'direct' && twoUsdc.to === RECIPIENT && twoUsdc.checks.record.code === 'ETH' && twoEth.mode === 'direct' && twoEth.to === RECIPIENT && twoEth.checks.record.code === 'ETH',
+    'Base: USDG and ETH lines, USDC and ETH both go to the ETH address')
+  const twoRs = sc(await sm.call('resolve_domain', { domain: 'two.type262.test' }))
+  ok(twoRs.pay_domain_would_on_base.to === RECIPIENT && twoRs.pay_domain_would_on_base.code === 'ETH' && twoRs.pay_domain_would.to === OTHER,
+    'resolve_domain: Base would pay the ETH line; Robinhood Chain still pays USDG to the USDG line')
+  const twoRh = sc(await sm.call('pay_domain', { domain: 'two.type262.test', amount: '0.001', asset: 'ETH', dry_run: true }))
+  ok(twoRh.to === RECIPIENT && sc(await sm.call('pay_domain', { domain: 'two.type262.test', amount: '1', dry_run: true })).to === OTHER, 'Robinhood Chain picks as before: the line coded with the asset')
+  const otherOnly = await sm.call('pay_domain', { domain: 'usdgonly.type262.test', amount: '1', chain: 'base', dry_run: true })
+  ok(otherOnly.isError && /^Not paying on Base: usdgonly\.type262\.test publishes its EVM wallet only under codes for other chains \(USDG, ARB\), which Base does not pay\./.test(sc(otherOnly).error),
+    'Base: an address published only under codes for other chains is refused')
+  const otherOnlyRs = sc(await sm.call('resolve_domain', { domain: 'usdgonly.type262.test' }))
+  ok(otherOnlyRs.pay_domain_would.mode === 'direct' && otherOnlyRs.pay_domain_would_on_base.mode === 'refuse' && /codes for other chains/.test(otherOnlyRs.pay_domain_would_on_base.reason),
+    'resolve_domain: ...and says so, while Robinhood Chain pays that line directly')
+  const generic = sc(await sm.call('pay_domain', { domain: 'generic.type262.test', amount: '1', chain: 'base', dry_run: true }))
+  ok(generic.mode === 'direct' && generic.to === RECIPIENT && generic.checks.record.code === 'DAI', 'Base: with no USDC, ETH or EVM line, a code that names no chain (DAI) before one that does (POL)')
+  const rsBase = sc(await sm.call('resolve_domain', { domain: 'signed.type262.test' }))
+  ok(rsBase.pay_domain_would_on_base.mode === 'direct' && rsBase.pay_domain_would_on_base.to === RECIPIENT && rsBase.summary.includes(`on Robinhood Chain and pay ${RECIPIENT} directly on Base.`), 'resolve_domain: what pay_domain would do on Base, direct')
+  const rsNoBase = sc(await sm.call('resolve_domain', { domain: 'unsigned.type262.test' }))
+  ok(rsNoBase.pay_domain_would.mode === 'escrow' && rsNoBase.pay_domain_would_on_base.mode === 'refuse' && /not DNSSEC-signed/.test(rsNoBase.pay_domain_would_on_base.reason) &&
+    /deposit into escrow on Robinhood Chain and refuse on Base\./.test(rsNoBase.summary), 'resolve_domain: what pay_domain would do on Base, refuse')
 
   // ---------- walking up to the parent ----------
   const viaParent = sc(await sm.call('pay_domain', { domain: 'api.signed.type262.test', amount: '1', dry_run: true }))
@@ -333,6 +421,9 @@ try {
 
   const lax = server({ TYPE262_DOH: DOH, TYPE262_REQUIRE_DNSSEC: 'false' })
   ok(sc(await lax.call('pay_domain', { domain: 'unsigned.type262.test', amount: '1', dry_run: true })).mode === 'direct', 'TYPE262_REQUIRE_DNSSEC=false pays an unsigned record directly')
+  const laxBase = await lax.call('pay_domain', { domain: 'unsigned.type262.test', amount: '1', chain: 'base', dry_run: true })
+  ok(laxBase.isError && /^Not paying on Base: unsigned\.type262\.test's wallet record is not DNSSEC-signed/.test(sc(laxBase).error), 'TYPE262_REQUIRE_DNSSEC=false does not reach Base: an unsigned record is still refused there')
+  ok(sc(await lax.call('resolve_domain', { domain: 'unsigned.type262.test' })).pay_domain_would_on_base.mode === 'refuse', '...and resolve_domain says so')
   await lax.stop()
   const ceiling = server({ TYPE262_DOH: DOH, TYPE262_ALLOW_ESCROW: 'false' })
   const ce = await ceiling.call('pay_domain', { domain: 'unsigned.type262.test', amount: '1', dry_run: true, allow_escrow: true })
@@ -341,7 +432,26 @@ try {
   const rce = sc(await ceiling.call('resolve_domain', { domain: 'unsigned.type262.test' }))
   ok(rce.pay_domain_would.mode === 'refuse' && /TYPE262_ALLOW_ESCROW=false/.test(rce.pay_domain_would.reason) && /pay_domain would refuse/.test(rce.summary), 'resolve_domain says pay_domain would refuse when escrow is off on the server')
   ok(sc(await ceiling.call('resolve_domain', { domain: 'signed.type262.test' })).pay_domain_would.mode === 'direct', 'resolve_domain: direct is unaffected by escrow being off')
+  ok(sc(await ceiling.call('pay_domain', { domain: 'signed.type262.test', amount: '1', chain: 'base', dry_run: true })).mode === 'direct', 'Base direct payments work with escrow off')
   await ceiling.stop()
+  // A custom Base RPC must serve Base, and is never echoed.
+  const wrongRpc = http.createServer(async (req, res) => {
+    let b = ''
+    for await (const c of req) b += c
+    const j = JSON.parse(b)
+    const reply = m => ({ jsonrpc: '2.0', id: m.id, ...(m.method === 'eth_chainId' ? { result: '0x1' } : { error: { code: -32601, message: 'not here' } }) })
+    res.writeHead(200, { 'content-type': 'application/json' })
+    res.end(JSON.stringify(Array.isArray(j) ? j.map(reply) : reply(j)))
+  }).listen(0, '127.0.0.1')
+  await new Promise(r => wrongRpc.once('listening', r))
+  const WRONG = `http://127.0.0.1:${wrongRpc.address().port}/key-in-path`
+  const sw = server({ TYPE262_DOH: DOH, TYPE262_BASE_RPC: WRONG })
+  const wrong = await sw.call('pay_domain', { domain: 'signed.type262.test', amount: '1', chain: 'base', dry_run: true })
+  ok(wrong.isError && sc(wrong).error === 'TYPE262_BASE_RPC serves chain 1, not Base (8453).', 'a TYPE262_BASE_RPC that serves another chain is refused')
+  ok(!(await sw.call('pay_domain', { domain: 'signed.type262.test', amount: '1', dry_run: true })).isError, '...and Robinhood Chain payments are unaffected')
+  await sw.stop()
+  wrongRpc.close()
+  ok(!sw.logs().includes(WRONG) && !sw.logs().includes('key-in-path'), 'a custom TYPE262_BASE_RPC appears in no result and no log')
   const one = server({ TYPE262_DOH: `${DOH_BASE}/a` })
   await one.request('ping')
   await one.stop()
@@ -352,6 +462,8 @@ try {
   const sk = server({ TYPE262_PRIVATE_KEY: key })
   const ws = sc(await sk.call('wallet_status'))
   ok(ws.configured && ws.address === privateKeyToAccount(key).address && ws.balances.USDG === '0' && ws.escrow_enabled === true, 'wallet_status with a key (mainnet read)')
+  ok(ws.base.chain.id === 8453 && ws.base.balances.USDC === '0' && ws.base.balances.ETH === '0' && ws.base.explorer === `https://basescan.org/address/${ws.address}` &&
+    / and 0 USDC and 0 ETH on Base\./.test(ws.summary), `wallet_status reads the Base balances too (Base mainnet read) ${JSON.stringify(ws.base.balances)}`)
   await sk.stop()
   ok(!sk.logs().toLowerCase().includes(key.slice(2)), 'the key never appears in stdout or stderr')
   const bad = '0x' + 'ab'.repeat(20)
@@ -363,6 +475,7 @@ try {
 
   ok(oneLine >= 50, `every result carried a one-line summary, or a one-line error (${oneLine} results)`)
   if (FORK) await forkTest()
+  if (FORK) await baseForkTest()
 } finally {
   await Promise.all(servers.map(s => s.stop()))
   doh.close()
@@ -647,5 +760,73 @@ async function forkTest() {
   } finally {
     anvil.kill()
     proxy.close()
+  }
+}
+
+// ---------- real payments on a local fork of Base (FORK=1) ----------
+async function baseForkTest() {
+  const bin = name => join(homedir(), '.foundry', 'bin', process.platform === 'win32' ? `${name}.exe` : name)
+  const LOCAL = 'http://127.0.0.1:8547'
+  const USDC = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'
+  const HOLDER = '0xd0b53D9277642d899DF5C87A3966A349A798F224' // Uniswap v3 USDC/WETH pool on Base: holds USDC on mainnet
+  const rpc = async (method, params = []) => {
+    const j = await (await fetch(LOCAL, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }) })).json()
+    if (j.error) throw new Error(`${method}: ${j.error.message}`)
+    return j.result
+  }
+  const abi = parseAbi(['function balanceOf(address) view returns (uint256)'])
+  const usdcOf = async a => decodeFunctionResult({ abi, functionName: 'balanceOf', data: await rpc('eth_call', [{ to: USDC, data: encodeFunctionData({ abi, functionName: 'balanceOf', args: [a] }) }, 'latest']) })
+  const ethOf = async a => BigInt(await rpc('eth_getBalance', [a, 'latest']))
+
+  const anvil = spawn(bin('anvil'), ['--fork-url', 'https://mainnet.base.org', '--port', '8547', '--silent'], { stdio: 'ignore' })
+  try {
+    for (let i = 0; ; i++) {
+      try { if ((await rpc('eth_chainId')) === '0x2105') break } catch {}
+      if (i > 120) throw new Error('anvil (Base) did not start')
+      await sleep(500)
+    }
+    const key = throwaway()
+    const agent = privateKeyToAccount(key).address
+    await rpc('anvil_setBalance', [agent, '0xde0b6b3a7640000']) // 1 ETH
+    await rpc('anvil_setBalance', [HOLDER, '0xde0b6b3a7640000'])
+    await rpc('anvil_impersonateAccount', [HOLDER])
+    execFileSync(bin('cast'), ['send', USDC, 'transfer(address,uint256)', agent, '5000000', '--from', HOLDER, '--unlocked', '--rpc-url', LOCAL], { stdio: 'ignore' })
+    await rpc('anvil_stopImpersonatingAccount', [HOLDER])
+    ok((await usdcOf(agent)) === 5_000_000n, 'base fork: agent funded with 5 USDC')
+
+    const spend = join(tmp, 'base-spend.json')
+    const sb = server({ TYPE262_BASE_RPC: LOCAL, TYPE262_PRIVATE_KEY: key, TYPE262_SPEND_FILE: spend, TYPE262_DOH: DOH })
+    const ws = sc(await sb.call('wallet_status'))
+    ok(ws.base.balances.USDC === '5' && ws.base.balances.ETH === '1' && ws.base.rpc === 'custom (TYPE262_BASE_RPC)', `base fork: wallet_status reads Base ${JSON.stringify(ws.base)}`)
+    const plan = sc(await sb.call('pay_domain', { domain: 'signed.type262.test', amount: '1', chain: 'base', dry_run: true }))
+    ok(plan.mode === 'direct' && /^about \d/.test(plan.checks.gas) && plan.checks.balance.USDC === '5', 'base fork: the plan checks the USDC balance and estimates gas, L1 data fee included')
+
+    const u0 = await usdcOf(RECIPIENT), e0 = await ethOf(RECIPIENT)
+    const p1 = await sb.call('pay_domain', { domain: 'signed.type262.test', amount: '1', chain: 'base' })
+    ok(!p1.isError && sc(p1).sent && sc(p1).chain.id === 8453 && sc(p1).transactions.map(t => t.step).join() === 'transfer' && sc(p1).explorer.startsWith('https://basescan.org/tx/0x') &&
+      /^Paid 1 USDC to signed\.type262\.test's wallet 0x[0-9a-fA-F]{40} on Base\. https:\/\/basescan\.org\/tx\//.test(sc(p1).summary) && (await usdcOf(RECIPIENT)) - u0 === 1_000_000n,
+    `base fork: 1 USDC straight to a DNSSEC-signed wallet ${JSON.stringify(sc(p1).error || '')}`)
+    ok((await rpc('eth_getTransactionReceipt', [sc(p1).transactions[0].hash])).status === '0x1', 'base fork: the locally computed hash is the mined transaction')
+    const p2 = await sb.call('pay_domain', { domain: 'signed.type262.test', amount: '0.0005', asset: 'ETH', chain: 'base' })
+    ok(!p2.isError && sc(p2).transactions.map(t => t.step).join() === 'send' && (await ethOf(RECIPIENT)) - e0 === 5n * 10n ** 14n, `base fork: 0.0005 ETH direct ${JSON.stringify(sc(p2).error || '')}`)
+
+    const nonce = await rpc('eth_getTransactionCount', [agent, 'latest'])
+    const un = await sb.call('pay_domain', { domain: 'unsigned.type262.test', amount: '1', chain: 'base' })
+    ok(un.isError && /^Not paying on Base/.test(sc(un).error) && (await rpc('eth_getTransactionCount', [agent, 'latest'])) === nonce, 'base fork: an unsigned record is refused and nothing is sent')
+    const again = await sb.call('pay_domain', { domain: 'signed.type262.test', amount: '1', chain: 'base' })
+    ok(again.isError && /identical payment \(1 USDC on Base to signed\.type262\.test\)/.test(sc(again).error) && sc(again).error.includes(`https://basescan.org/address/${agent}`) &&
+      (await rpc('eth_getTransactionCount', [agent, 'latest'])) === nonce, 'base fork: the same payment again is refused, with a link to the wallet on Basescan')
+    const short = await sb.call('pay_domain', { domain: 'signed.type262.test', amount: '9', chain: 'base' })
+    ok(short.isError && /^Insufficient USDC on Base/.test(sc(short).error), 'base fork: insufficient USDC is refused before sending')
+    const ws2 = sc(await sb.call('wallet_status'))
+    ok(ws2.limits.BASE_USDC.spent_today === '1 USDC' && ws2.limits.BASE_ETH.spent_today === '0.0005 ETH' && ws2.limits.USDG.spent_today === '0 USDG' && ws2.limits.ETH.spent_today === '0 ETH',
+      'base fork: Base spend is counted apart from Robinhood Chain\'s')
+    await sb.stop()
+    const logged = JSON.parse(readFileSync(spend, 'utf8'))
+    ok(logged[day].BASE_USDC === '1' && logged[day].BASE_ETH === '0.0005' && !('USDC' in logged[day]) && logged.recent.every(x => x.chain === 'base' && x.to === RECIPIENT.toLowerCase()),
+      'base fork: the spend log keeps Base under BASE_USDC and BASE_ETH, and marks its recent payments')
+    ok(!sb.logs().toLowerCase().includes(key.slice(2)) && !sb.logs().includes(LOCAL), 'base fork: neither the key nor the custom RPC appears in server output')
+  } finally {
+    anvil.kill()
   }
 }

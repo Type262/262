@@ -5,4 +5,5 @@ export const TOKEN = {
   symbol: '262',
   logo: new URL('./art/token-262.webp', import.meta.url).href, // served with the app, next to this module
   dev: '9QKi39EkFTM1x64TPG3H4mcMDkG85oWUttPdvzNjtvJP',
+  domain: 'type262.com', // lists the mint in _token.type262.com (token-records.js)
 }

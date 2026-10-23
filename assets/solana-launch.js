@@ -10,6 +10,7 @@ import * as V from './solana-vault.js'
 import { fmtUnits, solRecord, friendly, stepList, sendSteps, card, logoTag, imgUrl, uploaded, tokens, coinsPanel, forgetCoins, loadImages, coinLinks } from './solana-escrow.js'
 import { launchedCoins, solPrice } from './solana-board.js'
 import { TOKEN } from './token.js'
+import { markOfficial } from './token-records.js'
 
 const UPLOAD_URL = config.UPLOAD_URL || 'https://type262-upload.onrender.com'
 const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp']
@@ -453,10 +454,10 @@ function tokenCard(c, price) {
   const progress = c ? Math.max(0, Math.min(1, c.progress || 0)) : 0
   // a graduated coin trades on PumpSwap: its curve no longer prices it
   const mcap = !c ? '…' : c.complete ? 'On PumpSwap' : price ? `${usd((Number(c.mcap) / 1e9) * price)} <small>${solAmount(c.mcap)} SOL</small>` : `${solAmount(c.mcap)} <small>SOL</small>`
-  return `<div class="ln-box tk-feature">
+  return `<div class="ln-box tk-feature" data-mint="${esc(TOKEN.mint)}">
     <div class="tk-top"><img class="ln-logo tk-logo" src="${esc(TOKEN.logo)}" alt="">
       <div class="tk-name"><span class="label">The TYPE/262 token</span><strong>${esc(TOKEN.name)} <span class="accent">$${esc(TOKEN.symbol)}</span></strong></div>
-      <span class="tag good">Official</span></div>
+      <span class="tag good" data-official>Official</span></div>
     <div class="ln-feegrid">
       <div><span class="label">Market cap</span><div class="v">${mcap}</div></div>
       <div><span class="label">Bonding curve</span><div class="v">${!c ? '…' : c.complete ? 'Graduated' : `${Math.floor(progress * 100)}%`}</div></div>
@@ -474,10 +475,14 @@ let tokenSeq = 0
 async function loadToken() {
   const el = $('#sl-token', root)
   const seq = ++tokenSeq
+  // the card's tag also says when type262.com lists the mint in a DNSSEC-verified _token record
+  const official = () => markOfficial(el, [{ mint: TOKEN.mint, domain: TOKEN.domain }])
   if (!el.children.length) el.innerHTML = tokenCard(null, 0)
+  official()
   const [coins, price] = await Promise.all([V.coinsByMint([TOKEN.mint]).catch(() => null), solPrice().catch(() => 0)])
   // a read that fails keeps what the card already shows
   if (seq === tokenSeq && coins && coins[0]) el.innerHTML = tokenCard(coins[0], price)
+  official()
 }
 
 async function loadExplore(force = false) {
@@ -504,6 +509,7 @@ async function loadExplore(force = false) {
   }
   el.innerHTML = `<div class="ln-grid">${coins.map((t, i) => card({ ...t, launchedAt: t.time }, i, coinLinks(t.mint))).join('')}</div>`
   loadImages(el, coins)
+  markOfficial(el, coins) // "Official · listed by <domain>" on the coins their domain lists in DNS
 }
 
 // ---------- a domain's coins and fees ----------

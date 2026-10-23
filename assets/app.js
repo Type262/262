@@ -1,6 +1,6 @@
 import {
   resolveWallets, resolveWalletsUp, verifyPayTo, payTosFromX402, zoneLines, normalizeDomain,
-  addressKind, codeMatchesAddress, transferTx, paymentUri, parseUnits, sameAddress, EVM_CODES,
+  addressKind, codeMatchesAddress, paymentUri, parseUnits, sameAddress, EVM_CODES,
 } from '../lib/wallet262.js'
 import { $, $$, esc, short, copy, loading, renderResult, renderError } from './ui.js'
 import { encodeCall, SEL, words, toBig, toAddr, decodeString, decodeLaunches, decodeLaunch } from './abi.js'
@@ -11,6 +11,8 @@ import * as sol from './solana.js'
 import * as solEscrow from './solana-escrow.js'
 import * as solLaunch from './solana-launch.js'
 import { TOKEN } from './token.js'
+import { mountTokenCheck, mountPublishToken, publishToken, tokenRecordHtml, tokenCheckHref, tokenCheckArg } from './token-records.js'
+import { BASE, basePick, evmLink, evmTransfer, assetSymbol, waitForReceipt, x402Networks, networksFor } from './evm-pay.js'
 
 ambient(48)
 const { ESCROW_ADDRESS = '', LAUNCHER_ADDRESS = '' } = config
@@ -30,6 +32,10 @@ const CHAIN = {
   // read-only fallback on our server for browsers that can't reach the public RPC (DNS trouble, outages)
   rpcFallback: config.RPC_FALLBACK || 'https://type262-upload.onrender.com/rpc',
 }
+// The chains Pay offers for an EVM address. Base takes direct payments only; escrow and launches use CHAIN.
+const PAY_CHAINS = { robinhood: CHAIN, base: BASE }
+let evmPayChain = 'robinhood' // the payer's pick, kept for the next domain
+const payChain = () => PAY_CHAINS[evmPayChain] || CHAIN
 
 // ---------- network: Solana is the main chain, Robinhood Chain the second ----------
 const NET_KEY = 't262-net'
@@ -117,6 +123,12 @@ function route() {
   const rail = $('.rail'), on = $('.rail a.on')
   if (on && rail.scrollWidth > rail.clientWidth) rail.scrollLeft = on.offsetLeft - (rail.clientWidth - on.offsetWidth) / 2
   if ((v === 'escrow' || v === 'launch') && network === 'solana') return showSolanaView(v, arg)
+  // Many domains is on Solana only (solana-fund.js), not a domain to look up: say so, with the switch
+  if (v === 'escrow' && arg === 'many') {
+    $('#esc-out').innerHTML = '<div class="note" data-many>Many domains is on Solana. <button class="linkish" type="button" data-chain-go="solana">Switch to Solana</button></div>'
+    return
+  }
+  if (v === 'escrow') $('#esc-out [data-many]')?.remove()
   if (v === 'launch') return showLaunch(arg)
   if (arg) prefill(v, arg, true) // a link to a domain always shows fresh results
   else if (lastDomain) prefill(v, lastDomain, false) // the last domain follows you, re-queried only if it changed
@@ -127,7 +139,9 @@ function prefill(v, arg, force) {
   if (v === 'pay' && set('#v-pay input[name=d]', arg)) $('[data-form=pay]').requestSubmit()
   if (v === 'escrow' && set('#v-escrow input[name=d]', arg)) $('[data-form=escrow]').requestSubmit()
   if (v === 'publish' && set('#pub-d', arg)) renderPublish()
-  if (v === 'verify') set('#v-verify input[name=u]', arg)
+  const tk = v === 'verify' && tokenCheckArg(arg) // #verify/token/<domain>/<coin>: the official token check
+  if (tk) tokenCheck.open(tk.domain, tk.coin)
+  else if (v === 'verify') { set('#v-verify input[name=u]', arg); set('#v-verify input[name=d]', arg) }
   if (v === 'badge' && set('#badge-d', arg)) renderBadge()
 }
 addEventListener('hashchange', route)
@@ -272,10 +286,16 @@ $('[data-form=pay]').addEventListener('submit', async e => {
   } catch (err) { renderError(box.firstChild, err.message) }
 })
 
-// A domain that publishes both: the selected network's address comes first.
-const preferredPick = r => Math.max(0, r.records.findIndex(x => addressKind(x.address) === (network === 'solana' ? 'solana' : 'evm')))
+// A domain that publishes both: the selected network's address comes first. On Base, of its EVM addresses, the one
+// Base pays (basePick: USDC, ETH or EVM before a code for another chain such as USDG).
+const preferredPick = r => {
+  const i = Math.max(0, r.records.findIndex(x => addressKind(x.address) === (network === 'solana' ? 'solana' : 'evm')))
+  const b = evmPayChain === 'base' && r.records[i] && addressKind(r.records[i].address) === 'evm' ? basePick(r.records) : -1
+  return b >= 0 ? b : i
+}
 
-function renderPay() {
+// keep: the asset and amount to carry over when the chain switch moves the pick.
+function renderPay(keep) {
   const box = $('#pay-step')
   const { r } = payCtx
   if (!r.records.length) {
@@ -301,13 +321,16 @@ function renderPay() {
       <div class="tags"><span class="tag">${x.source === 'TYPE262' ? 'TYPE262' : '_wallet TXT'}</span></div>
     </label>`).join('')
   const evm = kind === 'evm', solana = kind === 'solana'
-  const netName = evm ? `${CHAIN.name} · ${CHAIN.id}` : solana ? `${sol.NAME} · mainnet` : ''
+  const pc = payChain()
+  const netName = evm ? `${pc.name} · ${pc.id}` : solana ? `${sol.NAME} · mainnet` : ''
+  // An EVM address is the same on every EVM chain: the payer picks Robinhood Chain or Base.
+  const chainPick = `<select id="p-chain" aria-label="Network">${Object.entries(PAY_CHAINS).map(([k, c]) => `<option value="${k}" ${c === pc ? 'selected' : ''}>${c.name} · ${c.id}</option>`).join('')}</select>`
   box.innerHTML = `
     <div class="result"><div class="r-head"><span class="label">${esc(r.resolvedAt)} publishes ${r.records.length} wallet(s)</span><span class="tag ${r.dnssec ? 'good' : ''}">${r.dnssec ? 'DNSSEC ✓' : 'Unsigned'}</span></div>${picker}</div>
     ${trust}
     <div class="row-2">
-      ${netName ? `<div><span class="label lbl">Network</span><div class="field sm"><input value="${netName}" readonly aria-label="Network"></div></div>` : ''}
-      <div><span class="label lbl">Asset</span><div class="field sm"><select id="p-asset">${evm ? `<option value="stable">${CHAIN.stable.symbol}</option><option value="native">${CHAIN.native}</option>` : solana ? `<option value="usdc">${sol.USDC.symbol}</option><option value="sol">SOL</option>` : `<option value="native">${esc(rec.code)}</option>`}</select></div></div>
+      ${netName ? `<div><span class="label lbl">Network</span><div class="field sm">${evm ? chainPick : `<input value="${netName}" readonly aria-label="Network">`}</div></div>` : ''}
+      <div><span class="label lbl">Asset</span><div class="field sm"><select id="p-asset">${evm ? `<option value="stable">${pc.stable.symbol}</option><option value="native">${pc.native}</option>` : solana ? `<option value="usdc">${sol.USDC.symbol}</option><option value="sol">SOL</option>` : `<option value="native">${esc(rec.code)}</option>`}</select></div></div>
       <div><span class="label lbl">Amount</span><div class="field sm"><input id="p-amt" inputmode="decimal" placeholder="5.00" value="5"></div></div>
     </div>
     <div style="display:flex;flex-wrap:wrap;gap:0.75rem">
@@ -320,6 +343,23 @@ function renderPay() {
   $$('input[name=pick]', box).forEach(el => el.addEventListener('change', () => { payCtx.pick = +el.value; renderPay() }))
   const sync = () => { if ($('#p-link')) $('#p-link').href = linkFor(rec, kind) }
   ;['#p-asset', '#p-amt'].forEach(s => $(s) && $(s).addEventListener('input', sync))
+  // Switching chains keeps the asset choice (stable or native) and the amount. An address the payer didn't pick
+  // follows the chain's own pick, so Base doesn't pay a USDG line when the domain also publishes an ETH one.
+  if (evm) $('#p-chain').addEventListener('change', e => {
+    const auto = payCtx.pick === preferredPick(r)
+    evmPayChain = e.target.value
+    const next = preferredPick(r)
+    if (auto && next !== payCtx.pick) {
+      payCtx.pick = next
+      return renderPay({ asset: $('#p-asset').value, amount: $('#p-amt').value })
+    }
+    const c = payChain(), [stable, native] = $('#p-asset').options
+    stable.textContent = c.stable.symbol
+    native.textContent = c.native
+    $('#p-status').innerHTML = ''
+    sync()
+  })
+  if (keep) { $('#p-asset').value = keep.asset; $('#p-amt').value = keep.amount }
   sync()
   $('#p-copy').addEventListener('click', e => copy(rec.address, e.currentTarget))
   $('#p-copy-link').addEventListener('click', e => {
@@ -336,10 +376,7 @@ const PHONE = navigator.userAgentData ? navigator.userAgentData.mobile : /Androi
 function linkFor(rec, kind) {
   const amount = $('#p-amt').value.trim()
   try {
-    if (kind === 'evm') {
-      const s = $('#p-asset').value === 'stable' ? CHAIN.stable : null
-      return paymentUri(rec.address, { amount, chainId: CHAIN.id, token: s ? s.address : undefined, decimals: s ? s.decimals : 18 })
-    }
+    if (kind === 'evm') return evmLink(payChain(), rec.address, $('#p-asset').value, amount)
     if (kind === 'solana') return paymentUri(rec.address, { amount, splToken: $('#p-asset').value === 'usdc' ? sol.USDC.mint : undefined })
     return paymentUri(rec.address, { amount })
   } catch { return '#' }
@@ -347,21 +384,20 @@ function linkFor(rec, kind) {
 
 async function send(rec) {
   const status = $('#p-status')
-  const c = CHAIN
-  const s = $('#p-asset').value === 'stable' ? c.stable : null
+  const c = payChain()
+  const asset = $('#p-asset').value
   const amount = $('#p-amt').value.trim()
-  const btn = $('#p-send')
-  btn.disabled = true
+  const btn = $('#p-send'), pick = $('#p-chain')
+  btn.disabled = pick.disabled = true // the chain stays put until this payment settles
   status.innerHTML = '<div class="note">Waiting for your wallet…</div>'
   try {
-    const tx = transferTx({ from: account || '', to: rec.address, amount, decimals: s ? s.decimals : 18, token: s ? s.address : undefined })
-    delete tx.from
-    status.innerHTML = '<div class="note">Confirm in your wallet, then wait for Robinhood Chain…</div>'
-    const r = await sendTx(tx)
-    status.innerHTML = `<div class="note good">✓ Sent ${esc(amount)} ${s ? s.symbol : c.native} to ${esc(payCtx.r.resolvedAt)} on ${c.name}. <a href="${c.explorer}/tx/${r.transactionHash}" target="_blank" rel="noopener">View transaction ↗</a></div>`
+    const tx = evmTransfer(c, rec.address, asset, amount)
+    status.innerHTML = `<div class="note">Confirm in your wallet, then wait for ${c.name}…</div>`
+    const r = await sendTx(tx, c)
+    status.innerHTML = `<div class="note good">✓ Sent ${esc(amount)} ${assetSymbol(c, asset)} to ${esc(payCtx.r.resolvedAt)} on ${c.name}. <a href="${c.explorer}/tx/${r.transactionHash}" target="_blank" rel="noopener">View transaction ↗</a></div>`
   } catch (err) {
     status.innerHTML = `<div class="note warn">${esc(err.message || 'Transaction cancelled')}</div>`
-  } finally { btn.disabled = false }
+  } finally { btn.disabled = pick.disabled = false }
 }
 
 // SOL or USDC on Solana, from the connected Solana wallet to the domain's published address.
@@ -443,13 +479,15 @@ async function rpc(method, params) {
 const view = data => rpc('eth_call', [{ to: ESCROW_ADDRESS, data }, 'latest'])
 
 let txBusy = 0
-async function sendTx(params) {
+async function sendTx(params, c = CHAIN) {
   txBusy++
   try {
     const from = account || await connect()
-    await switchChain(CHAIN)
-    if (parseInt(await eth().request({ method: 'eth_chainId' }), 16) !== CHAIN.id) throw new Error(`Switch your wallet to ${CHAIN.name} first.`)
+    await switchChain(c)
+    if (parseInt(await eth().request({ method: 'eth_chainId' }), 16) !== c.id) throw new Error(`Switch your wallet to ${c.name} first.`)
     const hash = await eth().request({ method: 'eth_sendTransaction', params: [{ from, ...params }] })
+    // Base: the receipt comes from Base's public RPC. Robinhood Chain reads through rpc(), with its fallback.
+    if (c !== CHAIN) return await waitForReceipt(c, hash)
     for (let i = 0; i < 80; i++) {
       const r = await rpc('eth_getTransactionReceipt', [hash])
       if (r) { if (r.status !== '0x1') throw new Error('Transaction reverted'); return r }
@@ -697,6 +735,7 @@ $('#pub-add').addEventListener('click', () => {
 })
 $('#pub-d').addEventListener('input', renderPublish)
 $('#pub-ttl').addEventListener('change', renderPublish)
+mountPublishToken($('#pub-token'), renderPublish)
 
 function renderPublish() {
   const out = $('#pub-out')
@@ -722,7 +761,8 @@ function renderPublish() {
   if (domain && $('#v-publish').classList.contains('on')) history.replaceState(null, '', `#publish/${domain}`)
   const step3 = body => `<div class="pb-step"><div class="pb-head"><small>03</small><h3>Add it at your DNS host</h3>
     <p>A TXT record works on every DNS host, and every claim accepts it, on Solana and on Robinhood Chain.</p></div>${body}</div>`
-  if (!domain || !list.length) {
+  const tk = publishToken($('#pub-token')) // the optional _token record: it can be published on its own
+  if (!domain || (!list.length && !tk)) {
     out.innerHTML = step3(`<div class="pb-empty">${domainErr ? `${esc(domainErr)}. Fix it` : !domain ? 'Enter your domain' : 'Add a valid address'} and your record appears here.</div>`)
     return
   }
@@ -748,7 +788,7 @@ function renderPublish() {
       <div class="pb-block-h"><div><b>${title}</b><span>${sub}</span></div><button class="pb-copy" type="button" data-copy="${esc(lines.join('\n'))}">Copy</button></div>
       <pre>${esc(lines.join('\n'))}</pre>
     </div>`
-  out.innerHTML = step3(`
+  out.innerHTML = step3(`${list.length ? `
     <div class="pb-table" role="table" aria-label="DNS records to add">
       <div class="pb-tr pb-th" role="row"><div>Type</div><div>Name</div><div>Content</div><div>TTL</div></div>
       ${rows}
@@ -760,13 +800,13 @@ function renderPublish() {
       ${block('WALLET record', 'for DNS software that knows type 262', z.named)}
       ${block('Generic TYPE262', 'RFC 3597: BIND, Knot, NSD, PowerDNS', z.generic)}
       ${block('TXT as a zone-file line', 'same record as above, for zone files', z.txt)}
-    </details>`) + `
+    </details>` : ''}${tk ? tokenRecordHtml(tk, { domain, sub, ttlText }) : ''}`) + `
     <div class="pb-step">
       <div class="pb-head"><small>04</small><h3>Turn on DNSSEC</h3>
         <p>It signs your record, so wallets and agents can trust it and escrow can verify it on-chain. On Cloudflare: DNS, Settings, Enable DNSSEC. If your registrar is somewhere else, add the DS record Cloudflare shows you there.</p></div>
-      <div class="pb-actions"><a class="btn primary" href="#resolve/${encodeURIComponent(domain)}">Check it's live</a><a class="btn" href="#escrow/${encodeURIComponent(domain)}">See what's waiting</a></div>
+      <div class="pb-actions">${list.length ? `<a class="btn primary" href="#resolve/${encodeURIComponent(domain)}">Check it's live</a>` : ''}${tk ? `<a class="btn${list.length ? '' : ' primary'}" href="${esc(tokenCheckHref(domain, tk))}">Check the token record</a>` : ''}<a class="btn" href="#escrow/${encodeURIComponent(domain)}">See what's waiting</a></div>
     </div>`
-  if (wasOpen) $('.pb-adv', out).open = true
+  if (wasOpen && $('.pb-adv', out)) $('.pb-adv', out).open = true
   $$('[data-copy]', out).forEach(b => b.addEventListener('click', () => copy(b.dataset.copy, b)))
 }
 renderPublish()
@@ -777,8 +817,9 @@ $('[data-form=verify]').addEventListener('submit', async e => {
   const out = $('#verify-out')
   const target = e.target.u.value.trim()
   let addrs = e.target.a.value.trim() ? [e.target.a.value.trim()] : []
+  let nets = [] // the network the 402 body names for each payTo, shown next to its result
   if (e.target.j.value.trim()) {
-    try { addrs = addrs.concat(payTosFromX402(e.target.j.value)) } catch { out.innerHTML = '<div class="note warn">That 402 body isn\'t valid JSON.</div>'; return }
+    try { addrs = addrs.concat(payTosFromX402(e.target.j.value)); nets = x402Networks(e.target.j.value) } catch { out.innerHTML = '<div class="note warn">That 402 body isn\'t valid JSON.</div>'; return }
   }
   if (!target || !addrs.length) { out.innerHTML = '<div class="note warn">Give a URL or domain, and a payTo address or 402 body.</div>'; return }
   out.innerHTML = '<div class="note">Checking DNS…</div>'
@@ -790,11 +831,12 @@ $('[data-form=verify]').addEventListener('submit', async e => {
       <div class="result">
         <div class="r-empty" style="${v.strong ? 'background:var(--acid);color:var(--on-acid)' : v.ok ? '' : 'background:var(--hot);color:#fff'}">
           <strong>${v.strong ? 'Match. Safe to pay.' : v.ok ? (/zone is not DNSSEC-signed/.test(v.reason) ? 'Match, unsigned.' : 'Match, not verified.') : 'No match. Don\'t pay.'}</strong>
-          <span class="mono">${esc(short(a))} · ${esc(v.reason)} · checked ${esc(v.resolvedAt)}</span>
+          <span class="mono">${esc(short(a))}${networksFor(nets, a) ? ` · on ${esc(networksFor(nets, a))}` : ''} · ${esc(v.reason)} · checked ${esc(v.resolvedAt)}</span>
         </div>
       </div>`).join('')
   } catch (err) { out.innerHTML = `<div class="note warn">${esc(err.message)}</div>` }
 })
+const tokenCheck = mountTokenCheck($('#v-verify')) // the second mode: is this coin a domain's official token?
 
 // ---------- badge ----------
 $('#badge-d').addEventListener('input', renderBadge)

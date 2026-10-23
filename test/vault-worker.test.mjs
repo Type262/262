@@ -334,6 +334,21 @@ Object.assign(tests, {
     await fails(w.refund(DOMAIN, DEPOSIT), 422, 'Already refunded')
     assert.equal(fresh.sent.length, 1)
   },
+  'refund: one transaction that funded two vaults is refunded once for each, one right after the other': async () => {
+    const OTHER = 'example.org', OTHER_VAULT = vaultKeypair(MASTER, OTHER).address
+    const both = depositTx()
+    both.transaction.message.accountKeys.push({ pubkey: OTHER_VAULT, signer: false })
+    both.transaction.message.instructions.push({ program: 'system', programId: SYSTEM, parsed: { type: 'transfer', info: { source: ALICE, destination: OTHER_VAULT, lamports: 200_000_000 } } })
+    const m = chain({ txs: { [DEPOSIT]: both }, history: [entry(DEPOSIT, 40, null)], lamports: { [VAULT]: 300_000_000n, [OTHER_VAULT]: 200_000_000n, [GAS]: SOL(1), [ALICE]: SOL(1) } })
+    const w = make(m, { now: after(181) })
+    assert.equal((await w.refund(DOMAIN, DEPOSIT)).refunded.amount, '300000000')
+    assert.equal((await w.refund(OTHER, DEPOSIT)).refunded.amount, '200000000', 'not "already refunded"')
+    assert.deepEqual(m.sent.map(read), [
+      [['memo', `type262:refund:${DEPOSIT}`], ['transfer', VAULT, ALICE, 300_000_000n]],
+      [['memo', `type262:refund:${DEPOSIT}`], ['transfer', OTHER_VAULT, ALICE, 200_000_000n]],
+    ])
+    await fails(w.refund(OTHER, DEPOSIT), 422, 'Already refunded')
+  },
   'refund: an RPC without the memo field gets each later transaction read': async () => {
     const claim = b58encode(Buffer.alloc(64, 8))
     const m = chain({ txs: { [DEPOSIT]: depositTx(), [claim]: memoTx(`type262:claim:${DOMAIN}`, [GAS, VAULT]) }, history: [{ signature: claim, slot: 45, err: null }], lamports: { [VAULT]: SOL(1), [GAS]: SOL(1) } })

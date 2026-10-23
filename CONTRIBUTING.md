@@ -40,6 +40,7 @@ The full documentation lives in [`docs.html`](https://type262.com/docs.html).
 | `assets/solana-vault.js` | The vault client: the worker's API, reads of a vault and its history, and pump.fun launches and collects sent from the user's wallet |
 | `assets/solana-proof.js`, `assets/solana-type262.js` | Clients for the on-chain program: DNSSEC proofs for it, and its instructions and account readers |
 | `assets/solana-escrow.js`, `assets/solana-launch.js` | The Escrow and Launch screens on Solana |
+| `assets/solana-fund.js`, `assets/solana-batch.js` | Escrow's Many domains mode on Solana, and its plan and transactions |
 | `assets/solana-board.js`, `assets/board-data.js` | The board's Solana side, tagged deposits and launches checked on-chain, and the merge with Robinhood Chain (`assets/chain-data.js`) for the board and profiles |
 | `solana/programs/type262/` | The on-chain Solana program, built and tested, not deployed: escrow, on-chain DNSSEC verifier and pump.fun launcher (Anchor) |
 | `solana/tests-rs/` | The program's LiteSVM tests, in their own Cargo workspace |
@@ -129,11 +130,13 @@ npm test
 | File | What it checks |
 |---|---|
 | `test/wallet262.test.mjs` | SDK: WALLET RDATA encoding and parsing, `_wallet` TXT forms, domain normalization for URLs, emails and IDNs, address kinds, USDG calldata, EIP-681 links, `parseUnits` precision, x402 `payTo` extraction, and, against mocked DNS, the `resolveWalletsUp` walk-up rules, `nxdomain` and `verified` across resolvers, CNAME answers, and every `verifyPayTo` reason |
+| `test/token-records.test.mjs` | Official token records: `_token` TXT parsing per chain code, token links and the chain each names, `resolveTokens` and every `verifyToken` reason against mocked DNS, matching by chain, the CLI `token` command, and the app helpers in `assets/token-records.js` (the lookup pool, the Explore tag, the Verify verdicts and link, the Publish record) |
 | `test/abi.test.mjs` | The app's hand-written ABI coder in `assets/abi.js` matches viem byte for byte |
 | `test/vault.test.mjs` | The vault rules in `upload/vault.mjs`: key derivation, canonical domains, the fee, what DNS must say, which addresses can be paid, what counts as a deposit, and memos |
 | `test/vault-worker.test.mjs` | The vault worker in `upload/worker.mjs` against a mocked Solana RPC and stub DNS: every transaction it sends, the lock, gas checks, refund rules, retries and priority fees |
 | `test/chain-data.test.mjs` | The board and profile event decoders in `assets/chain-data.js` match viem, then one read-only call to the live escrow |
 | `test/solana-board.test.mjs` | The board's Solana side in `assets/solana-board.js` against a mocked RPC: the board reference and memo, deposit and claim parsing, and that only money that reached a domain's vault, or a coin whose creator is that vault, makes the board |
+| `test/solana-batch.test.mjs` | Funding many domains at once in `assets/solana-batch.js`, against mocked DNS, worker, RPC and npm: the list, the split, direct or vault routes, transaction sizes, and a deposit per vault exactly as a single one |
 | `test/upload.test.mjs` | The upload endpoints against a mock Pinata: health, pinning, CORS and the origin allowlist, content checks, the 5 MB limit, the rate limit |
 | `test/mcp.test.mjs` | The bundled MCP server over stdio: protocol, live DNS, dry runs, spending limits, key handling, mock DNS |
 
@@ -273,7 +276,7 @@ The site itself needs no build: `dist/` only exists to version asset paths for t
 
 1. **Agree on the approach.** For anything larger than a small fix, open an issue first so the design is settled before the code.
 2. **Keep it focused.** One logical change per pull request. Leave unrelated code and formatting alone.
-3. **Add a test.** SDK changes go in `test/wallet262.test.mjs`, new app contract calls in `test/abi.test.mjs`, board decoders in `test/chain-data.test.mjs`, MCP tools in `test/mcp.test.mjs`, the worker next to `test/upload.test.mjs`, the Solana client in `test/solana*.test.mjs`, on-chain program changes in `solana/tests-rs/tests/`, and contract changes in `contracts/test/`.
+3. **Add a test.** SDK changes go in `test/wallet262.test.mjs`, official token records (SDK, CLI and app) in `test/token-records.test.mjs`, new app contract calls in `test/abi.test.mjs`, board decoders in `test/chain-data.test.mjs`, MCP tools in `test/mcp.test.mjs`, the worker next to `test/upload.test.mjs`, the Solana client in `test/solana*.test.mjs`, on-chain program changes in `solana/tests-rs/tests/`, and contract changes in `contracts/test/`.
 4. **Run the suites.** `npm test` always. The [Solana screens](#the-apps-solana-screens) run for Solana screen or worker changes, the [on-chain program](#on-chain-solana-program) suites for program changes, and `forge test` and the [fork tests](#fork-tests) for contract changes.
 5. **Update the docs.** Change `docs.html` when behaviour, commands or addresses change, and add a line to `CHANGELOG.md` under **Unreleased**.
 6. **Write clear commits.** A short summary line in the imperative mood, under about 72 characters, optionally prefixed with the area: `Escrow: reject proofs signed before the last claim`. Use the body to explain why when it isn't obvious.

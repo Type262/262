@@ -82,7 +82,7 @@ export function createWorker({ env = process.env, rpc, fetch = globalThis.fetch,
   const gas = env.SOLANA_GAS_KEYPAIR ? keypairFromSolanaJson(env.SOLANA_GAS_KEYPAIR) : cfg.master ? gasKeypair(cfg.master) : null
   const locks = new Set()
   const curveMints = new Map() // bonding curve -> mint: fixed forever once found
-  const refunding = new Map() // deposit signature -> time, while its refund may not show in history yet
+  const refunding = new Map() // "domain signature" -> time, while its refund may not show in history yet
   const rentCache = new Map()
 
   const needReady = () => { if (!ready) throw new Refusal(503, 'Not set up', 'Solana vaults are not set up on this server yet.') }
@@ -509,8 +509,10 @@ export function createWorker({ env = process.env, rpc, fetch = globalThis.fetch,
     return withLock(domain, async () => {
       const ctx = context(domain)
       const vault = ctx.vault.address
-      for (const [sig, at] of refunding) if (now() - at > 3_600_000) refunding.delete(sig)
-      if (refunding.has(depositSig)) throw new Refusal(422, 'Already refunded', 'That deposit was already refunded.')
+      // per domain: one transaction can fund several vaults (the app's Many domains), each refunded on its own
+      const key = `${domain} ${depositSig}`
+      for (const [k, at] of refunding) if (now() - at > 3_600_000) refunding.delete(k)
+      if (refunding.has(key)) throw new Refusal(422, 'Already refunded', 'That deposit was already refunded.')
       const tx = await rpc('getTransaction', [depositSig, { encoding: 'jsonParsed', commitment: 'confirmed', maxSupportedTransactionVersion: 0 }])
       if (!tx) throw new Refusal(404, 'Deposit not found', 'No confirmed transaction with that signature. If you just sent it, wait a moment.')
       const dep = depositOf(tx, vault)
@@ -555,13 +557,13 @@ export function createWorker({ env = process.env, rpc, fetch = globalThis.fetch,
           ...(closes ? [closeAccount({ account: dep.account, destination: gas.address, owner: vault, tokenProgram: dep.program })] : []),
         ]
       }
-      refunding.set(depositSig, now())
+      refunding.set(key, now())
       let r
       try {
         r = await step(ctx, 'refund', async attempt => (attempt && (await laterMemos(ctx, dep, depositSig)).refund ? null : { instructions, signers: [ctx.vault], rent: rentNeed }))
       } catch (err) {
         // Only a refused, failed or expired transaction frees the deposit for another try: it can no longer land.
-        if (err.tx || err.refusal) refunding.delete(depositSig)
+        if (err.tx || err.refusal) refunding.delete(key)
         unexpected(err)
         throw err.refusal ? err : new Refusal(502, 'Refund failed', reasonOf(err))
       }

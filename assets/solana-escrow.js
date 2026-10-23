@@ -8,6 +8,7 @@ import { resolveWallets, normalizeDomain, addressKind, codeMatchesAddress, parse
 import { $, $$, esc, short, copy } from './ui.js'
 import * as sol from './solana.js'
 import * as V from './solana-vault.js'
+import * as fund from './solana-fund.js'
 
 // ---------- shared with solana-launch.js ----------
 
@@ -271,13 +272,21 @@ export function mount(el, c) {
   ctx = c
   root = el
   el.innerHTML = `
+    <div class="seg ln-switch se-switch">
+      <a href="#escrow" data-ev="one">One domain</a>
+      <a href="#escrow/many" data-ev="many">Many domains</a>
+    </div>
+    <div class="ln-pane on" id="se-one">
     <form class="field" data-form="sol-escrow" autocomplete="off">
       <span class="pre">to</span>
       <input name="d" placeholder="yoursite.com" aria-label="Domain" spellcheck="false">
       <button class="btn primary" type="submit">Look up</button>
     </form>
-    <div id="se-out" class="stack" style="margin-top:1rem"></div>`
+    <div id="se-out" class="stack" style="margin-top:1rem"></div>
+    </div>
+    <div class="ln-pane" id="se-many"></div>`
   $('form', el).addEventListener('submit', e => { e.preventDefault(); lookup(e.target.d.value) })
+  fund.mount($('#se-many', el), ctx)
   // Deposits and refunds belong to a wallet: connecting, disconnecting or switching accounts re-reads them.
   let seen = ctx.account()
   sol.subscribe(() => {
@@ -293,6 +302,12 @@ export function mount(el, c) {
 /** #escrow/<domain> always shows fresh numbers; the last domain from another tool only when it changed. */
 export function route(arg, c) {
   if (c) ctx = c
+  // #escrow/many is the other mode: many domains at once (solana-fund.js)
+  const many = hashArg() === 'many'
+  $$('.se-switch a', root).forEach(a => a.classList.toggle('on', a.dataset.ev === (many ? 'many' : 'one')))
+  $('#se-one', root).classList.toggle('on', !many)
+  $('#se-many', root).classList.toggle('on', many)
+  if (many) return fund.route(ctx)
   const explicit = hashArg()
   const d = explicit || arg
   const input = $('input[name=d]', root)

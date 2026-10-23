@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// TYPE/262 MCP server: AI agents resolve, verify and pay domains by name on Robinhood Chain.
+// TYPE/262 MCP server: AI agents resolve, verify and pay domains by name on Robinhood Chain, or directly on Base.
 // MCP over stdio: newline-delimited JSON-RPC 2.0. stdout carries protocol messages only; logs go to stderr.
 import { closeSync, existsSync, mkdirSync, openSync, readFileSync, renameSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
@@ -21,6 +21,16 @@ const ASSETS = {
   USDG: { symbol: 'USDG', decimals: 6, token: '0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168' },
   ETH: { symbol: 'ETH', decimals: 18, token: null },
 }
+// Base: direct payments only, there is no escrow there. key names the asset's own limits and spend-log entry,
+// apart from Robinhood Chain's. USDC verified on-chain: symbol USDC, 6 decimals.
+const BASE_RPC_DEFAULT = 'https://mainnet.base.org'
+const BASE_EXPLORER = 'https://basescan.org'
+const BASE_ASSETS = {
+  USDC: { symbol: 'USDC', decimals: 6, token: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', key: 'BASE_USDC' },
+  ETH: { symbol: 'ETH', decimals: 18, token: null, key: 'BASE_ETH' },
+}
+// OP Stack's GasPriceOracle predeploy: a Base transaction also pays an L1 data fee, on top of its gas.
+const GAS_ORACLE = '0x420000000000000000000000000000000000000F'
 
 // Route stray console output from dependencies to stderr so it can never corrupt the protocol stream.
 console.log = console.info = console.debug = console.warn = (...a) => console.error(...a)
@@ -30,12 +40,15 @@ console.log = console.info = console.debug = console.warn = (...a) => console.er
 const env = process.env
 const flag = (v, dflt) => (v == null || v.trim() === '' ? dflt : !/^(0|false|no|off)$/i.test(v.trim()))
 const RPC = env.TYPE262_RPC || MAINNET_RPC
+const BASE_RPC = env.TYPE262_BASE_RPC || BASE_RPC_DEFAULT
 const REQUIRE_DNSSEC = flag(env.TYPE262_REQUIRE_DNSSEC, true)
 const ALLOW_ESCROW = flag(env.TYPE262_ALLOW_ESCROW, true)
 const SPEND_FILE = env.TYPE262_SPEND_FILE || join(homedir(), '.type262', 'agent-spend.json')
 const LIMITS = {
   USDG: { max: env.TYPE262_MAX_USDG || '25', daily: env.TYPE262_DAILY_USDG || '100' },
   ETH: { max: env.TYPE262_MAX_ETH || '0.01', daily: env.TYPE262_DAILY_ETH || '0.05' },
+  BASE_USDC: { max: env.TYPE262_MAX_BASE_USDC || '25', daily: env.TYPE262_DAILY_BASE_USDC || '100' },
+  BASE_ETH: { max: env.TYPE262_MAX_BASE_ETH || '0.01', daily: env.TYPE262_DAILY_BASE_ETH || '0.05' },
 }
 // Optional DNS-over-HTTPS JSON endpoints (comma-separated). Default: Cloudflare + Google.
 const DOH = env.TYPE262_DOH ? env.TYPE262_DOH.split(',').map(s => s.trim()).filter(Boolean) : null
@@ -58,6 +71,7 @@ const KEY = (() => {
   try { return { account: privateKeyToAccount(hex) } } catch { return { error: 'TYPE262_PRIVATE_KEY is not a valid secp256k1 private key.' } }
 })()
 if (env.TYPE262_RPC) SECRETS.push(env.TYPE262_RPC) // custom RPC URLs often embed an API key
+if (env.TYPE262_BASE_RPC) SECRETS.push(env.TYPE262_BASE_RPC)
 if (DOH) SECRETS.push(...DOH) // so can custom DoH URLs
 
 const escapeRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -92,6 +106,26 @@ const transport = http(RPC, { timeout: 20_000 })
 const pub = createPublicClient({ chain, transport })
 const wallet = KEY.account ? createWalletClient({ account: KEY.account, chain, transport }) : null
 
+const baseChain = {
+  id: 8453,
+  name: 'Base',
+  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+  rpcUrls: { default: { http: [BASE_RPC] } },
+  blockExplorers: { default: { name: 'Basescan', url: BASE_EXPLORER } },
+}
+const baseTransport = http(BASE_RPC, { timeout: 20_000 })
+
+// The chains pay_domain sends on: Robinhood Chain, with escrow, and Base, direct payments only. rpcEnv is the
+// setting that picks each one's RPC; dflt is the asset paid when the call names none.
+const NETS = {
+  robinhood: { key: 'robinhood', chain, pub, wallet, explorer: EXPLORER, assets: ASSETS, dflt: 'USDG', rpcEnv: 'TYPE262_RPC' },
+  base: {
+    key: 'base', chain: baseChain, explorer: BASE_EXPLORER, assets: BASE_ASSETS, dflt: 'USDC', rpcEnv: 'TYPE262_BASE_RPC',
+    pub: createPublicClient({ chain: baseChain, transport: baseTransport }),
+    wallet: KEY.account ? createWalletClient({ account: KEY.account, chain: baseChain, transport: baseTransport }) : null,
+  },
+}
+
 const ESCROW_ABI = parseAbi([
   'function deposit(string domain) payable',
   'function depositToken(string domain, address token, uint256 amount)',
@@ -106,16 +140,20 @@ const ERC20_ABI = parseAbi([
   'function allowance(address owner, address spender) view returns (uint256)',
   'function balanceOf(address owner) view returns (uint256)',
 ])
+const ORACLE_ABI = parseAbi(['function getL1FeeUpperBound(uint256 unsignedTxSize) view returns (uint256)'])
 
-const read = (address, abi, functionName, args) => pub.readContract({ address, abi, functionName, args })
+const read = (address, abi, functionName, args, client = pub) => client.readContract({ address, abi, functionName, args })
 
 // Refuse to touch a misconfigured RPC that serves another chain.
-let chainChecked
-function onChain() {
-  chainChecked ??= pub.getChainId().then(id => {
-    if (id !== chain.id) throw new ToolError(`TYPE262_RPC serves chain ${id}, not Robinhood Chain (${chain.id}).`)
-  })
-  return chainChecked.catch(e => { chainChecked = undefined; throw e })
+const chainChecked = new Map()
+function onChain(net = NETS.robinhood) {
+  if (!chainChecked.has(net)) {
+    chainChecked.set(net, net.pub.getChainId().then(id => {
+      if (id !== net.chain.id) throw new ToolError(`${net.rpcEnv} serves chain ${id}, not ${net.chain.name} (${net.chain.id}).`)
+    }))
+  }
+  const check = chainChecked.get(net)
+  return check.catch(e => { if (chainChecked.get(net) === check) chainChecked.delete(net); throw e })
 }
 
 /** Exact decimal string for base units. */
@@ -196,7 +234,25 @@ function dnsOpts(memo) {
 }
 
 const evmRecords = r => r.records.filter(x => addressKind(x.address) === 'evm' && codeMatchesAddress(x.code, x.address))
-const unpayable = a => [ZERO, ESCROW, ASSETS.USDG.token].some(x => sameAddress(a, x))
+const unpayable = a => [ZERO, ESCROW, ASSETS.USDG.token, BASE_ASSETS.USDC.token].some(x => sameAddress(a, x))
+
+// EVM coin codes that name another chain: Base never pays an address published only under one of them, which may be
+// a contract or a deposit address that exists on that chain alone.
+const OTHER_CHAINS = new Set(['HOOD', 'USDG', 'ARB', 'OP', 'POL'])
+const isBaseAsset = asset => Object.values(BASE_ASSETS).includes(asset)
+
+// The record a payment goes to. Robinhood Chain: the one coded with the asset, else the first EVM record. Base: the
+// one coded with the asset, then ETH, then EVM, then the first other EVM code that names no other chain, so a domain
+// that publishes USDG and ETH lines is paid at its ETH address in USDC and ETH alike, whatever the RRset order. The
+// app (basePick in assets/evm-pay.js) and the CLI pick the same way.
+function payRecord(evm, asset) {
+  if (!isBaseAsset(asset)) return evm.find(x => x.code === asset.symbol) || evm[0] || null
+  for (const code of [asset.symbol, 'ETH', 'EVM']) {
+    const x = evm.find(y => y.code === code)
+    if (x) return x
+  }
+  return evm.find(x => !OTHER_CHAINS.has(x.code)) || null
+}
 
 // Direct payment needs every resolver to answer and agree, and (unless TYPE262_REQUIRE_DNSSEC=false)
 // every resolver to DNSSEC-authenticate the record. Anything short of that goes to escrow, which only
@@ -211,7 +267,7 @@ function decideAt(r, asset) {
   if (r.nxdomain) return { refuse: `${r.domain} does not exist (NXDOMAIN). Check the spelling.` }
   if (!r.agree) return { refuse: `DNS resolvers disagree about ${r.resolvedAt}'s wallets, a sign of tampering. Not paying.` }
   const evm = evmRecords(r)
-  const record = evm.find(x => x.code === asset.symbol) || evm[0] || null
+  const record = payRecord(evm, asset)
   if (record && unpayable(record.address)) return { refuse: `${r.resolvedAt} publishes ${record.address}, which cannot receive payments.` }
   // A resolver that failed, or answered with an error such as SERVFAIL (what a DNSSEC-bogus zone gets).
   const failed = r.resolvers.filter(x => !x.ok || (x.status !== 0 && x.status !== 3))
@@ -221,11 +277,21 @@ function decideAt(r, asset) {
   const why = failed.length
     ? `not every DNS resolver answered (${failed.join(', ')}), so ${r.resolvedAt}'s record could not be cross-checked`
     : !record
-      ? r.records.length
-        ? `${r.resolvedAt} publishes no EVM wallet (only ${[...new Set(r.records.map(x => x.code))].join(', ')})`
-        : `${r.resolvedAt} publishes no WALLET record`
+      ? evm.length // only on Base: every EVM line names another chain
+        ? `${r.resolvedAt} publishes its EVM wallet only under codes for other chains (${[...new Set(evm.map(x => x.code))].join(', ')}), which Base does not pay`
+        : r.records.length
+          ? `${r.resolvedAt} publishes no EVM wallet (only ${[...new Set(r.records.map(x => x.code))].join(', ')})`
+          : `${r.resolvedAt} publishes no WALLET record`
       : `${r.resolvedAt}'s wallet record is not DNSSEC-signed`
   return { mode: 'escrow', record, why }
+}
+
+// Base has no escrow: it pays only a DNSSEC-signed EVM record that every resolver returns, whatever
+// TYPE262_REQUIRE_DNSSEC says. The reason Base would refuse r (decided as d), or null when it would pay.
+function baseRefusal(r, d) {
+  if (d.refuse) return d.refuse
+  if (d.mode === 'direct' && d.signed) return null
+  return d.why || `${r.requested ? `${r.requested} publishes no WALLET record and ` : ''}${r.resolvedAt}'s wallet record is not DNSSEC-signed`
 }
 
 const recordOut = x => ({ code: x.code, address: x.address, source: x.source, dnssec: x.dnssec })
@@ -237,10 +303,11 @@ const isDay = k => /^\d{4}-\d{2}-\d{2}$/.test(k)
 const REPEAT_MS = 10 * 60_000
 
 /**
- * { "2026-10-21": { "USDG": "2", "ETH": "0.001" },
+ * { "2026-10-21": { "USDG": "2", "ETH": "0.001", "BASE_USDC": "1" },
  *   "recent": [{ "at": "2026-10-21T09:30:00.000Z", "domain": "example.com", "asset": "USDG", "amount": "2", "to": "escrow:example.com" }] }
  * Daily totals, plus the payments of the last 10 minutes for the repeat check. "to" is the recipient: the
- * wallet address paid directly, or "escrow:<name>". No keys, no hashes.
+ * wallet address paid directly, or "escrow:<name>". Base payments count under BASE_USDC and BASE_ETH, and their
+ * recent entries carry "chain": "base". No keys, no hashes.
  */
 function loadSpend() {
   if (!existsSync(SPEND_FILE)) return {}
@@ -253,22 +320,26 @@ function loadSpend() {
   }
 }
 
+// The asset's entry in the spend log and its limits: USDG and ETH on Robinhood Chain, BASE_USDC and BASE_ETH on Base.
+const spendKey = asset => asset.key || asset.symbol
+
 function spentOn(logData, day, asset) {
-  const v = logData[day] && logData[day][asset.symbol]
+  const v = logData[day] && logData[day][spendKey(asset)]
   if (!v) return 0n
   try { return parseUnits(v, asset.decimals) } catch { throw new ToolError(`The spend log at ${SPEND_FILE} is corrupt. Fix or remove it.`) }
 }
 
 function addSpend(data, asset, units, day) {
   const next = spentOn(data, day, asset) + units
-  data[day] = { ...data[day], [asset.symbol]: fmt(next > 0n ? next : 0n, asset.decimals) }
+  data[day] = { ...data[day], [spendKey(asset)]: fmt(next > 0n ? next : 0n, asset.decimals) }
 }
 
 const recentOf = data => (Array.isArray(data.recent) ? data.recent : [])
   .filter(x => x && typeof x.at === 'string' && Date.now() - Date.parse(x.at) < REPEAT_MS)
-// The same asset and amount to the same name, or to the same recipient under another name or URL
-// (api.example.com and example.com can both pay example.com's wallet).
-const sameAttempt = (a, b) => a.asset === b.asset && a.amount === b.amount && (a.domain === b.domain || (!!a.to && a.to === b.to))
+// The same asset and amount on the same chain to the same name, or to the same recipient under another name or
+// URL (api.example.com and example.com can both pay example.com's wallet).
+const sameAttempt = (a, b) => a.asset === b.asset && a.amount === b.amount && (a.chain || 'robinhood') === (b.chain || 'robinhood') &&
+  (a.domain === b.domain || (!!a.to && a.to === b.to))
 const recipientOf = (d, domain) => (d.mode === 'direct' ? d.record.address.toLowerCase() : `escrow:${domain}`)
 
 function saveSpend(data) {
@@ -314,17 +385,17 @@ function checkRepeat(attempt, data) {
   if (!prev) return
   const s = Math.max(0, Math.round((Date.now() - Date.parse(prev.at)) / 1000))
   const ago = s < 90 ? `${s} seconds` : `${Math.round(s / 60)} minutes`
-  const where = KEY.account ? `${EXPLORER}/address/${KEY.account.address}` : 'the agent wallet on the explorer'
+  const where = KEY.account ? `${attempt.chain === 'base' ? BASE_EXPLORER : EXPLORER}/address/${KEY.account.address}` : 'the agent wallet on the explorer'
   const to = prev.domain === attempt.domain ? attempt.domain
     : `the same ${String(prev.to).startsWith('escrow:') ? 'escrow name' : `wallet ${prev.to}`}, requested as ${prev.domain}`
-  throw new ToolError(`Refused: an identical payment (${attempt.amount} ${attempt.asset} to ${to}) was submitted ${ago} ago. If its result was lost or timed out, check ${where} before paying again. To make the same payment again on purpose, call pay_domain with repeat: true.`, { previous: prev })
+  throw new ToolError(`Refused: an identical payment (${attempt.amount} ${attempt.asset}${attempt.chain === 'base' ? ' on Base' : ''} to ${to}) was submitted ${ago} ago. If its result was lost or timed out, check ${where} before paying again. To make the same payment again on purpose, call pay_domain with repeat: true.`, { previous: prev })
 }
 
 function limitsOf(asset) {
   const parse = (v, name) => {
     try { return parseUnits(v, asset.decimals) } catch { throw new ToolError(`${name} must be a decimal amount, got "${v}".`) }
   }
-  const s = asset.symbol
+  const s = spendKey(asset)
   return { max: parse(LIMITS[s].max, `TYPE262_MAX_${s}`), daily: parse(LIMITS[s].daily, `TYPE262_DAILY_${s}`) }
 }
 
@@ -340,7 +411,7 @@ function limitView(asset, data = loadSpend()) {
 function checkLimits(asset, units, data = loadSpend()) {
   const { max, daily } = limitsOf(asset)
   const spent = spentOn(data, today(), asset)
-  const s = asset.symbol
+  const s = spendKey(asset)
   const view = limitView(asset, data)
   if (units > max) {
     throw new ToolError(`Refused: ${show(units, asset)} is above the per-payment limit of ${show(max, asset)} (TYPE262_MAX_${s}, set in the server's environment).`, { limits: view })
@@ -362,6 +433,9 @@ async function resolveDomain({ domain }) {
   const requested = canonical(domain)
   const r = await resolveWalletsUp(requested, dnsOpts())
   const d = decide(r, ASSETS.USDG)
+  const b = decide(r, BASE_ASSETS.USDC)
+  const noBase = baseRefusal(r, b)
+  const wouldOnBase = noBase ? { mode: 'refuse', reason: noBase } : { mode: 'direct', domain: r.resolvedAt, to: b.record.address, code: b.record.code, dnssec: true }
   // Escrow is keyed by the name asked for, even when its parent publishes the record.
   const escrow = { domain: requested, ...await escrowState(requested).catch(e => ({ error: clean(e) })) }
   const wouldPay = d.refuse ? { mode: 'refuse', reason: d.refuse }
@@ -383,8 +457,9 @@ async function resolveDomain({ domain }) {
     verified: r.verified,
     resolvers: r.resolvers.map(x => ({ resolver: x.resolver, ok: x.ok, signed: !!x.signed, records: x.records.length, ...(x.error && { error: x.error }) })),
     pay_domain_would: wouldPay,
+    pay_domain_would_on_base: wouldOnBase,
     escrow,
-    summary: `${r.resolvedAt}: ${recs}. ${r.agree ? 'Resolvers agree' : 'RESOLVERS DISAGREE'}, ${r.dnssec ? 'DNSSEC-signed' : 'not DNSSEC-signed'}. pay_domain would ${wouldPay.mode === 'refuse' ? 'refuse' : wouldPay.mode === 'direct' ? `pay ${wouldPay.to} directly` : 'deposit into escrow'}. ${waiting}`,
+    summary: `${r.resolvedAt}: ${recs}. ${r.agree ? 'Resolvers agree' : 'RESOLVERS DISAGREE'}, ${r.dnssec ? 'DNSSEC-signed' : 'not DNSSEC-signed'}. pay_domain would ${wouldPay.mode === 'refuse' ? 'refuse' : wouldPay.mode === 'direct' ? `pay ${wouldPay.to} directly` : 'deposit into escrow'} on Robinhood Chain and ${wouldOnBase.mode === 'direct' ? `pay ${wouldOnBase.to} directly` : 'refuse'} on Base. ${waiting}`,
   }
 }
 
@@ -435,29 +510,47 @@ function paymentTxs(d, asset, units, domain, allowance) {
 }
 
 // Gas for those transactions at the current price, plus 20%. depositToken can't be estimated before its
-// approve lands, so it counts as twice the approve. null when the node can't estimate; sending re-estimates.
-async function gasCost(from, txs) {
+// approve lands, so it counts as twice the approve. On Base each transaction also pays an L1 data fee, counted at
+// the oracle's upper bound for 300 bytes (a signed transfer takes about 110 to 180). null when the node can't
+// estimate; sending re-estimates.
+async function gasCost(from, txs, net = NETS.robinhood) {
   try {
-    const price = await pub.getGasPrice()
+    const price = await net.pub.getGasPrice()
     let total = 0n, last = 0n
     for (const t of txs) {
-      last = await pub.estimateGas({ account: from, ...t.request }).catch(e => { if (t.step === 'depositToken' && last) return last * 2n; throw e })
+      last = await net.pub.estimateGas({ account: from, ...t.request }).catch(e => { if (t.step === 'depositToken' && last) return last * 2n; throw e })
       total += last
     }
-    return total * price * 6n / 5n
+    const l1 = net === NETS.base ? await read(GAS_ORACLE, ORACLE_ABI, 'getL1FeeUpperBound', [300n], net.pub) * BigInt(txs.length) : 0n
+    return total * price * 6n / 5n + l1
   } catch { return null }
 }
 
+// The chain and asset of a pay_domain call: Robinhood Chain unless the call names Base. USDC is paid on Base only,
+// and only with chain "base": a bare "USDC" may mean Solana USDC, which pay_domain does not pay.
+function payTarget(args) {
+  const sym = args.asset == null || args.asset === '' ? null : String(args.asset).toUpperCase()
+  const key = args.chain == null || args.chain === '' ? 'robinhood' : String(args.chain).toLowerCase()
+  const net = Object.hasOwn(NETS, key) ? NETS[key] : null
+  if (!net) throw new ToolError('chain must be "robinhood" or "base".')
+  const name = sym || net.dflt
+  if (!Object.hasOwn(net.assets, name)) {
+    throw new ToolError(net === NETS.base ? 'On Base, asset must be "USDC" or "ETH".' : name === 'USDC'
+      ? 'USDC is paid on Base: pass chain "base". pay_domain does not pay on Solana, and on Robinhood Chain it pays USDG or ETH.' : 'asset must be "USDG" or "ETH".')
+  }
+  return { net, asset: net.assets[name] }
+}
+
 async function payDomain(args, id) {
-  const asset = ASSETS[String(args.asset || 'USDG').toUpperCase()]
-  if (!asset) throw new ToolError('asset must be "USDG" or "ETH".')
+  const { net, asset } = payTarget(args)
+  const onBase = net === NETS.base
   const units = amountUnits(args.amount, asset)
   const requested = canonical(args.domain)
   const dryRun = args.dry_run === true
   const repeat = args.repeat === true
   // TYPE262_ALLOW_ESCROW=false is a ceiling: a call can turn escrow off, never back on.
   const allowEscrow = ALLOW_ESCROW && args.allow_escrow !== false
-  const attempt = { domain: requested, asset: asset.symbol, amount: fmt(units, asset.decimals) }
+  const attempt = { domain: requested, asset: asset.symbol, amount: fmt(units, asset.decimals), ...(onBase && { chain: 'base' }) }
   const spend = loadSpend()
   const limits = checkLimits(asset, units, spend) // before any network call
   if (!repeat) checkRepeat(attempt, spend)
@@ -468,11 +561,15 @@ async function payDomain(args, id) {
   const d = decide(r, asset)
   const dns = { resolved_at: r.resolvedAt, agree: r.agree, dnssec: r.dnssec, records: r.records.map(recordOut) }
   if (d.refuse) throw new ToolError(d.refuse, { dns })
+  const noBase = onBase && baseRefusal(r, d)
+  if (noBase) {
+    throw new ToolError(`Not paying on Base: ${noBase}. Base takes direct payments only, to a DNSSEC-signed EVM wallet record that every resolver agrees on; there is no escrow on Base. To pay it on Robinhood Chain instead, directly or into escrow, use chain "robinhood" (USDG or ETH).`, { dns })
+  }
   if (d.mode === 'escrow' && !allowEscrow) {
     const off = ALLOW_ESCROW ? 'escrow is off for this call (allow_escrow=false)' : 'escrow is off on this server (TYPE262_ALLOW_ESCROW=false)'
     throw new ToolError(`Not paying: ${d.why}, and ${off}. Direct payment needs a DNSSEC-signed EVM wallet record that every resolver agrees on.`, { dns })
   }
-  await onChain()
+  await onChain(net)
 
   // A direct payment goes to the wallet of the name that publishes it, which may be the parent
   // (api.example.com -> example.com). Escrow is always keyed by the name asked for, so only its owner can claim.
@@ -487,15 +584,15 @@ async function payDomain(args, id) {
     amount: attempt.amount,
     from: account ? account.address : null,
     to: d.mode === 'direct' ? d.record.address : ESCROW,
-    chain: { id: chain.id, name: chain.name },
+    chain: { id: net.chain.id, name: net.chain.name },
     steps: [],
-    checks: { dns, require_dnssec: REQUIRE_DNSSEC, limits },
+    checks: { dns, require_dnssec: onBase || REQUIRE_DNSSEC, limits },
   }
 
   let refundDays, feeBps
   if (d.mode === 'direct') {
     plan.checks.record = { ...recordOut(d.record), dnssec_all_resolvers: d.signed }
-    plan.steps.push(asset.token ? `transfer ${plan.amount} USDG to ${d.record.address}` : `send ${plan.amount} ETH to ${d.record.address}`)
+    plan.steps.push(asset.token ? `transfer ${plan.amount} ${asset.symbol} to ${d.record.address}` : `send ${plan.amount} ETH to ${d.record.address}`)
   } else {
     const [paused, delay, fee] = await Promise.all(['depositsPaused', 'refundDelay', 'feeBps'].map(f => read(ESCROW, ESCROW_ABI, f)))
     if (paused) throw new ToolError('DomainEscrow deposits are paused right now (claims and refunds still work). Not paying.', { dns })
@@ -507,17 +604,18 @@ async function payDomain(args, id) {
 
   if (account) {
     const [eth, tok, allowance] = await Promise.all([
-      pub.getBalance({ address: account.address }),
-      asset.token ? read(asset.token, ERC20_ABI, 'balanceOf', [account.address]) : null,
+      net.pub.getBalance({ address: account.address }),
+      asset.token ? read(asset.token, ERC20_ABI, 'balanceOf', [account.address], net.pub) : null,
       d.mode === 'escrow' && asset.token ? read(asset.token, ERC20_ABI, 'allowance', [account.address, ESCROW]) : 0n,
     ])
     const have = asset.token ? tok : eth
     plan.checks.balance = { [asset.symbol]: fmt(have, asset.decimals), ...(asset.token && { ETH: fmt(eth, 18) }) }
-    if (have < units) throw new ToolError(`Insufficient ${asset.symbol}: the agent wallet holds ${show(have, asset)} and this payment needs ${show(units, asset)}.`, { plan })
-    const gas = await gasCost(account.address, paymentTxs(d, asset, units, domain, allowance))
+    const where = onBase ? ' on Base' : ''
+    if (have < units) throw new ToolError(`Insufficient ${asset.symbol}${where}: the agent wallet holds ${show(have, asset)} and this payment needs ${show(units, asset)}.`, { plan })
+    const gas = await gasCost(account.address, paymentTxs(d, asset, units, domain, allowance), net)
     if (gas != null) plan.checks.gas = `about ${show(gas, ASSETS.ETH)}`
     if (eth < (asset.token ? 0n : units) + (gas ?? 1n)) {
-      throw new ToolError(`Not enough ETH for gas: the agent wallet holds ${show(eth, ASSETS.ETH)}, and this payment needs ${asset.token ? '' : `${plan.amount} ETH plus `}${gas == null ? 'some ETH' : `about ${show(gas, ASSETS.ETH)}`} for gas.`, { plan })
+      throw new ToolError(`Not enough ETH for gas${where}: the agent wallet holds ${show(eth, ASSETS.ETH)}, and this payment needs ${asset.token ? '' : `${plan.amount} ETH plus `}${gas == null ? 'some ETH' : `about ${show(gas, ASSETS.ETH)}`} for gas.`, { plan })
     }
     if (d.mode === 'escrow' && asset.token && allowance < units) plan.steps.push(`approve ${plan.amount} USDG to DomainEscrow`)
   } else if (d.mode === 'escrow' && asset.token) {
@@ -532,7 +630,7 @@ async function payDomain(args, id) {
 
   if (dryRun) {
     const what = d.mode === 'direct'
-      ? `Would pay ${show(units, asset)} directly to ${domain}'s wallet ${d.record.address}${d.signed ? ' (DNSSEC-verified, resolvers agree).' : ' (unsigned; TYPE262_REQUIRE_DNSSEC is off).'}`
+      ? `Would pay ${show(units, asset)} directly to ${domain}'s wallet ${d.record.address}${onBase ? ' on Base' : ''}${d.signed ? ' (DNSSEC-verified, resolvers agree).' : ' (unsigned; TYPE262_REQUIRE_DNSSEC is off).'}`
       : `Would deposit ${show(units, asset)} into DomainEscrow for ${domain}, because ${d.why}. ${escrowNote}`
     const keyNote = account ? '' : 'No agent wallet is configured (TYPE262_PRIVATE_KEY), so a real payment would be refused; wallet_status explains how to set one.'
     return { dry_run: true, ...plan, summary: ['Dry run, nothing sent.', what, keyNote].filter(Boolean).join(' ') }
@@ -565,14 +663,14 @@ async function payDomain(args, id) {
     // a transaction that was in fact sent.
     const send = async ({ step, request, moves }) => {
       if (!txs.length && stopped(id)) throw new ToolError(NOT_SENT) // nothing broadcast yet, so it is released
-      const prepared = await wallet.prepareTransactionRequest(request) // fails here: nothing was broadcast
-      const serializedTransaction = await wallet.signTransaction(prepared)
+      const prepared = await net.wallet.prepareTransactionRequest(request) // fails here: nothing was broadcast
+      const serializedTransaction = await net.wallet.signTransaction(prepared)
       const hash = keccak256(serializedTransaction)
-      const tx = { step, hash, explorer: `${EXPLORER}/tx/${hash}`, status: 'pending' }
+      const tx = { step, hash, explorer: `${net.explorer}/tx/${hash}`, status: 'pending' }
       txs.push(tx)
       if (moves) keep = true // the outcome is unknown from here until a receipt says otherwise
       try {
-        await pub.sendRawTransaction({ serializedTransaction })
+        await net.pub.sendRawTransaction({ serializedTransaction })
         log(`${step} sent: ${hash}`)
       } catch (e) {
         tx.broadcast_error = e && e.details ? scrub(e.details) : clean(e) // details: the RPC's own message
@@ -583,7 +681,7 @@ async function payDomain(args, id) {
       const counted = moves ? ' The amount stays counted in today\'s spend, and repeating this exact payment needs repeat: true.' : ''
       let receipt
       try {
-        receipt = await pub.waitForTransactionReceipt({ hash, timeout: 120_000, pollingInterval: 1_500, checkReplacement: false })
+        receipt = await net.pub.waitForTransactionReceipt({ hash, timeout: 120_000, pollingInterval: 1_500, checkReplacement: false })
       } catch {
         throw new ToolError(`${step} transaction ${hash} is not confirmed after 2 minutes${tx.broadcast_error ? ' (the RPC returned an error when it was broadcast)' : ''}. It may still be mined: check ${tx.explorer} before trying again.${counted}`, { transactions: txs })
       }
@@ -617,7 +715,7 @@ async function payDomain(args, id) {
       explorer: last.explorer,
       spent_today: limitView(asset).spent_today,
       summary: d.mode === 'direct'
-        ? `Paid ${show(units, asset)} to ${domain}'s wallet ${d.record.address} on Robinhood Chain. ${last.explorer}`
+        ? `Paid ${show(units, asset)} to ${domain}'s wallet ${d.record.address} on ${net.chain.name}. ${last.explorer}`
         : `Deposited ${show(units, asset)} into DomainEscrow for ${domain} (${d.why}). ${escrowNote} ${last.explorer}`,
     }
   })
@@ -636,11 +734,17 @@ async function escrowStatus({ domain }) {
 }
 
 async function walletStatus() {
-  const limits = { USDG: limitView(ASSETS.USDG), ETH: limitView(ASSETS.ETH) }
+  const limits = { USDG: limitView(ASSETS.USDG), ETH: limitView(ASSETS.ETH), BASE_USDC: limitView(BASE_ASSETS.USDC), BASE_ETH: limitView(BASE_ASSETS.ETH) }
   if (!KEY.account) throw new ToolError(keyProblem(), { configured: false, how_to_set: HOW_TO_SET_KEY, limits })
   await onChain()
   const address = KEY.account.address
-  const [eth, usdg] = await Promise.all([pub.getBalance({ address }), read(ASSETS.USDG.token, ERC20_ABI, 'balanceOf', [address])])
+  const bp = NETS.base.pub
+  // Base is read apart: when it can't be reached, the Robinhood Chain status still comes back.
+  const [eth, usdg, base] = await Promise.all([
+    pub.getBalance({ address }), read(ASSETS.USDG.token, ERC20_ABI, 'balanceOf', [address]),
+    onChain(NETS.base).then(() => Promise.all([bp.getBalance({ address }), read(BASE_ASSETS.USDC.token, ERC20_ABI, 'balanceOf', [address], bp)]))
+      .then(([e, u]) => ({ USDC: fmt(u, 6), ETH: fmt(e, 18) }), e => ({ error: clean(e) })),
+  ])
   return {
     configured: true,
     address,
@@ -648,11 +752,17 @@ async function walletStatus() {
     chain: { id: chain.id, name: chain.name },
     rpc: env.TYPE262_RPC ? 'custom (TYPE262_RPC)' : MAINNET_RPC,
     balances: { USDG: fmt(usdg, 6), ETH: fmt(eth, 18) },
+    base: {
+      chain: { id: baseChain.id, name: baseChain.name },
+      explorer: `${BASE_EXPLORER}/address/${address}`,
+      rpc: env.TYPE262_BASE_RPC ? 'custom (TYPE262_BASE_RPC)' : BASE_RPC_DEFAULT,
+      balances: base,
+    },
     limits,
     require_dnssec: REQUIRE_DNSSEC,
     escrow_enabled: ALLOW_ESCROW,
     spend_log: SPEND_FILE,
-    summary: `Agent wallet ${address} holds ${fmt(usdg, 6)} USDG and ${fmt(eth, 18)} ETH on Robinhood Chain. Spent today (UTC): ${limits.USDG.spent_today} of ${limits.USDG.daily}, ${limits.ETH.spent_today} of ${limits.ETH.daily}.`,
+    summary: `Agent wallet ${address} holds ${fmt(usdg, 6)} USDG and ${fmt(eth, 18)} ETH on Robinhood Chain, ${base.error ? 'and its Base balances could not be read' : `and ${base.USDC} USDC and ${base.ETH} ETH on Base`}. Spent today (UTC): ${limits.USDG.spent_today} of ${limits.USDG.daily}, ${limits.ETH.spent_today} of ${limits.ETH.daily}; on Base ${limits.BASE_USDC.spent_today} of ${limits.BASE_USDC.daily}, ${limits.BASE_ETH.spent_today} of ${limits.BASE_ETH.daily}.`,
   }
 }
 
@@ -662,7 +772,7 @@ const TOOLS = [
   {
     name: 'resolve_domain',
     title: 'Resolve a domain\'s wallets',
-    description: 'Look up the crypto wallets a domain publishes in DNS (the WALLET record, RRTYPE 262, or its _wallet TXT fallback), cross-checked across two DNS-over-HTTPS resolvers. Returns each record (coin code, address, source, whether DNSSEC authenticated it), whether the resolvers agree, whether the result is verified (records found, every resolver answered and agrees, every record DNSSEC-authenticated on every resolver), what pay_domain would do on this server (pay directly, deposit into escrow, or refuse), and how much USDG and ETH already waits for the domain in DomainEscrow on Robinhood Chain. If every resolver answers that the host exists and has no record, its parent is checked (api.example.com -> example.com), unless the parent is a co.uk-style suffix or on the built-in list of shared hosting domains (github.io, vercel.app, netlify.app, pages.dev, ...). Read-only.',
+    description: 'Look up the crypto wallets a domain publishes in DNS (the WALLET record, RRTYPE 262, or its _wallet TXT fallback), cross-checked across two DNS-over-HTTPS resolvers. Returns each record (coin code, address, source, whether DNSSEC authenticated it), whether the resolvers agree, whether the result is verified (records found, every resolver answered and agrees, every record DNSSEC-authenticated on every resolver), what pay_domain would do on this server on Robinhood Chain (pay directly, deposit into escrow, or refuse) and on Base (pay directly or refuse: Base has no escrow), and how much USDG and ETH already waits for the domain in DomainEscrow on Robinhood Chain. If every resolver answers that the host exists and has no record, its parent is checked (api.example.com -> example.com), unless the parent is a co.uk-style suffix or on the built-in list of shared hosting domains (github.io, vercel.app, netlify.app, pages.dev, ...). Read-only.',
     inputSchema: { type: 'object', properties: { domain: DOMAIN_PROP }, required: ['domain'], additionalProperties: false },
     annotations: { readOnlyHint: true, openWorldHint: true },
     run: resolveDomain,
@@ -688,16 +798,17 @@ const TOOLS = [
   {
     name: 'pay_domain',
     title: 'Pay a domain by name',
-    description: 'Pay a domain by name in USDG or ETH on Robinhood Chain (chain 4663) from the agent wallet. The domain\'s wallet is looked up in DNS. If it publishes an EVM wallet record that is DNSSEC-signed and every resolver agrees, the money goes straight to that address. A host with no record of its own may be paid through its parent\'s record (api.example.com -> example.com). Otherwise (no record, or an unsigned one) it is deposited into DomainEscrow under the exact name given, where only the owner who proves that name with DNSSEC can claim it (a claim pays out the deposit minus a 0.5% fee); this wallet can refund it in full if nobody claims within the refund delay (180 days). Never pays when resolvers disagree or the domain does not exist. Per-payment and daily spend limits set by the server operator apply. An identical payment (same asset and amount to the same domain, or to the same recipient wallet or escrow name under another name or URL) within 10 minutes is refused unless repeat: true, so retrying after a lost or timed-out result cannot pay twice. Call with dry_run: true first to see the plan (mode direct or escrow, recipient, checks) without sending anything. Real payments are irreversible: only pay when the user asked for this payment.',
+    description: 'Pay a domain by name from the agent wallet: in USDG or ETH on Robinhood Chain (chain 4663, the default), or in USDC or ETH on Base (chain 8453) with chain: "base". The domain\'s wallet is looked up in DNS. If it publishes an EVM wallet record that is DNSSEC-signed and every resolver agrees, the money goes straight to that address. A host with no record of its own may be paid through its parent\'s record (api.example.com -> example.com). Otherwise (no record, or an unsigned one) it is deposited into DomainEscrow under the exact name given, where only the owner who proves that name with DNSSEC can claim it (a claim pays out the deposit minus a 0.5% fee); this wallet can refund it in full if nobody claims within the refund delay (180 days). Base has no escrow: there, a domain without a DNSSEC-signed EVM record that every resolver agrees on is refused. On Base the record coded with the asset is paid first, then ETH, then EVM, then any other EVM code that names no other chain; an address published only under HOOD, USDG, ARB, OP or POL is refused there. Never pays when resolvers disagree or the domain does not exist. Per-payment and daily spend limits set by the server operator apply, with separate limits on Base. An identical payment (same chain, asset and amount to the same domain, or to the same recipient wallet or escrow name under another name or URL) within 10 minutes is refused unless repeat: true, so retrying after a lost or timed-out result cannot pay twice. Call with dry_run: true first to see the plan (mode direct or escrow, recipient, checks) without sending anything. Real payments are irreversible: only pay when the user asked for this payment.',
     inputSchema: {
       type: 'object',
       properties: {
         domain: DOMAIN_PROP,
         amount: { type: 'string', pattern: '^[0-9]*\\.?[0-9]+$', description: 'Decimal amount in whole units of the asset, e.g. "2.5" USDG or "0.001" ETH. Not base units.' },
-        asset: { type: 'string', enum: ['USDG', 'ETH'], default: 'USDG', description: 'USDG (stablecoin, 6 decimals) or ETH. Default USDG.' },
+        asset: { type: 'string', enum: ['USDG', 'ETH', 'USDC'], description: 'On Robinhood Chain: USDG (stablecoin, 6 decimals, the default) or ETH. On Base: USDC (stablecoin, 6 decimals, the default) or ETH. USDC needs chain "base"; without it the call is refused.' },
+        chain: { type: 'string', enum: ['robinhood', 'base'], description: 'robinhood (the default): Robinhood Chain, direct or into escrow. base: Base, direct payments only, and the only chain for USDC.' },
         allow_escrow: { type: 'boolean', description: `Deposit into escrow when the domain has no DNSSEC-verified wallet (default true). false refuses such payments instead. The operator's TYPE262_ALLOW_ESCROW=false turns escrow off for every call, and this argument cannot turn it back on.${ALLOW_ESCROW ? '' : ' Escrow is off on this server.'}` },
         dry_run: { type: 'boolean', default: false, description: 'true: return the plan and checks without sending anything.' },
-        repeat: { type: 'boolean', default: false, description: 'true: pay even though an identical payment (same asset and amount to the same domain or the same recipient) was submitted in the last 10 minutes. Without it that payment is refused. Check the earlier payment first.' },
+        repeat: { type: 'boolean', default: false, description: 'true: pay even though an identical payment (same chain, asset and amount to the same domain or the same recipient) was submitted in the last 10 minutes. Without it that payment is refused. Check the earlier payment first.' },
       },
       required: ['domain', 'amount'],
       additionalProperties: false,
@@ -717,7 +828,7 @@ const TOOLS = [
   {
     name: 'wallet_status',
     title: 'Agent wallet status',
-    description: 'The agent wallet\'s address, its ETH and USDG balances on Robinhood Chain, what it has spent today (UTC) and the spend limits. Needs TYPE262_PRIVATE_KEY in the server\'s environment; without it, the result explains how to set it. Read-only.',
+    description: 'The agent wallet\'s address, its ETH and USDG balances on Robinhood Chain and its ETH and USDC balances on Base, what it has spent today (UTC) and the spend limits. Needs TYPE262_PRIVATE_KEY in the server\'s environment; without it, the result explains how to set it. Read-only.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false },
     annotations: { readOnlyHint: true, openWorldHint: true },
     run: walletStatus,
@@ -758,7 +869,7 @@ async function callTool(tool, args, id) {
 
 // ---------- JSON-RPC over stdio ----------
 
-const INSTRUCTIONS = 'TYPE/262 turns domains into wallets. This server pays them on Robinhood Chain (4663), which TYPE/262 also supports; its main network, Solana, is paid from the TYPE/262 app or any Solana wallet. resolve_domain shows what a domain publishes; verify_payto checks an x402 payTo before you pay it; pay_domain pays a domain by name in USDG or ETH (call it with dry_run: true first). Payments are real and irreversible: only pay when the user asked for it. If a payment result is lost or times out, check the transaction before paying again; an identical payment within 10 minutes needs repeat: true.'
+const INSTRUCTIONS = 'TYPE/262 turns domains into wallets. This server pays them on Robinhood Chain (4663), which TYPE/262 also supports, and directly on Base (8453); its main network, Solana, is paid from the TYPE/262 app or any Solana wallet. resolve_domain shows what a domain publishes; verify_payto checks an x402 payTo before you pay it; pay_domain pays a domain by name in USDG or ETH on Robinhood Chain, or in USDC or ETH on Base with chain: "base" (call it with dry_run: true first). Payments are real and irreversible: only pay when the user asked for it. If a payment result is lost or times out, check the transaction before paying again; an identical payment within 10 minutes needs repeat: true.'
 
 const ok = (id, result) => ({ jsonrpc: '2.0', id, result })
 const err = (id, code, message) => ({ jsonrpc: '2.0', id, error: { code, message } })
@@ -833,4 +944,4 @@ rl.on('close', async () => {
 })
 process.on('unhandledRejection', e => log('unhandled:', clean(e)))
 
-log(`MCP server ${VERSION} on Robinhood Chain (${chain.id}); wallet ${KEY.account ? KEY.account.address : KEY.error ? 'misconfigured' : 'not configured'}; RPC ${env.TYPE262_RPC ? 'custom' : 'default'}`)
+log(`MCP server ${VERSION} on Robinhood Chain (${chain.id}) and Base (${baseChain.id}); wallet ${KEY.account ? KEY.account.address : KEY.error ? 'misconfigured' : 'not configured'}; RPC ${env.TYPE262_RPC ? 'custom' : 'default'}`)

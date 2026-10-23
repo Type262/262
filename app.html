@@ -38,7 +38,7 @@
       <a href="#pay" data-v="pay"><small>02</small><strong>Pay</strong><em>Send USDC or SOL to a name</em></a>
       <a href="#escrow" data-v="escrow"><small>03</small><strong>Escrow</strong><em>Pay before they publish</em></a>
       <a href="#publish" data-v="publish"><small>04</small><strong>Publish</strong><em>Make your domain payable</em></a>
-      <a href="#verify" data-v="verify"><small>05</small><strong>Verify</strong><em>Check an x402 payTo</em></a>
+      <a href="#verify" data-v="verify"><small>05</small><strong>Verify</strong><em>Check a payTo or a token</em></a>
       <a href="#badge" data-v="badge"><small>06</small><strong>Badge</strong><em>A pay button for your site</em></a>
       <a href="#launch" data-v="launch"><small>07</small><strong>Launch</strong><em>Tokens that pay a domain</em></a>
       <a href="board"><small>08</small><strong>Board</strong><em>Money waiting for websites</em></a>
@@ -66,7 +66,7 @@
         <div class="view-head">
           <span class="eyebrow">02 — Pay</span>
           <h2 class="h2">Pay a <span class="accent">name.</span></h2>
-          <p class="body">Send to a domain instead of an address. We resolve its WALLET record and check DNSSEC, then your wallet sends USDC or SOL on Solana, or USDG or ETH on Robinhood Chain.</p>
+          <p class="body">Send to a domain instead of an address. We resolve its WALLET record and check DNSSEC, then your wallet sends USDC or SOL on Solana, USDG or ETH on Robinhood Chain, or USDC or ETH on Base.</p>
         </div>
         <form class="field" data-form="pay" autocomplete="off">
           <span class="pre">pay</span>
@@ -117,6 +117,8 @@
           <div class="pb-head"><small>02</small><h3>Where you get paid</h3><p>Paste any address; the network is detected for you.</p></div>
           <div class="pb-rows" id="pub-entries"></div>
           <button class="btn sm" id="pub-add" type="button">+ Add another address</button>
+          <!-- the optional _token record (assets/token-records.js) -->
+          <div id="pub-token"></div>
         </div>
 
         <div id="pub-out"></div>
@@ -127,7 +129,11 @@
         <div class="view-head">
           <span class="eyebrow">05 — Verify</span>
           <h2 class="h2">Trust, <span class="accent">verified.</span></h2>
-          <p class="body">An x402 server says "pay this address". Does that address really belong to the domain? Paste a URL and an address, or a whole 402 response. Building an agent? The <a class="ul" href="docs.html#mcp">MCP server</a> gives it this check, and pay-by-name on Robinhood Chain, as tools.</p>
+          <p class="body">An x402 server says "pay this address". Does that address really belong to the domain? Paste a URL and an address, or a whole 402 response. Building an agent? The <a class="ul" href="docs.html#mcp">MCP server</a> gives it this check, and pay-by-name on Robinhood Chain or Base, as tools.</p>
+        </div>
+        <div class="seg sm vf-mode" role="tablist" aria-label="What to check">
+          <button type="button" role="tab" data-vm="payto" class="on" aria-selected="true">payTo address</button>
+          <button type="button" role="tab" data-vm="token" aria-selected="false">Official token</button>
         </div>
         <form class="stack" data-form="verify" autocomplete="off">
           <div class="row-2">
@@ -138,6 +144,16 @@
           <div><button class="btn primary" type="submit">Verify</button></div>
         </form>
         <div id="verify-out" class="stack" style="margin-top:1rem"></div>
+        <!-- official token check (assets/token-records.js) -->
+        <form class="stack" data-form="verify-token" autocomplete="off" hidden>
+          <p class="vt-lead">Fake coins copy a project's name and logo. A project that lists its token in DNS, in a <span class="mono">_token</span> record at its domain, settles which coin is real.</p>
+          <div class="row-2">
+            <div><span class="label lbl">Project's domain</span><div class="field sm"><input name="d" placeholder="yoursite.com" spellcheck="false"></div></div>
+            <div><span class="label lbl">Coin</span><div class="field sm"><input name="t" placeholder="Mint, contract, pump.fun or explorer link" spellcheck="false"></div></div>
+          </div>
+          <div><button class="btn primary" type="submit">Check token</button></div>
+        </form>
+        <div id="vtoken-out" class="stack" style="margin-top:1rem" hidden></div>
       </section>
 
       <!-- badge -->

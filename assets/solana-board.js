@@ -11,7 +11,7 @@ import { normalizeDomain } from '../lib/wallet262.js'
 
 const { USDC } = sol
 const TX = { encoding: 'jsonParsed', maxSupportedTransactionVersion: 0, commitment: 'confirmed' }
-const MAX_DEPOSIT_TXS = 150 // the newest deposits read in full (senders, amounts)
+const MAX_DEPOSIT_TXS = 150 // the newest deposit transactions read in full (senders, amounts)
 const MAX_CLAIM_TXS = 60
 const MAX_LAUNCH_TXS = 60
 const MAX_DOMAINS = 150 // the most recently funded domains whose vaults are asked for (the worker allows 240 reads a minute)
@@ -130,17 +130,17 @@ export function metadataDomain(uri) {
 
 /**
  * Everything tagged, newest first: deposits by their memos [{ kind: 'deposit', domain, signature, time }], and the
- * other tagged transactions, the launches to check [{ signature, time }].
+ * other tagged transactions, the launches to check [{ signature, time }]. A transaction that funds several vaults
+ * (Escrow, Many domains) has a memo per domain and gives an entry per domain, each checked against its own vault.
  */
 export async function index({ pages = 3 } = {}) {
   const sigs = await V.history([V.BOARD_REFERENCE], { pages })
   const deposits = [], others = []
   for (const s of sigs) {
     if (s.err) continue
-    const t = V.memos(s.memo).map(V.parseBoardMemo).find(Boolean)
-    const domain = t && domainOf(t.domain)
-    if (domain) deposits.push({ kind: 'deposit', domain, signature: s.signature, time: s.blockTime || 0 })
-    else others.push({ signature: s.signature, time: s.blockTime || 0 })
+    const domains = [...new Set(V.memos(s.memo).map(V.parseBoardMemo).filter(Boolean).map(t => domainOf(t.domain)).filter(Boolean))]
+    for (const domain of domains) deposits.push({ kind: 'deposit', domain, signature: s.signature, time: s.blockTime || 0 })
+    if (!domains.length) others.push({ signature: s.signature, time: s.blockTime || 0 })
   }
   return { deposits, others }
 }
@@ -262,7 +262,13 @@ export async function solanaDomains() {
   }))
 
   // deposits: only those that really moved SOL or USDC into the named domain's vault
-  const tagged = idx.deposits.filter(e => vaultOf.has(e.domain)).slice(0, MAX_DEPOSIT_TXS)
+  // the newest MAX_DEPOSIT_TXS transactions, each with every vault it funded: a batch takes one, however many domains
+  const recent = new Set()
+  const tagged = idx.deposits.filter(e => {
+    if (!vaultOf.has(e.domain)) return false
+    if (!recent.has(e.signature)) { if (recent.size >= MAX_DEPOSIT_TXS) return false; recent.add(e.signature) }
+    return true
+  })
   const txs = await pool(tagged, 4, e => getTx(e.signature))
   const deposits = []
   tagged.forEach((e, i) => {
@@ -280,13 +286,17 @@ export async function solanaDomains() {
 
   // claims and refunds: anyone can write the worker's memos, so each counts only if money really left the vault
   const claimEvents = work.filter(e => e.kind === 'claim' && vaultOf.has(e.domain)).slice(0, MAX_CLAIM_TXS)
-  const bySig = new Map(deposits.map(d => [d.signature, d]))
+  const bySig = new Map() // deposit signature -> its deposits, one per vault it funded
+  for (const d of deposits) bySig.set(d.signature, [...(bySig.get(d.signature) || []), d])
   const refundEvents = work.filter(e => e.kind === 'refund' && bySig.has(e.deposit)).slice(0, MAX_CLAIM_TXS)
   const outTxs = await pool([...claimEvents, ...refundEvents], 4, e => getTx(e.signature))
   const moved = p => p.sol > 0n || p.usdc > 0n
   const claims = claimEvents.map((e, i) => ({ chain: 'solana', ...e, paid: paidOut(outTxs[i], vaultOf.get(e.domain)) })).filter(e => moved(e.paid))
-  const refunds = refundEvents.filter((e, i) => moved(paidOut(outTxs[claimEvents.length + i], vaultOf.get(bySig.get(e.deposit).domain))))
-    .map(e => { const d = bySig.get(e.deposit); return { chain: 'solana', kind: 'refund', domain: d.domain, signature: e.signature, time: e.time, mint: d.mint, amount: d.amount, from: d.from } })
+  // a refund is of the deposit whose vault it paid out of
+  const refunds = refundEvents.flatMap((e, i) => {
+    const d = bySig.get(e.deposit).find(x => moved(paidOut(outTxs[claimEvents.length + i], vaultOf.get(x.domain))))
+    return d ? [{ chain: 'solana', kind: 'refund', domain: d.domain, signature: e.signature, time: e.time, mint: d.mint, amount: d.amount, from: d.from }] : []
+  })
 
   const by = new Map()
   const get = d => by.get(d) || by.set(d, { chain: 'solana', domain: d, vault: vaultOf.get(d).vault, supporters: new Set(), deposits: 0, launches: 0, claims: 0, first: Infinity, last: 0 }).get(d)

@@ -54,7 +54,7 @@ TYPE/262 is the layer that makes it useful:
 - **Builders and fans** launch a pump.fun coin for any app, web game or website. Its creator fees go to the domain, the one identity nobody can spoof, and only the domain's real owner can claim them.
 - **Site owners** add one DNS record and their domain becomes payable. No account, no checkout, no custody.
 - **Wallets and apps** pay `yoursite.com` instead of `9WzD…AWWM`, and DNSSEC tells them the answer is authentic.
-- **AI agents** check that an x402 `payTo` address is published by the domain they are talking to before they pay it, or use the MCP server to pay any domain by name on Robinhood Chain within spend limits.
+- **AI agents** check that an x402 `payTo` address is published by the domain they are talking to before they pay it, or use the MCP server to pay any domain by name on Robinhood Chain or Base within spend limits.
 - **Anyone** can send money to any website today, even one that has never heard of TYPE/262. It waits in the domain's own vault on Solana until the owner publishes a DNSSEC-signed record naming their wallet.
 
 ## What's inside
@@ -92,7 +92,7 @@ Look up the wallets any domain publishes. Every lookup goes to Cloudflare and Go
 <td valign="top">
 
 #### Pay by name
-Send SOL or USDC on Solana from Phantom, Solflare, Backpack or any Wallet Standard wallet, or USDG and ETH on Robinhood Chain. The app refuses to send when the resolvers disagree.
+Send SOL or USDC on Solana from Phantom, Solflare, Backpack or any Wallet Standard wallet, USDG and ETH on Robinhood Chain, or USDC and ETH on Base. The app refuses to send when the resolvers disagree.
 
 </td>
 <td valign="top">
@@ -140,7 +140,7 @@ A live leaderboard of money waiting for websites, in their vaults on Solana and 
 <td valign="top">
 
 #### MCP server for AI agents
-One self-contained file that gives Claude, Cursor or any MCP client five tools to resolve, verify and pay domains on Robinhood Chain in USDG or ETH, with per-payment and daily limits the model cannot override.
+One self-contained file that gives Claude, Cursor or any MCP client five tools to resolve, verify and pay domains in USDG or ETH on Robinhood Chain, or USDC or ETH on Base, with per-payment and daily limits the model cannot override.
 
 </td>
 </tr>
@@ -169,7 +169,7 @@ One self-contained file that gives Claude, Cursor or any MCP client five tools t
 </p>
 
 - **Resolution** queries two independent DNS-over-HTTPS resolvers and compares their answers. A record counts as verified only when every resolver answered, they all agree, and every one of them DNSSEC-authenticated it; each resolver's status is reported. It reads the `WALLET` record (type 262) and the `_wallet` TXT fallback in the same round trip, and counts only answers owned by the name itself, never a CNAME target's.
-- **Payments** go straight from the payer's wallet to the address the domain publishes: SOL or USDC on Solana, USDG or ETH on Robinhood Chain. There is no TYPE/262 server in the payment path.
+- **Payments** go straight from the payer's wallet to the address the domain publishes: SOL or USDC on Solana, USDG or ETH on Robinhood Chain, USDC or ETH on Base. There is no TYPE/262 server in the payment path.
 - **Claims** pay only the wallet a domain's DNSSEC-signed record names. On Solana, the worker pays a vault out once Cloudflare and Google agree on that record and both validated it. On Robinhood Chain, ENS's oracle checks the DNSSEC signatures on-chain, from the root keys down, with no server involved.
 - **The site** is plain static files, so it can be hosted anywhere. One small Node service, the worker, runs Solana vault claims, collects and refunds, and pins launch images and coin metadata to IPFS. The board and the domain profiles read Solana and Robinhood Chain directly in your browser.
 
@@ -195,7 +195,7 @@ yoursite.com.          3600 IN TYPE262 \# 49 03534F4C2C39577A44587742626D6B67385
 | `WALLET "SOL" "…"` | Your DNS software knows type 262 by name. |
 | `TYPE262 \# …` | Your DNS software speaks RFC 3597 generic records (BIND, Knot, NSD, PowerDNS). Works today. |
 
-One Solana address (`SOL`) receives SOL, USDC, vault claims and launch fees on Solana. Add an `ETH` line for Robinhood Chain, or `BTC` for Bitcoin; one `_wallet` record set can carry them all.
+One Solana address (`SOL`) receives SOL, USDC, vault claims and launch fees on Solana. Add an `ETH` line for Robinhood Chain and Base, or `BTC` for Bitcoin; one `_wallet` record set can carry them all.
 
 ### Resolve and pay from code
 
@@ -236,6 +236,27 @@ if (res.status === 402) {
 }
 ```
 
+### Name your official token
+
+Fake coins copy a project's name and logo. A domain can name its own tokens in DNS, so people, wallets and agents can check a coin against the project's domain. Add one TXT record per token at `_token.<domain>`, in the same layout as the `_wallet` record, and turn on DNSSEC:
+
+```text
+_token.yoursite.com.  3600 IN TXT  "SOL BjVsSDQoNbxswtPLtpAr5QXZTEXQsfEQTAz7A7iipump"
+```
+
+The code is the chain the token lives on: `SOL` for a Solana mint (SPL Token or Token-2022), `HOOD` for a token contract on Robinhood Chain, `BASE` for Base, `ETH` for Ethereum mainnet. A record whose address doesn't fit its code is ignored.
+
+```js
+import { verifyToken } from './wallet262.js'
+
+// a mint or contract, or a pump.fun or explorer link to the coin
+const v = await verifyToken('yoursite.com', 'https://pump.fun/coin/BjVsSDQoNbxswtPLtpAr5QXZTEXQsfEQTAz7A7iipump')
+// { listed: true, verified: true, code: 'SOL', reason: 'Listed, DNSSEC-verified', records: […], … }
+if (!v.verified) throw new Error(`Not confirmed as yoursite.com's token: ${v.reason}`)
+```
+
+`verified` means every resolver answered, they agree, and each returned the record DNSSEC-signed; `resolveTokens` lists all of a domain's tokens. The chain counts too: a Solscan, Blockscout, Basescan or Etherscan link names its chain and matches only a record for that chain, and a bare `0x` contract matches any chain unless you pass `{ code: 'BASE' }`. In the app, Publish writes the record, Verify checks a coin against a domain, and Launch → Explore tags each coin its domain lists as **Official · listed by &lt;domain&gt;**. The check reads the exact name you give, and a record says only that the domain's owner names this token as theirs.
+
 ### From the terminal
 
 ```bash
@@ -245,7 +266,9 @@ curl --create-dirs -o type262/bin/type262.mjs https://type262.com/bin/type262.mj
 node type262/bin/type262.mjs resolve yoursite.com                  # wallets a domain publishes
 node type262/bin/type262.mjs verify https://api.yoursite.com 9WzD…  # does this payTo belong to the domain?
 node type262/bin/type262.mjs encode yoursite.com SOL 9WzD…          # zone lines to publish
+node type262/bin/type262.mjs token yoursite.com BjVs…pump           # is this coin yoursite.com's official token?
 node type262/bin/type262.mjs link yoursite.com 5 USDC               # Solana Pay link (SOL, USDC; USDG, ETH on Robinhood Chain)
+node type262/bin/type262.mjs link yoursite.com 5 USDC base          # EIP-681 link: USDC (or ETH) on Base
 ```
 
 ## On Solana
@@ -287,6 +310,15 @@ Then the worker collects the creator fees of the domain's pump.fun coins into th
 ### Refunds
 
 A sender can get a deposit back 180 days after it was made, if the domain hasn't claimed since and the deposit wasn't refunded already. `POST /solana/refund` takes the domain and the deposit's transaction signature; the worker checks the deposit and the vault's history on-chain and pays the original sender, with the memo `type262:refund:<deposit signature>`.
+
+### Fund many domains at once
+
+Escrow, **Many domains** (`app.html#escrow/many`) pays up to 25 domains in one go: the apps, sites and open-source projects you use. Paste domains or links, one per line or separated by commas or spaces, or paste a `package.json`, and the app looks up each dependency's homepage on npm, leaving out code hosts and shared hosts such as `github.com` or `*.vercel.app`. Links to pages on a platform or its subdomains (`gist.github.com`, `apps.apple.com`, `patreon.com/…`) and email addresses at mail providers are left out too, with the reason: they would pay the platform, not the project. Choose SOL or USDC and an amount, as a total split evenly (exact to the base unit, the remainder going to the first domains) or the same for each.
+
+- **Direct or into the vault.** A domain is paid at the wallet it publishes when it publishes exactly one Solana address, Cloudflare and Google both return it DNSSEC-signed and agree, and the address is a regular wallet: the record a claim needs. Every other domain is paid into its vault exactly as a single deposit is, with the board reference and its own `TYPE/262 deposit <domain>` memo, so its owner claims it with one record and you can take it back after 180 days.
+- **The plan first.** Before anything is sent, the app lists each domain with its route, address and amount, every domain it can't pay with the reason, the total, the network fees, and the number of transactions and wallet approvals. Send reads every route again first; if a domain changed or removed its record since the review, the plan is redrawn and nothing is sent until you press Send again.
+- **Few transactions.** Payments are packed into legacy transactions under Solana's 1,232 bytes: up to about 11 SOL or 6 USDC vault deposits per transaction, or 20 SOL or 9 USDC direct payments, so 25 domains usually take 2 to 5 approvals. Each transaction sets a compute limit for its payments and the deposit's priority fee and loaded-data limit, and is simulated before your wallet is asked.
+- **Counted per domain.** The board counts each domain of a batch for what reached its own vault, and the worker refunds each vault's part of a batch on its own.
 
 ### Launch a coin on pump.fun
 
@@ -368,9 +400,26 @@ trades ──▶ pons fee escrow ──collect(domain)──▶ DomainFeeForward
 
 </details>
 
+## Pay on Base
+
+A domain that publishes an EVM address, an `ETH` line in its `WALLET` or `_wallet` record, can also be paid on Base (chain id 8453), in USDC or ETH, straight to that address. Most x402 payments settle in USDC on Base, so the same domain record now covers them.
+
+- **In the app**, Pay offers Robinhood Chain or Base for an EVM address. The wallet switches to the chain picked, sends, and the app waits for the receipt on Base's RPC. Badge links open the same Pay view.
+- **From the terminal**, `type262 link yoursite.com 5 USDC base` prints an EIP-681 link on chain 8453.
+- **For agents**, the MCP server's `pay_domain` takes `chain: "base"`, and the Verify tab shows the network a 402 body names next to each `payTo` it checks.
+
+Base takes direct payments only: there is no escrow and there are no launches on Base. Vaults and pump.fun launches stay on Solana, escrow and pons launches on Robinhood Chain. A domain that publishes no EVM address is not offered Base. Publish a regular wallet address under `ETH`: a smart-contract wallet at that address may not exist on Base. When a domain publishes several EVM addresses, Base pays the one coded with the asset, then `ETH`, then `EVM`. An address published only under a code for another chain (`HOOD`, `USDG`, `ARB`, `OP`, `POL`) is refused by the CLI and the MCP server on Base; the app shows its code and leaves the choice to the payer.
+
+| Network | |
+|---|---|
+| Chain ID | `8453` (`0x2105`) |
+| RPC | `https://mainnet.base.org` |
+| Explorer | [basescan.org](https://basescan.org) |
+| USDC | [`0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`](https://basescan.org/token/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913) (6 decimals) |
+
 ## AI agents
 
-The MCP server pays on Robinhood Chain, in USDG or ETH. A domain whose DNSSEC-signed EVM address every resolver agrees on is paid directly. A domain that publishes no EVM address (only a Solana one, for example), or only an unsigned one, is paid into `DomainEscrow` on Robinhood Chain, and its owner claims it with an EVM record.
+The MCP server pays on Robinhood Chain, in USDG or ETH, and directly on Base, in USDC or ETH, with `chain: "base"`. A domain whose DNSSEC-signed EVM address every resolver agrees on is paid directly. A domain that publishes no EVM address (only a Solana one, for example), or only an unsigned one, is paid into `DomainEscrow` on Robinhood Chain, and its owner claims it with an EVM record. Base has no escrow, so there `pay_domain` refuses such a domain and says why.
 
 ### Give your agent a wallet
 
@@ -412,13 +461,13 @@ Then ask your agent to *"send yoursite.com 5 USDG"*. Without a key, resolving, v
 
 | Tool | What it does |
 |---|---|
-| `resolve_domain` | The wallets a domain publishes, whether the resolvers agree and DNSSEC signed them, what `pay_domain` would do, and what already waits in `DomainEscrow` on Robinhood Chain |
+| `resolve_domain` | The wallets a domain publishes, whether the resolvers agree and DNSSEC signed them, what `pay_domain` would do on each chain, and what already waits in `DomainEscrow` on Robinhood Chain |
 | `verify_payto` | Checks one address, or every `payTo` in a 402 body, against the domain you are talking to: `safe`, `unsigned` or `no_match` |
-| `pay_domain` | Pays a domain by name in USDG or ETH. `dry_run: true` returns the full plan and sends nothing; the same asset and amount to the same recipient within 10 minutes needs `repeat: true`, even under another name or URL |
+| `pay_domain` | Pays a domain by name in USDG or ETH on Robinhood Chain, or in USDC or ETH on Base with `chain: "base"` (direct payments only). `dry_run: true` returns the full plan and sends nothing; the same asset and amount on the same chain to the same recipient within 10 minutes needs `repeat: true`, even under another name or URL |
 | `escrow_status` | USDG and ETH waiting in `DomainEscrow` for a domain |
-| `wallet_status` | The agent wallet's address, balances, limits and what it spent today |
+| `wallet_status` | The agent wallet's address, balances on both chains, limits and what it spent today |
 
-Spend limits live in the server's environment, not in the prompt: by default 25 USDG per payment and 100 per UTC day, 0.01 ETH per payment and 0.05 per day. Payments run one at a time in each server process, and a lock file shared by every process keeps the daily limit across them. A payment the client cancels before it starts is never sent. The key is read once and never logged, and every successful result carries a one-line summary the agent can repeat to you (refusals carry a one-line error). Full reference: [docs › MCP server](https://type262.com/docs.html#mcp).
+Spend limits live in the server's environment, not in the prompt: by default 25 USDG per payment and 100 per UTC day, 0.01 ETH per payment and 0.05 per day. Base has its own limits, by default the same for USDC and ETH (`TYPE262_MAX_BASE_USDC`, `TYPE262_DAILY_BASE_USDC`, `TYPE262_MAX_BASE_ETH`, `TYPE262_DAILY_BASE_ETH`). Payments run one at a time in each server process, and a lock file shared by every process keeps the daily limit across them. A payment the client cancels before it starts is never sent. The key is read once and never logged, and every successful result carries a one-line summary the agent can repeat to you (refusals carry a one-line error). Full reference: [docs › MCP server](https://type262.com/docs.html#mcp).
 
 ## Deployments
 
@@ -491,7 +540,7 @@ npm ci
 
 npm run dev                         # serves the site at http://127.0.0.1:5262
 npm test                            # SDK, ABI, board (both chains), worker and MCP tests
-npm run test:mcp:fork               # MCP payments end to end on a local Robinhood Chain fork
+npm run test:mcp:fork               # MCP payments end to end on local Robinhood Chain and Base forks
 npm run mcp:build                   # rebuild mcp/type262-mcp.mjs
 node test/solana.test.mjs           # Solana client (12 tests)
 node test/solana-vault.test.mjs     # the vault client: pump.fun instructions, launches, the worker API (offline)
@@ -538,5 +587,5 @@ Issues and pull requests are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.
   <br>
   <sub><a href="https://type262.com">type262.com</a> · <a href="https://x.com/type_262">@type_262 on X</a></sub>
   <br>
-  <sub>Payments settle on Solana, with Robinhood Chain (4663) also supported. Not affiliated with IANA, ICANN, Solana, pump.fun, Robinhood or the x402 project.</sub>
+  <sub>Payments settle on Solana, with Robinhood Chain (4663) and Base (8453) also supported. Not affiliated with IANA, ICANN, Solana, pump.fun, Robinhood, Base or the x402 project.</sub>
 </div>

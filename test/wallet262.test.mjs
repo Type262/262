@@ -66,6 +66,11 @@ const tests = {
   'eip-681 link on robinhood chain': () => assert.equal(
     w.paymentUri(EVM, { amount: '5', chainId: 4663, token: '0x5fc5360d0400a0fd4f2af552add042d716f1d168', decimals: 6 }),
     `ethereum:0x5fc5360d0400a0fd4f2af552add042d716f1d168@4663/transfer?address=${EVM}&uint256=5000000`),
+  'eip-681 links on base': () => {
+    assert.equal(w.paymentUri(EVM, { amount: '5', chainId: 8453, token: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913', decimals: 6 }),
+      `ethereum:0x833589fcd6edb6e08f4c7c32d4f71b54bda02913@8453/transfer?address=${EVM}&uint256=5000000`)
+    assert.equal(w.paymentUri(EVM, { amount: '0.01', chainId: 8453 }), `ethereum:${EVM}@8453?value=10000000000000000`)
+  },
   'parseUnits precision': () => {
     assert.equal(w.parseUnits('0.000001', 6), 1n)
     assert.throws(() => w.parseUnits('0.0000001', 6))
